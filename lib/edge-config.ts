@@ -291,22 +291,36 @@ export async function updateEdgeConfig(key: string, value: any): Promise<void> {
     // Parse the Edge Config connection string
     const edgeConfigString = process.env.EDGE_CONFIG;
 
+    console.log("Edge Config Connection String:", edgeConfigString);
+
     if (!edgeConfigString) {
       throw new Error("EDGE_CONFIG environment variable is missing");
     }
 
+    // Remove @ prefix if present
+    const cleanConfigString = edgeConfigString.startsWith("@")
+      ? edgeConfigString.substring(1)
+      : edgeConfigString;
+
     // Extract Edge Config ID and token from the connection string
-    // Format: @https://edge-config.vercel.com/ecfg_xxx?token=yyy
-    const match = edgeConfigString.match(
+    // Format: https://edge-config.vercel.com/ecfg_xxx?token=yyy
+    const match = cleanConfigString.match(
       /edge-config\.vercel\.com\/([^?]+)\?token=([^&]+)/
     );
 
     if (!match || match.length < 3) {
+      console.error("Failed to parse Edge Config URL:", cleanConfigString);
       throw new Error("Invalid EDGE_CONFIG format");
     }
 
     const edgeConfigId = match[1];
     const token = match[2];
+
+    console.log("Extracted Edge Config ID:", edgeConfigId);
+    console.log(
+      "Using Edge Config URL:",
+      `https://edge-config.vercel.com/${edgeConfigId}/items?token=${token}`
+    );
 
     const response = await fetch(
       `https://edge-config.vercel.com/${edgeConfigId}/items?token=${token}`,
@@ -331,6 +345,11 @@ export async function updateEdgeConfig(key: string, value: any): Promise<void> {
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Edge Config update error:", errorText);
+      console.error("Response status:", response.status);
+      console.error(
+        "Response headers:",
+        Object.fromEntries(response.headers.entries())
+      );
       throw new Error(
         `Failed to update Edge Config: Status ${response.status}`
       );
