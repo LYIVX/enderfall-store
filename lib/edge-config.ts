@@ -288,12 +288,15 @@ export async function updateResetData(
 // Helper function to update Edge Config
 export async function updateEdgeConfig(key: string, value: any): Promise<void> {
   try {
+    const edgeConfigId = "ecfg_0yqbzfkjkifmcbj5w8wxytxvnomp";
+    const token = "cdb28656-fbd2-4a36-94fc-27c117c000c2";
+
     const response = await fetch(
-      `https://edge-config.vercel.com/v1/edge-config/ecfg_0yqbzfkjkifmcbj5w8wxytxvnomp/items`,
+      `https://api.vercel.com/v1/edge-config/${edgeConfigId}/items`,
       {
         method: "PATCH",
         headers: {
-          Authorization: `Bearer cdb28656-fbd2-4a36-94fc-27c117c000c2`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
