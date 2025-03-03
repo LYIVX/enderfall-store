@@ -24,10 +24,12 @@ export async function GET() {
       }),
     });
 
+    // Check if the response is ok but don't try to parse it as JSON
     if (!response.ok) {
-      const error = await response.json();
+      const errorText = await response.text();
+      console.error("Edge Config initialization error:", errorText);
       throw new Error(
-        `Failed to initialize Edge Config: ${JSON.stringify(error)}`
+        `Failed to initialize Edge Config: Status ${response.status}`
       );
     }
 
@@ -44,6 +46,7 @@ export async function GET() {
           error instanceof Error
             ? error.message
             : "Failed to initialize Edge Config",
+        status: "error",
       },
       { status: 500 }
     );

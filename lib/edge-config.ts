@@ -287,26 +287,34 @@ export async function updateResetData(
 
 // Helper function to update Edge Config
 export async function updateEdgeConfig(key: string, value: any): Promise<void> {
-  const response = await fetch(`https://edge-config.vercel.com/v1/items`, {
-    method: "PATCH",
-    headers: {
-      Authorization: `Bearer ${process.env.EDGE_CONFIG}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      items: [
-        {
-          operation: "upsert",
-          key,
-          value,
-        },
-      ],
-    }),
-  });
+  try {
+    const response = await fetch(`https://edge-config.vercel.com/v1/items`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${process.env.EDGE_CONFIG}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        items: [
+          {
+            operation: "upsert",
+            key,
+            value,
+          },
+        ],
+      }),
+    });
 
-  if (!response.ok) {
-    const error = await response.json();
+    // Check if the response is ok but don't try to parse it as JSON
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Edge Config update error:", errorText);
+      throw new Error(
+        `Failed to update Edge Config: Status ${response.status}`
+      );
+    }
+  } catch (error) {
     console.error("Edge Config update error:", error);
-    throw new Error(`Failed to update Edge Config: ${JSON.stringify(error)}`);
+    throw error;
   }
 }
