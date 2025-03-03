@@ -317,29 +317,17 @@ export async function updateEdgeConfig(key: string, value: any): Promise<void> {
     const token = match[2];
 
     console.log("Extracted Edge Config ID:", edgeConfigId);
+    console.log("Using direct PUT to set Edge Config item");
 
-    // Instead of trying to write directly to Edge Config, use the Vercel API
-    // https://vercel.com/docs/rest-api#endpoints/edge-config
-    console.log("Using Vercel API to update Edge Config");
-
-    // We'll make a direct POST to the public Edge Config record
-    // Use the /items endpoint for creating or updating items
+    // Use direct PUT to set a specific item
     const response = await fetch(
-      `https://edge-config.vercel.com/${edgeConfigId}/items?token=${token}`,
+      `https://edge-config.vercel.com/${edgeConfigId}/items/${key}?token=${token}`,
       {
-        method: "POST",
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          items: [
-            {
-              operation: "upsert",
-              key: key,
-              value: value,
-            },
-          ],
-        }),
+        body: JSON.stringify(value),
       }
     );
 

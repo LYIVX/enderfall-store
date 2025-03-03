@@ -37,22 +37,19 @@ export async function GET() {
     const edgeConfigId = match[1];
     const token = match[2];
 
+    const baseUrl = `https://edge-config.vercel.com/${edgeConfigId}`;
+    const baseUrlWithToken = `${baseUrl}?token=${token}`;
+
     console.log("Extracted Edge Config ID:", edgeConfigId);
-    console.log(
-      "Using Edge Config URL:",
-      `https://edge-config.vercel.com/${edgeConfigId}?token=${token}`
-    );
+    console.log("Using Edge Config URL:", baseUrlWithToken);
 
     // Let's try a simple GET request first to verify the connection
-    const testResponse = await fetch(
-      `https://edge-config.vercel.com/${edgeConfigId}?token=${token}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    const testResponse = await fetch(baseUrlWithToken, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
     console.log("Test GET response status:", testResponse.status);
     if (!testResponse.ok) {
@@ -63,56 +60,75 @@ export async function GET() {
       console.log("Current Edge Config data:", JSON.stringify(testData));
     }
 
-    // Now prepare all items for a single request to the items endpoint
-    const itemsToUpsert = Object.entries(initialData).map(([key, value]) => ({
-      operation: "upsert",
-      key,
-      value,
-    }));
+    // Initialize keys - try direct PUT for each key
+    const results = [];
 
-    console.log("Initializing all Edge Config keys in a single request");
-    console.log(
-      `Using correct API endpoint: https://edge-config.vercel.com/${edgeConfigId}/items?token=${token}`
-    );
+    for (const [key, value] of Object.entries(initialData)) {
+      console.log(`Initializing key: ${key}`);
+      console.log(
+        `Using direct PUT to: ${baseUrl}/items/${key}?token=${token}`
+      );
 
-    // Make a single POST request with all items to be upserted
-    const response = await fetch(
-      `https://edge-config.vercel.com/${edgeConfigId}/items?token=${token}`,
-      {
-        method: "POST",
+      // Use PUT request to set each key directly
+      const response = await fetch(`${baseUrl}/items/${key}?token=${token}`, {
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          items: itemsToUpsert,
-        }),
+        body: JSON.stringify(value),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Error initializing key ${key}:`, errorText);
+        console.error("Response status:", response.status);
+        console.error(
+          "Response headers:",
+          Object.fromEntries(response.headers.entries())
+        );
+        results.push({
+          key,
+          success: false,
+          status: response.status,
+          error: errorText,
+        });
+      } else {
+        console.log(`Successfully initialized key: ${key}`);
+        results.push({ key, success: true });
       }
-    );
+    }
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Error initializing Edge Config:", errorText);
-      console.error("Response status:", response.status);
-      console.error(
-        "Response headers:",
-        Object.fromEntries(response.headers.entries())
-      );
+    // Check if any operations failed
+    const anyFailed = results.some((result) => !result.success);
 
+    if (anyFailed) {
+      const failedResults = results.filter((result) => !result.success);
       throw new Error(
-        `Failed to initialize Edge Config: Status ${response.status}`
+        `Failed to initialize some Edge Config keys: ${JSON.stringify(failedResults)}`
       );
     }
 
-    const responseData = await response.json();
-    console.log(
-      "Edge Config initialization response:",
-      JSON.stringify(responseData)
-    );
+    // Verify the data was set correctly
+    const verifyResponse = await fetch(baseUrlWithToken, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (verifyResponse.ok) {
+      const verifyData = await verifyResponse.json();
+      console.log(
+        "Edge Config after initialization:",
+        JSON.stringify(verifyData)
+      );
+    }
 
     return NextResponse.json({
       success: true,
       message: "Edge Config initialized successfully",
       initializedKeys: Object.keys(initialData),
+      results,
     });
   } catch (error) {
     console.error("Error initializing Edge Config:", error);
