@@ -8,6 +8,7 @@ import { useUserSettings } from "@/lib/context/UserSettingsContext";
 import RankCard from "../components/RankCard";
 import { isServerOnline } from "@/lib/serverStatus";
 import { checkPlayerExists, getRankCategory } from "@/lib/minecraft-api";
+import { useSearchParams } from "next/navigation";
 
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
@@ -95,6 +96,8 @@ export default function Shop() {
   const [isErrorModalOpen, setIsErrorModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [errorTitle, setErrorTitle] = useState("Error");
+
+  const searchParams = useSearchParams();
 
   // Update selectedCurrency when userSettings change
   useEffect(() => {
@@ -607,6 +610,12 @@ export default function Shop() {
     setSearchUsername(username);
     handleUsernameSearch(username);
   };
+
+  useEffect(() => {
+    if (searchParams.get("username")) {
+      handleUsernameSearch();
+    }
+  }, [searchParams, handleUsernameSearch]);
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-[var(--background-gradient-from)] to-[var(--background-gradient-to)] text-[var(--text-color)] py-16">

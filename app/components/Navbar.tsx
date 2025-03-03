@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { useUserSettings } from "@/lib/context/UserSettingsContext";
+import Image from "next/image";
 
 // Currency symbols
 const currencySymbols = {
@@ -229,13 +230,13 @@ export default function Navbar() {
                   className="bg-[var(--input-bg)] hover:bg-[var(--card-bg-secondary)] border border-[var(--input-border)] text-[var(--text-color)] rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 w-32 h-10 transition-colors"
                 >
                   <div className="flex items-center">
-                    {session.user?.image && (
-                      <img
-                        src={session.user.image}
-                        alt={session.user.name || "User"}
-                        className="w-5 h-5 rounded-full mr-2"
-                      />
-                    )}
+                    <Image
+                      src={session?.user?.image || "/default-avatar.png"}
+                      alt="User Avatar"
+                      width={32}
+                      height={32}
+                      className="rounded-full"
+                    />
                     <span className="truncate max-w-[70px]">
                       {session.user?.name?.split("#")[0] || "User"}
                     </span>
