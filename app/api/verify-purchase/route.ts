@@ -64,6 +64,82 @@ async function getSessionDetails(
   }
 }
 
+/**
+ * Activates a rank for a user on the Minecraft server
+ */
+async function activateRank(
+  userId: string,
+  rankId: string,
+  isGift: boolean,
+  recipient?: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    // Call the Minecraft server API to apply the rank
+    const response = await axios.post(
+      `${process.env.MINECRAFT_SERVER_API_URL}/api/apply-rank`,
+      {
+        username: recipient || userId,
+        rank: rankId,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.MINECRAFT_SERVER_API_KEY}`,
+        },
+      }
+    );
+
+    if (!response.data.success) {
+      return {
+        success: false,
+        error: "Failed to activate rank on Minecraft server",
+      };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error activating rank:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error occurred",
+    };
+  }
+}
+
+/**
+ * Marks a purchase as completed in the database
+ */
+async function completePurchase(sessionId: string): Promise<boolean> {
+  try {
+    const dataDir = path.join(process.cwd(), "data");
+    const pendingPurchasesPath = path.join(dataDir, "pending-purchases.json");
+
+    if (!fs.existsSync(pendingPurchasesPath)) {
+      return false;
+    }
+
+    const data = fs.readFileSync(pendingPurchasesPath, "utf8");
+    const purchasesData = JSON.parse(data);
+
+    // Remove the completed purchase
+    purchasesData.pendingPurchases = purchasesData.pendingPurchases.filter(
+      (purchase: PendingPurchase) => purchase.sessionId !== sessionId
+    );
+
+    // Write back to file
+    fs.writeFileSync(
+      pendingPurchasesPath,
+      JSON.stringify(purchasesData, null, 2),
+      "utf8"
+    );
+
+    return true;
+  } catch (error) {
+    console.error("Error completing purchase:", error);
+    return false;
+  }
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
