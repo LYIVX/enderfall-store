@@ -1,6 +1,6 @@
 import { createClient } from "@vercel/edge-config";
 
-const edgeConfig = createClient(process.env.EDGE_CONFIG_CONNECTION_STRING);
+const edgeConfig = createClient(process.env.EDGE_CONFIG);
 
 // Interfaces
 export interface SavedAccountsData {
@@ -290,29 +290,11 @@ export async function updateResetData(
 
 // Helper function to update Edge Config
 export async function updateEdgeConfig(key: string, value: any): Promise<void> {
-  // Use direct Vercel Edge Config API instead of going through our own API
-  const response = await fetch(
-    `https://api.vercel.com/v1/edge-config/${process.env.EDGE_CONFIG_ID}/items`,
-    {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${process.env.EDGE_CONFIG_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        items: [
-          {
-            operation: "upsert",
-            key,
-            value,
-          },
-        ],
-      }),
-    }
-  );
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(`Failed to update Edge Config: ${JSON.stringify(error)}`);
+  try {
+    // @ts-ignore - Edge Config's set method exists but TypeScript doesn't recognize it
+    await edgeConfig.set(key, value);
+  } catch (error) {
+    console.error("Error updating Edge Config:", error);
+    throw new Error("Failed to update Edge Config");
   }
 }
