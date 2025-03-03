@@ -287,11 +287,6 @@ export async function updateResetData(
 
 // Helper function to update Edge Config
 export async function updateEdgeConfig(key: string, value: any): Promise<void> {
-  const edgeConfigId = process.env.EDGE_CONFIG?.split("_")[1];
-  if (!edgeConfigId) {
-    throw new Error("Invalid Edge Config connection string");
-  }
-
   const response = await fetch(`https://edge-config.vercel.com/v1/items`, {
     method: "PATCH",
     headers: {

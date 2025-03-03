@@ -9,7 +9,6 @@ const initialData = {
 
 export async function GET() {
   try {
-    // Initialize Edge Config using the API
     const response = await fetch(`https://edge-config.vercel.com/v1/items`, {
       method: "PATCH",
       headers: {
