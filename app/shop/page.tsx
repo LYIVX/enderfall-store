@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { loadStripe } from "@stripe/stripe-js";
 import Link from "next/link";
@@ -58,7 +58,7 @@ interface Purchase {
 // Change type definition from TabType to CategoryId
 type CategoryId = string;
 
-export default function Shop() {
+function ShopContent() {
   const { data: session, status } = useSession();
   const { userSettings, updateUserSettings } = useUserSettings();
   const [minecraftProfile, setMinecraftProfile] =
@@ -913,5 +913,13 @@ export default function Shop() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function Shop() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ShopContent />
+    </Suspense>
   );
 }
