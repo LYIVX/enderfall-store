@@ -9,20 +9,23 @@ const initialData = {
 
 export async function GET() {
   try {
-    const response = await fetch(`https://edge-config.vercel.com/v1/items`, {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${process.env.EDGE_CONFIG}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        items: Object.entries(initialData).map(([key, value]) => ({
-          operation: "upsert",
-          key,
-          value,
-        })),
-      }),
-    });
+    const response = await fetch(
+      `https://edge-config.vercel.com/ecfg_0yqbzfkjkifmcbj5w8wxytxvnomp`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer cdb28656-fbd2-4a36-94fc-27c117c000c2`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          items: Object.entries(initialData).map(([key, value]) => ({
+            operation: "upsert",
+            key,
+            value,
+          })),
+        }),
+      }
+    );
 
     // Check if the response is ok but don't try to parse it as JSON
     if (!response.ok) {
