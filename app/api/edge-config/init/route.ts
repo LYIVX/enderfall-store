@@ -10,7 +10,7 @@ const initialData = {
 export async function GET() {
   try {
     const response = await fetch(
-      `https://edge-config.vercel.com/ecfg_0yqbzfkjkifmcbj5w8wxytxvnomp`,
+      `https://edge-config.vercel.com/v1/edge-config/ecfg_0yqbzfkjkifmcbj5w8wxytxvnomp/items`,
       {
         method: "PATCH",
         headers: {
