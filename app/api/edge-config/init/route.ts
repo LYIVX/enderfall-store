@@ -9,15 +9,21 @@ const initialData = {
 
 export async function GET() {
   try {
-    const edgeConfigId = "ecfg_0yqbzfkjkifmcbj5w8wxytxvnomp";
-    const token = "cdb28656-fbd2-4a36-94fc-27c117c000c2";
+    // Get Edge Config ID and token from environment variables
+    const edgeConfigId = process.env.EDGE_CONFIG_ID;
+    const token = process.env.EDGE_CONFIG_TOKEN;
+
+    if (!edgeConfigId || !token) {
+      throw new Error(
+        "Edge Config ID or token is missing in environment variables"
+      );
+    }
 
     const response = await fetch(
-      `https://api.vercel.com/v1/edge-config/${edgeConfigId}/items`,
+      `https://edge-config.vercel.com/${edgeConfigId}/items?token=${token}`,
       {
         method: "PATCH",
         headers: {
-          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
