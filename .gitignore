@@ -73,3 +73,5 @@ minecraft-plugin/*.iml
 
 # OS files
 Thumbs.db 
+.vercel
+.env*.local

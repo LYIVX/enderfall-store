@@ -79,10 +79,21 @@ export async function POST(request: Request) {
     const userId = session.user.id;
 
     // Add the account to the user's saved accounts
-    const updatedAccounts = await addSavedAccount(userId, cleanUsername);
+    const result = await addSavedAccount(userId, cleanUsername);
+
+    if (!result.success) {
+      console.error("Edge Config error when saving account:", result.error);
+      return NextResponse.json(
+        {
+          error: result.error || "Failed to save Minecraft account",
+          accounts: result.accounts,
+        },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
-      accounts: updatedAccounts,
+      accounts: result.accounts,
       message: "Account saved successfully",
     });
   } catch (error: any) {
@@ -124,10 +135,21 @@ export async function DELETE(request: Request) {
     const userId = session.user.id;
 
     // Remove the account from the user's saved accounts
-    const updatedAccounts = await removeSavedAccount(userId, username);
+    const result = await removeSavedAccount(userId, username);
+
+    if (!result.success) {
+      console.error("Edge Config error when removing account:", result.error);
+      return NextResponse.json(
+        {
+          error: result.error || "Failed to remove Minecraft account",
+          accounts: result.accounts,
+        },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
-      accounts: updatedAccounts,
+      accounts: result.accounts,
       message: "Account removed successfully",
     });
   } catch (error: any) {

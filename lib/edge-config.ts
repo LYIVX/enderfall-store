@@ -56,7 +56,7 @@ export async function getSavedAccounts(userId: string): Promise<string[]> {
 export async function addSavedAccount(
   userId: string,
   username: string
-): Promise<string[]> {
+): Promise<{ success: boolean; accounts: string[]; error?: string }> {
   try {
     // Get all accounts first
     const allAccounts =
@@ -76,25 +76,39 @@ export async function addSavedAccount(
       }
 
       // Update in Edge Config through API
-      await updateEdgeConfig("minecraft-accounts", {
+      const updateResult = await updateEdgeConfig("minecraft-accounts", {
         ...allAccounts,
         [userId]: { accounts: updatedAccounts },
       });
 
-      return updatedAccounts;
+      if (!updateResult.success) {
+        console.error("Failed to update Edge Config:", updateResult.error);
+        return {
+          success: false,
+          accounts: currentAccounts,
+          error: updateResult.error || "Failed to save account",
+        };
+      }
+
+      return { success: true, accounts: updatedAccounts };
     }
 
-    return currentAccounts;
+    return { success: true, accounts: currentAccounts };
   } catch (error) {
     console.error("Error adding saved account:", error);
-    return [];
+    return {
+      success: false,
+      accounts: [],
+      error:
+        error instanceof Error ? error.message : "Unknown error saving account",
+    };
   }
 }
 
 export async function removeSavedAccount(
   userId: string,
   username: string
-): Promise<string[]> {
+): Promise<{ success: boolean; accounts: string[]; error?: string }> {
   try {
     // Get all accounts first
     const allAccounts =
@@ -109,15 +123,31 @@ export async function removeSavedAccount(
     );
 
     // Update in Edge Config through API
-    await updateEdgeConfig("minecraft-accounts", {
+    const updateResult = await updateEdgeConfig("minecraft-accounts", {
       ...allAccounts,
       [userId]: { accounts: updatedAccounts },
     });
 
-    return updatedAccounts;
+    if (!updateResult.success) {
+      console.error("Failed to update Edge Config:", updateResult.error);
+      return {
+        success: false,
+        accounts: currentAccounts,
+        error: updateResult.error || "Failed to remove account",
+      };
+    }
+
+    return { success: true, accounts: updatedAccounts };
   } catch (error) {
     console.error("Error removing saved account:", error);
-    return [];
+    return {
+      success: false,
+      accounts: [],
+      error:
+        error instanceof Error
+          ? error.message
+          : "Unknown error removing account",
+    };
   }
 }
 
@@ -286,7 +316,10 @@ export async function updateResetData(
 }
 
 // Helper function to update Edge Config
-export async function updateEdgeConfig(key: string, value: any): Promise<void> {
+export async function updateEdgeConfig(
+  key: string,
+  value: any
+): Promise<{ success: boolean; error?: string; status?: number }> {
   try {
     console.log(`Attempting to update Edge Config key: ${key}`);
 
@@ -295,7 +328,12 @@ export async function updateEdgeConfig(key: string, value: any): Promise<void> {
     const edgeConfigString = process.env.EDGE_CONFIG;
 
     if (!edgeConfigString) {
-      throw new Error("EDGE_CONFIG environment variable is missing");
+      console.error("EDGE_CONFIG environment variable is missing");
+      return {
+        success: false,
+        error: "EDGE_CONFIG environment variable is missing",
+        status: 500,
+      };
     }
 
     // Remove @ prefix if present
@@ -313,7 +351,11 @@ export async function updateEdgeConfig(key: string, value: any): Promise<void> {
 
     if (!match || match.length < 3) {
       console.error("Failed to parse Edge Config URL:", cleanConfigString);
-      throw new Error("Invalid EDGE_CONFIG format");
+      return {
+        success: false,
+        error: "Invalid EDGE_CONFIG format",
+        status: 500,
+      };
     }
 
     const edgeConfigId = match[1];
@@ -322,12 +364,15 @@ export async function updateEdgeConfig(key: string, value: any): Promise<void> {
     console.log("Extracted Edge Config ID:", edgeConfigId);
 
     // First attempt to use the SDK to validate we can read data
+    let readSuccess = false;
     try {
       const edgeConfig = createClient(process.env.EDGE_CONFIG || "");
       const exists = await edgeConfig.has(key);
       console.log(`Key ${key} exists in Edge Config: ${exists}`);
+      readSuccess = true;
     } catch (readError) {
       console.error("Error reading from Edge Config:", readError);
+      // Continue anyway, as we might still have write access even if SDK read fails
     }
 
     // Now try to update using API directly with correct URL pattern
@@ -347,17 +392,55 @@ export async function updateEdgeConfig(key: string, value: any): Promise<void> {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Edge Config update error:", errorText);
-      console.error("Response status:", response.status);
-
-      throw new Error(
-        `Unable to update Edge Config (Status: ${response.status}). Please run 'vercel env pull' to update your environment variables with proper write access.`
+      console.error(
+        `Edge Config update error (${response.status}):`,
+        errorText
       );
+
+      // Handle specific error cases
+      if (response.status === 401) {
+        return {
+          success: false,
+          error:
+            "Unauthorized: Edge Config token doesn't have write permissions",
+          status: 401,
+        };
+      }
+
+      if (response.status === 403) {
+        return {
+          success: false,
+          error: "Forbidden: Edge Config token lacks necessary permissions",
+          status: 403,
+        };
+      }
+
+      if (response.status === 404) {
+        return {
+          success: false,
+          error: "Not Found: Invalid Edge Config ID or URL format",
+          status: 404,
+        };
+      }
+
+      return {
+        success: false,
+        error: `Edge Config update failed with status ${response.status}`,
+        status: response.status,
+      };
     }
 
     console.log(`Successfully updated Edge Config key: ${key}`);
+    return { success: true };
   } catch (error) {
-    console.error("Edge Config update error:", error);
-    throw error;
+    console.error("Error in updateEdgeConfig:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Unknown error during Edge Config update",
+      status: 500,
+    };
   }
 }
