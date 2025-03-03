@@ -330,18 +330,16 @@ export async function updateEdgeConfig(key: string, value: any): Promise<void> {
       console.error("Error reading from Edge Config:", readError);
     }
 
-    // Now try to update using API directly
+    // Now try to update using API directly with correct URL pattern
     console.log("Updating Edge Config via direct API call");
 
-    // Try direct API approach with the read token
-    // Note: This is unlikely to work with a read-only token
+    // The URL must include the /items endpoint for Edge Config updates
     const response = await fetch(
-      `https://edge-config.vercel.com/${edgeConfigId}`,
+      `https://edge-config.vercel.com/${edgeConfigId}/items?token=${token}`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ [key]: value }),
       }
@@ -353,7 +351,7 @@ export async function updateEdgeConfig(key: string, value: any): Promise<void> {
       console.error("Response status:", response.status);
 
       throw new Error(
-        "Unable to update Edge Config. Please run 'vercel env pull' to update your environment variables with proper write access, then install the Edge Config SDK with 'npm install @vercel/edge-config'."
+        `Unable to update Edge Config (Status: ${response.status}). Please run 'vercel env pull' to update your environment variables with proper write access.`
       );
     }
 

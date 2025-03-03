@@ -86,12 +86,11 @@ export async function GET() {
 
       // Try to update the Edge Config using direct API call
       const response = await fetch(
-        `https://edge-config.vercel.com/${edgeConfigId}`,
+        `https://edge-config.vercel.com/${edgeConfigId}/items?token=${token}`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({ [key]: value }),
         }
