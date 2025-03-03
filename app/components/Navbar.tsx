@@ -21,6 +21,7 @@ type CurrencyCode = keyof typeof currencySymbols;
 interface DiscordProfile {
   username: string;
   avatar: string;
+  id: string;
 }
 
 export default function Navbar() {
@@ -89,7 +90,9 @@ export default function Navbar() {
       fetch("/api/discord-profile")
         .then((res) => res.json())
         .then((data) => {
-          setDiscordProfile(data.profile);
+          if (data.profile) {
+            setDiscordProfile(data.profile);
+          }
         })
         .catch((error) => {
           console.error("Failed to fetch Discord profile:", error);
@@ -229,16 +232,18 @@ export default function Navbar() {
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="bg-[var(--input-bg)] hover:bg-[var(--card-bg-secondary)] border border-[var(--input-border)] text-[var(--text-color)] rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 w-32 h-10 transition-colors"
                 >
-                  <div className="flex items-center">
+                  <div className="flex items-center justify-center space-x-2">
                     <Image
-                      src={session?.user?.image || "/default-avatar.png"}
+                      src={discordProfile?.avatar || "/default-avatar.png"}
                       alt="User Avatar"
-                      width={32}
-                      height={32}
-                      className="rounded-full"
+                      width={24}
+                      height={24}
+                      className="rounded-full flex-shrink-0"
                     />
-                    <span className="truncate max-w-[70px]">
-                      {session.user?.name?.split("#")[0] || "User"}
+                    <span className="truncate flex-1 text-center">
+                      {discordProfile?.username ||
+                        session.user?.name?.split("#")[0] ||
+                        "User"}
                     </span>
                   </div>
                 </button>
