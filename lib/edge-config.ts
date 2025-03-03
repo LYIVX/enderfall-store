@@ -317,17 +317,26 @@ export async function updateEdgeConfig(key: string, value: any): Promise<void> {
     const token = match[2];
 
     console.log("Extracted Edge Config ID:", edgeConfigId);
-    console.log("Using direct PUT to set Edge Config item");
+    console.log("Using Vercel API to update Edge Config");
 
-    // Use direct PUT to set a specific item
+    // Use Vercel API to update Edge Config
     const response = await fetch(
-      `https://edge-config.vercel.com/${edgeConfigId}/items/${key}?token=${token}`,
+      `https://api.vercel.com/v1/edge-config/${edgeConfigId}/items`,
       {
-        method: "PUT",
+        method: "PATCH",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(value),
+        body: JSON.stringify({
+          items: [
+            {
+              operation: "update",
+              key,
+              value,
+            },
+          ],
+        }),
       }
     );
 

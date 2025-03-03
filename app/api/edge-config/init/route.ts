@@ -37,13 +37,13 @@ export async function GET() {
     const edgeConfigId = match[1];
     const token = match[2];
 
-    const baseUrl = `https://edge-config.vercel.com/${edgeConfigId}`;
-    const baseUrlWithToken = `${baseUrl}?token=${token}`;
+    // For GET requests, we can use the token in the URL
+    const baseUrlWithToken = `https://edge-config.vercel.com/${edgeConfigId}?token=${token}`;
 
     console.log("Extracted Edge Config ID:", edgeConfigId);
-    console.log("Using Edge Config URL:", baseUrlWithToken);
+    console.log("Using Edge Config URL for GET:", baseUrlWithToken);
 
-    // Let's try a simple GET request first to verify the connection
+    // Let's try a simple GET request to verify we can read the Edge Config
     const testResponse = await fetch(baseUrlWithToken, {
       method: "GET",
       headers: {
@@ -60,53 +60,88 @@ export async function GET() {
       console.log("Current Edge Config data:", JSON.stringify(testData));
     }
 
-    // Initialize keys - try direct PUT for each key
-    const results = [];
+    console.log("Creating a single item to test write permission");
 
-    for (const [key, value] of Object.entries(initialData)) {
-      console.log(`Initializing key: ${key}`);
-      console.log(
-        `Using direct PUT to: ${baseUrl}/items/${key}?token=${token}`
-      );
-
-      // Use PUT request to set each key directly
-      const response = await fetch(`${baseUrl}/items/${key}?token=${token}`, {
-        method: "PUT",
+    // Try directly using the Vercel REST API
+    // https://vercel.com/docs/api/edge-config/introduction
+    const testItemResponse = await fetch(
+      `https://api.vercel.com/v1/edge-config/${edgeConfigId}/items`,
+      {
+        method: "PATCH",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(value),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`Error initializing key ${key}:`, errorText);
-        console.error("Response status:", response.status);
-        console.error(
-          "Response headers:",
-          Object.fromEntries(response.headers.entries())
-        );
-        results.push({
-          key,
-          success: false,
-          status: response.status,
-          error: errorText,
-        });
-      } else {
-        console.log(`Successfully initialized key: ${key}`);
-        results.push({ key, success: true });
+        body: JSON.stringify({
+          items: [
+            {
+              operation: "update",
+              key: "test-write",
+              value: { initialized: true, timestamp: Date.now() },
+            },
+          ],
+        }),
       }
-    }
+    );
 
-    // Check if any operations failed
-    const anyFailed = results.some((result) => !result.success);
+    console.log("Test write response status:", testItemResponse.status);
 
-    if (anyFailed) {
-      const failedResults = results.filter((result) => !result.success);
+    if (!testItemResponse.ok) {
+      const writeErrorText = await testItemResponse.text();
+      console.error("Edge Config write test error:", writeErrorText);
+      console.error(
+        "Response headers:",
+        Object.fromEntries(testItemResponse.headers.entries())
+      );
       throw new Error(
-        `Failed to initialize some Edge Config keys: ${JSON.stringify(failedResults)}`
+        `Cannot write to Edge Config. Status: ${testItemResponse.status}. You may need a token with write permissions.`
       );
     }
+
+    // Since we can write, now attempt to update with our initial data
+    const results = [];
+
+    // Prepare all items for a batch update
+    const itemsToUpdate = Object.entries(initialData).map(([key, value]) => ({
+      operation: "update",
+      key,
+      value,
+    }));
+
+    console.log("Initializing all Edge Config keys in a single request");
+
+    const response = await fetch(
+      `https://api.vercel.com/v1/edge-config/${edgeConfigId}/items`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          items: itemsToUpdate,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Error initializing Edge Config:", errorText);
+      console.error("Response status:", response.status);
+      console.error(
+        "Response headers:",
+        Object.fromEntries(response.headers.entries())
+      );
+      throw new Error(
+        `Failed to initialize Edge Config: Status ${response.status}`
+      );
+    }
+
+    const responseData = await response.json();
+    console.log(
+      "Edge Config initialization response:",
+      JSON.stringify(responseData)
+    );
 
     // Verify the data was set correctly
     const verifyResponse = await fetch(baseUrlWithToken, {
@@ -128,7 +163,6 @@ export async function GET() {
       success: true,
       message: "Edge Config initialized successfully",
       initializedKeys: Object.keys(initialData),
-      results,
     });
   } catch (error) {
     console.error("Error initializing Edge Config:", error);
