@@ -63,35 +63,45 @@ export async function GET() {
       console.log("Current Edge Config data:", JSON.stringify(testData));
     }
 
-    // Now attempt the PATCH to update the items
-    const response = await fetch(
-      `https://edge-config.vercel.com/${edgeConfigId}?token=${token}`,
-      {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          items: Object.entries(initialData).map(([key, value]) => ({
-            operation: "upsert",
-            key,
-            value,
-          })),
-        }),
-      }
-    );
+    // Now attempt to update each key individually using POST
+    const results = [];
 
-    // Check if the response is ok but don't try to parse it as JSON
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Edge Config initialization error:", errorText);
-      console.error("Response status:", response.status);
-      console.error(
-        "Response headers:",
-        Object.fromEntries(response.headers.entries())
+    for (const [key, value] of Object.entries(initialData)) {
+      console.log(`Initializing key: ${key}`);
+
+      // Create a single key-value pair for this update
+      const requestBody: Record<string, any> = {};
+      requestBody[key] = value;
+
+      const response = await fetch(
+        `https://edge-config.vercel.com/${edgeConfigId}?token=${token}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestBody),
+        }
       );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Error initializing key ${key}:`, errorText);
+        console.error("Response status:", response.status);
+        results.push({ key, success: false, status: response.status });
+      } else {
+        console.log(`Successfully initialized key: ${key}`);
+        results.push({ key, success: true });
+      }
+    }
+
+    // Check if any of the operations failed
+    const anyFailed = results.some((result) => !result.success);
+
+    if (anyFailed) {
+      const failedResults = results.filter((result) => !result.success);
       throw new Error(
-        `Failed to initialize Edge Config: Status ${response.status}`
+        `Failed to initialize some Edge Config keys: ${JSON.stringify(failedResults)}`
       );
     }
 
@@ -99,6 +109,7 @@ export async function GET() {
       success: true,
       message: "Edge Config initialized successfully",
       initializedKeys: Object.keys(initialData),
+      results,
     });
   } catch (error) {
     console.error("Error initializing Edge Config:", error);
