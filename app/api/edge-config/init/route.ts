@@ -1,7 +1,4 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@vercel/edge-config";
-
-const edgeConfig = createClient(process.env.EDGE_CONFIG);
 
 const initialData = {
   "minecraft-accounts": {},
@@ -12,10 +9,30 @@ const initialData = {
 
 export async function GET() {
   try {
-    // Initialize each key in Edge Config
-    for (const [key, value] of Object.entries(initialData)) {
-      // @ts-ignore - Edge Config's set method exists but TypeScript doesn't recognize it
-      await edgeConfig.set(key, value);
+    // Initialize Edge Config using the API
+    const response = await fetch(
+      `https://api.vercel.com/v1/edge-config/${process.env.EDGE_CONFIG}/items`,
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${process.env.EDGE_CONFIG}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          items: Object.entries(initialData).map(([key, value]) => ({
+            operation: "upsert",
+            key,
+            value,
+          })),
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(
+        `Failed to initialize Edge Config: ${JSON.stringify(error)}`
+      );
     }
 
     return NextResponse.json({
@@ -26,7 +43,12 @@ export async function GET() {
   } catch (error) {
     console.error("Error initializing Edge Config:", error);
     return NextResponse.json(
-      { error: "Failed to initialize Edge Config" },
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to initialize Edge Config",
+      },
       { status: 500 }
     );
   }
