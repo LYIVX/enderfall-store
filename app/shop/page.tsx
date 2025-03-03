@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { loadStripe } from "@stripe/stripe-js";
 import Link from "next/link";
@@ -9,6 +9,7 @@ import RankCard from "../components/RankCard";
 import { isServerOnline } from "@/lib/serverStatus";
 import { checkPlayerExists, getRankCategory } from "@/lib/minecraft-api";
 import { useSearchParams } from "next/navigation";
+import Image from "next/image";
 
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
@@ -411,127 +412,51 @@ export default function Shop() {
     };
   }, []);
 
-  // Handle username search
-  const handleUsernameSearch = async (username?: string) => {
-    const searchName = username || searchUsername;
-    if (!searchName.trim()) return;
-
-    setIsSearching(true);
-    setSearchError("");
-    setSearchedUsername("");
-
-    try {
-      const response = await fetch(
-        `/api/check-minecraft-player?username=${encodeURIComponent(
-          searchName.trim()
-        )}`
-      );
-      const data = await response.json();
-
-      if (data.exists) {
-        // Save the player data - we need this before determining categories
-        const playerRanks = data.ranks || [];
-
-        // Update state with player information
-        setPlayerExists(true);
-        setSearchedUsername(data.username);
-        setSearchedUserRanks(playerRanks);
-
-        // Get available ranks based on player's existing ranks
-        const ranks = getAllRanks();
-        const filteredRanks = filterAvailableRanks(ranks, playerRanks);
-        setAvailableRanks(filteredRanks);
-
-        // Logic to handle category selection - directly check categories without relying on state
-        const orderedCategories = ranksConfig.getOrderedCategories();
-
-        // First find all categories that should be visible
-        const visibleCategories = orderedCategories.filter((category) => {
-          const categoryId = category.id;
-          const isUpgradeCategory = categoryId
-            .toLowerCase()
-            .includes("upgrade");
-
-          if (isUpgradeCategory) {
-            // For upgrade categories, check if the player has ranks in the base category
-            let normalCategoryId =
-              categoryId === "upgrade"
-                ? "regular"
-                : categoryId.replace(/upgrade/i, "");
-
-            // Check if player has ranks in the corresponding normal category
-            const playerHasRanksInNormalCategory = playerRanks.some(
-              (rankId: string) => {
-                const rank = ranksConfig.getRankById(rankId);
-                return rank && rank.categoryId === normalCategoryId;
-              }
-            );
-
-            // Only show upgrade categories if the player has ranks in the normal category
-            return playerHasRanksInNormalCategory;
-          } else {
-            // For normal categories, check if the player has any ranks in this category
-            const hasRankInCategory = playerRanks.some((rankId: string) => {
-              const rank = ranksConfig.getRankById(rankId);
-              return rank && rank.categoryId === categoryId;
-            });
-
-            // Only show normal categories if the player doesn't have ranks in them
-            return !hasRankInCategory;
-          }
-        });
-
-        // Also check which categories have available ranks to purchase
-        const categoriesWithRanks = orderedCategories.filter((category) => {
-          const ranksInCategory = ranksConfig.getRanksByCategory(category.id);
-          const availableRanks = filterAvailableRanks(
-            ranksInCategory,
-            playerRanks
-          );
-          return availableRanks.length > 0;
-        });
-
-        // Determine the best category to show
-        let categoryToSelect = selectedCategoryId;
-
-        // First check if current category should remain visible
-        const currentShouldRemainVisible =
-          visibleCategories.some((cat) => cat.id === selectedCategoryId) &&
-          categoriesWithRanks.some((cat) => cat.id === selectedCategoryId);
-
-        if (!currentShouldRemainVisible) {
-          // Find the first category that's both visible and has ranks
-          const firstViableCategory = orderedCategories.find(
-            (cat) =>
-              visibleCategories.some((vc) => vc.id === cat.id) &&
-              categoriesWithRanks.some((cr) => cr.id === cat.id)
-          );
-
-          if (firstViableCategory) {
-            categoryToSelect = firstViableCategory.id;
-          }
-        }
-
-        // Select the appropriate category
-        setSelectedCategoryId(categoryToSelect);
-      } else {
-        setPlayerExists(false);
-        setSearchedUserRanks([]);
-        // Use the message from the API if available, otherwise use a default message
-        setSearchError(data.message || "Player has never joined the server");
-        setAvailableRanks([]);
-        // Make sure search username is set for the error message display
-        setSearchedUsername(searchName.trim());
+  const handleUsernameSearch = useCallback(
+    async (username?: string) => {
+      if (!username && !searchUsername.trim()) {
+        setSearchError("Please enter a username");
+        return;
       }
-    } catch (error) {
-      // Silent error handling
-      setSearchError(
-        "Error searching for player. Please check your connection and try again."
-      );
-    } finally {
+
+      setIsSearching(true);
+      setSearchError("");
+      const usernameToSearch = username || searchUsername;
+
+      try {
+        const response = await fetch(
+          `/api/check-minecraft-user?username=${usernameToSearch}`
+        );
+        const data = await response.json();
+
+        if (response.ok) {
+          setPlayerExists(data.exists);
+          if (data.exists) {
+            setSearchedUsername(usernameToSearch);
+            setSearchedUserRanks(data.ranks || []);
+          }
+        } else {
+          setSearchError(data.error || "Failed to check username");
+          setPlayerExists(false);
+        }
+      } catch (error) {
+        setSearchError("Failed to check username");
+        setPlayerExists(false);
+      }
+
       setIsSearching(false);
+    },
+    [searchUsername]
+  );
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const username = params.get("username");
+    if (username) {
+      setSearchUsername(username);
+      handleUsernameSearch(username);
     }
-  };
+  }, [handleUsernameSearch]);
 
   // Helper to determine if a category should be visible based on available ranks
   const isCategoryVisible = (categoryId: string): boolean => {
@@ -610,12 +535,6 @@ export default function Shop() {
     setSearchUsername(username);
     handleUsernameSearch(username);
   };
-
-  useEffect(() => {
-    if (searchParams.get("username")) {
-      handleUsernameSearch();
-    }
-  }, [searchParams, handleUsernameSearch]);
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-[var(--background-gradient-from)] to-[var(--background-gradient-to)] text-[var(--text-color)] py-16">
@@ -819,7 +738,7 @@ export default function Shop() {
                             : "bg-[var(--card-bg-secondary)] text-[var(--text-color)] hover:bg-[var(--card-bg-hover)]"
                         }`}
                       >
-                        <img
+                        <Image
                           src={`https://mc-heads.net/avatar/${account}/24.png`}
                           alt={`${account}'s avatar`}
                           width={24}
@@ -883,12 +802,12 @@ export default function Shop() {
 
           {playerExists && searchedUsername && (
             <div className="mt-4 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 p-4 rounded-lg flex items-center">
-              <img
+              <Image
                 src={`https://mc-heads.net/avatar/${searchedUsername}/48.png`}
                 alt={`${searchedUsername}'s avatar`}
-                className="mr-4"
                 width={48}
                 height={48}
+                className="mr-4"
               />
               <div>
                 <div className="font-bold">{searchedUsername}</div>

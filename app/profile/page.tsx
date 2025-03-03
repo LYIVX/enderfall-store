@@ -7,6 +7,7 @@ import {
   useUserSettings,
   UserSettings,
 } from "@/lib/context/UserSettingsContext";
+import Image from "next/image";
 
 // Purchase History Dropdown Component
 const PurchaseHistoryDropdown = ({ purchases }: { purchases: Purchase[] }) => {
@@ -256,9 +257,11 @@ const MinecraftAccountManager = () => {
                     className="flex items-center justify-between bg-[var(--card-bg-secondary)] p-3 rounded-lg"
                   >
                     <div className="flex items-center">
-                      <img
+                      <Image
                         src={`https://mc-heads.net/avatar/${username}/36`}
                         alt={username}
+                        width={36}
+                        height={36}
                         className="w-9 h-9 mr-3 rounded"
                       />
                       <span className="font-medium">{username}</span>
@@ -490,7 +493,7 @@ export default function ProfilePage() {
           console.error("Failed to fetch Discord profile:", error);
         });
     }
-  }, [session]);
+  }, [session, userSettings.hideTestPurchases, updateUserSettings]);
 
   const handleSettingsChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -881,9 +884,11 @@ export default function ProfilePage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 {session.user.image && (
-                  <img
+                  <Image
                     src={session.user.image}
                     alt={session.user.name || "Discord Profile"}
+                    width={36}
+                    height={36}
                     className="w-16 h-16 rounded-full"
                   />
                 )}
