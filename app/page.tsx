@@ -66,7 +66,7 @@ export default function Home() {
             </div>
           </div>
 
-          <ServerStatus serverIp="localhost:25565" />
+          <ServerStatus serverIp="play.enderfall.co.uk" />
         </div>
 
         <div className="text-center">

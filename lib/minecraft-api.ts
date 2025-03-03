@@ -73,23 +73,25 @@ export async function checkPlayerExists(
 }
 
 /**
- * Convert a rank ID to its category (e.g., "vip_plus" → "vip")
+ * Convert a rank ID to its category (e.g., "shadow_enchanter_plus" → "shadow_enchanter")
  * @param rankId The rank ID to get the category for
  * @returns The category of the rank
  */
 export function getRankCategory(rankId: string): string {
-  // For upgrades like "vip_to_mvp", extract the target rank
+  // For upgrades like "shadow_enchanter_to_void_walker", extract the target rank
   if (rankId.includes("_to_")) {
     rankId = rankId.split("_to_")[1];
   }
 
   // Check for known categories
-  if (rankId.startsWith("vip")) {
-    return "vip";
-  } else if (rankId.startsWith("mvp")) {
-    return "mvp";
-  } else if (rankId.startsWith("legend")) {
-    return "legend";
+  if (rankId.startsWith("shadow_enchanter")) {
+    return "shadow_enchanter";
+  } else if (rankId.startsWith("void_walker")) {
+    return "void_walker";
+  } else if (rankId.startsWith("ethereal_warden")) {
+    return "ethereal_warden";
+  } else if (rankId.startsWith("astral_guardian")) {
+    return "astral_guardian";
   } else if (rankId.startsWith("towny")) {
     return "towny";
   }

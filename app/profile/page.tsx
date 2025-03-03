@@ -18,38 +18,43 @@ const PurchaseHistoryDropdown = ({ purchases }: { purchases: Purchase[] }) => {
   const remainingPurchases = purchases.slice(3);
   const hasMorePurchases = purchases.length > 3;
 
+  const renderPurchase = (purchase: Purchase) => (
+    <div
+      key={purchase.id}
+      className="bg-[var(--card-bg-secondary)] p-4 rounded-lg"
+    >
+      <div className="flex justify-between items-start">
+        <div>
+          <h3 className="text-xl font-semibold">{purchase.rankName}</h3>
+          <p className="text-gray-400">
+            {purchase.formattedDate} at {purchase.formattedTime}
+          </p>
+          <p className="text-blue-400 mt-1">
+            For: {purchase.minecraftUsername}
+          </p>
+          {purchase.isGift && purchase.recipient && (
+            <p className="text-purple-400 mt-1">
+              Gifted to: {purchase.recipient}
+            </p>
+          )}
+        </div>
+        <span
+          className={`px-3 py-1 rounded-full text-sm ${
+            purchase.status === "paid"
+              ? "bg-green-600 text-white"
+              : "bg-yellow-600 text-white"
+          }`}
+        >
+          {purchase.status === "paid" ? "completed" : purchase.status}
+        </span>
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-4">
       {/* Recent purchases (always visible) */}
-      {recentPurchases.map((purchase) => (
-        <div
-          key={purchase.id}
-          className="bg-[var(--card-bg-secondary)] p-4 rounded-lg"
-        >
-          <div className="flex justify-between items-start">
-            <div>
-              <h3 className="text-xl font-semibold">{purchase.rankName}</h3>
-              <p className="text-gray-400">
-                {purchase.formattedDate} at {purchase.formattedTime}
-              </p>
-              {purchase.isGift && purchase.recipient && (
-                <p className="text-purple-400 mt-1">
-                  Gifted to: {purchase.recipient}
-                </p>
-              )}
-            </div>
-            <span
-              className={`px-3 py-1 rounded-full text-sm ${
-                purchase.status === "completed"
-                  ? "bg-green-600 text-white"
-                  : "bg-yellow-600 text-white"
-              }`}
-            >
-              {purchase.status}
-            </span>
-          </div>
-        </div>
-      ))}
+      {recentPurchases.map(renderPurchase)}
 
       {/* Toggle button - only show if there are more purchases */}
       {hasMorePurchases && (
@@ -82,35 +87,7 @@ const PurchaseHistoryDropdown = ({ purchases }: { purchases: Purchase[] }) => {
       {/* Remaining purchases (visible when expanded) */}
       {isExpanded && remainingPurchases.length > 0 && (
         <div className="space-y-4 mt-4 border-t border-[var(--border-color)] pt-4">
-          {remainingPurchases.map((purchase) => (
-            <div
-              key={purchase.id}
-              className="bg-[var(--card-bg-secondary)] p-4 rounded-lg"
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="text-xl font-semibold">{purchase.rankName}</h3>
-                  <p className="text-gray-400">
-                    {purchase.formattedDate} at {purchase.formattedTime}
-                  </p>
-                  {purchase.isGift && purchase.recipient && (
-                    <p className="text-purple-400 mt-1">
-                      Gifted to: {purchase.recipient}
-                    </p>
-                  )}
-                </div>
-                <span
-                  className={`px-3 py-1 rounded-full text-sm ${
-                    purchase.status === "completed"
-                      ? "bg-green-600 text-white"
-                      : "bg-yellow-600 text-white"
-                  }`}
-                >
-                  {purchase.status}
-                </span>
-              </div>
-            </div>
-          ))}
+          {remainingPurchases.map(renderPurchase)}
         </div>
       )}
     </div>
@@ -135,7 +112,7 @@ const MinecraftAccountManager = () => {
           setSavedAccounts(data.accounts || []);
         }
       } catch (error) {
-        console.error("Error fetching saved Minecraft accounts:", error);
+        setIsLoading(false);
       } finally {
         setIsLoading(false);
       }
@@ -188,30 +165,31 @@ const MinecraftAccountManager = () => {
         setVerificationError(errorData.error || "Failed to save account");
       }
     } catch (error) {
-      console.error("Error adding Minecraft account:", error);
-      setVerificationError("An error occurred while verifying the account");
-    } finally {
       setIsVerifying(false);
+      setVerificationError("An error occurred while verifying the account");
     }
   };
 
   // Handle removing a Minecraft account
   const handleRemoveAccount = async (username: string) => {
     try {
-      const response = await fetch("/api/minecraft-accounts", {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username }),
-      });
+      const response = await fetch(
+        `/api/minecraft-accounts?username=${encodeURIComponent(username)}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       if (response.ok) {
         const data = await response.json();
         setSavedAccounts(data.accounts);
       }
     } catch (error) {
-      console.error("Error removing Minecraft account:", error);
+      setIsLoading(false);
+      setVerificationError("Failed to remove Minecraft account");
     }
   };
 
@@ -374,9 +352,10 @@ interface Purchase {
   timestamp: string;
   formattedDate: string;
   formattedTime: string;
-  status: "completed" | "pending";
+  status: string;
   isGift?: boolean;
   recipient?: string;
+  minecraftUsername: string;
 }
 
 interface DiscordProfile {
@@ -399,12 +378,9 @@ export default function ProfilePage() {
     preferredCurrency: "GBP",
     emailNotifications: true,
     theme: "dark",
-    hideTestPurchases: false,
   });
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
-  const [resetInProgress, setResetInProgress] = useState(false);
-  const [hideTestPurchases, setHideTestPurchases] = useState(false);
 
   // Dropdown states
   const [isCurrencyMenuOpen, setIsCurrencyMenuOpen] = useState(false);
@@ -460,26 +436,15 @@ export default function ProfilePage() {
   }, [status, router]);
 
   useEffect(() => {
-    // Initialize tempSettings with current userSettings
-    setTempSettings(userSettings);
-  }, [userSettings]);
-
-  useEffect(() => {
     if (session?.user) {
       // Fetch purchase history
       fetch("/api/purchases")
         .then((res) => res.json())
         .then((data) => {
           setPurchases(data.purchases);
-          setHideTestPurchases(data.resetActive === true);
-          // Update user settings if necessary
-          if (data.resetActive !== userSettings.hideTestPurchases) {
-            updateUserSettings({ hideTestPurchases: data.resetActive });
-          }
           setLoading(false);
         })
         .catch((error) => {
-          console.error("Failed to fetch purchases:", error);
           setLoading(false);
         });
 
@@ -491,11 +456,9 @@ export default function ProfilePage() {
             setDiscordProfile(data.profile);
           }
         })
-        .catch((error) => {
-          console.error("Failed to fetch Discord profile:", error);
-        });
+        .catch((error) => {});
     }
-  }, [session, userSettings.hideTestPurchases, updateUserSettings]);
+  }, [session]);
 
   const handleSettingsChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -526,48 +489,9 @@ export default function ProfilePage() {
   };
 
   const saveSettings = () => {
-    // Check if the test purchases setting has changed
-    if (tempSettings.hideTestPurchases !== userSettings.hideTestPurchases) {
-      resetPurchasesForTesting(!!tempSettings.hideTestPurchases);
-    }
-
     // Update the context with new settings
     updateUserSettings(tempSettings);
     setIsEditingSettings(false);
-  };
-
-  const resetPurchasesForTesting = async (active: boolean) => {
-    setResetInProgress(true);
-    try {
-      const response = await fetch("/api/reset-purchases", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ active }),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        setHideTestPurchases(result.active);
-        updateUserSettings({ hideTestPurchases: result.active });
-
-        // Refresh purchases list
-        fetch("/api/purchases")
-          .then((res) => res.json())
-          .then((data) => {
-            setPurchases(data.purchases);
-          });
-      } else {
-        const data = await response.json();
-        alert(`Failed to update visibility: ${data.error}`);
-      }
-    } catch (error) {
-      console.error("Error updating purchase visibility:", error);
-      alert("An error occurred while updating purchase visibility.");
-    } finally {
-      setResetInProgress(false);
-    }
   };
 
   if (status === "loading" || loading) {
@@ -691,19 +615,6 @@ export default function ProfilePage() {
                   </h3>
                   <p className="font-medium">March 1, 2023</p>
                 </div>
-                <div className="bg-[var(--card-bg-secondary)] p-4 rounded-lg">
-                  <h3 className="text-sm text-[var(--text-secondary)] mb-1">
-                    Hide Test Purchases
-                  </h3>
-                  <p className="font-medium">
-                    {userSettings.hideTestPurchases ? "Enabled" : "Disabled"}
-                    {userSettings.hideTestPurchases && (
-                      <span className="ml-2 text-xs text-yellow-400">
-                        (Testing mode active)
-                      </span>
-                    )}
-                  </p>
-                </div>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -824,43 +735,6 @@ export default function ProfilePage() {
                     )}
                   </div>
                 </div>
-                <div className="bg-[var(--card-bg-secondary)] p-4 rounded-lg">
-                  <label
-                    htmlFor="hideTestPurchases"
-                    className="block text-sm text-[var(--text-secondary)] mb-1"
-                  >
-                    Hide Test Purchases
-                  </label>
-                  <div className="flex items-center">
-                    <div
-                      className={`relative w-12 h-6 rounded-full transition-colors duration-300 ${tempSettings.hideTestPurchases ? "bg-purple-600" : "bg-gray-300"}`}
-                      onClick={() => {
-                        setTempSettings({
-                          ...tempSettings,
-                          hideTestPurchases: !tempSettings.hideTestPurchases,
-                        });
-                      }}
-                      role="checkbox"
-                      aria-checked={tempSettings.hideTestPurchases}
-                      tabIndex={0}
-                    >
-                      <div
-                        className={`absolute w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-300 transform ${tempSettings.hideTestPurchases ? "translate-x-6" : "translate-x-1"} top-0.5`}
-                      ></div>
-                    </div>
-                    <span className="ml-3">
-                      {tempSettings.hideTestPurchases
-                        ? "Testing mode active"
-                        : "Normal mode"}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-1">
-                    For testing only.{" "}
-                    {tempSettings.hideTestPurchases
-                      ? "Toggle off to show all purchases."
-                      : "Toggle on to hide purchases and allow repurchasing."}
-                  </p>
-                </div>
               </div>
             )}
           </div>
@@ -946,7 +820,7 @@ export default function ProfilePage() {
                 viewBox="0 0 512 512"
                 fill="currentColor"
               >
-                <path d="M86.2 232.8c19.7 0 34.9-15.7 34.9-35.9s-15.2-36-34.9-36c-19.8 0-35.5 15.8-35.5 36 0 20.2 15.8 35.9 35.5 35.9zm38.1 21.4c-13.4-5.6-24.6-5.3-38.2 0-29.7 11.6-53.5 45.2-53.5 80.9v52.3l30.6 29.1 52.3-12.8L128 393l-19.7-20.2 19.7-23.3 19.7 23.3L128 393l12.5 10.7 52.3 12.8 30.6-29.1v-52.3c0-35.7-23.8-69.3-53.5-80.9zm225.7-133.7c-23.1 0-42 18.9-42 42.2s18.9 42.2 42 42.2 42-18.9 42-42.2-18.9-42.2-42-42-42.2zm0 84.4c-23.1 0-42 18.9-42 42.2s18.9 42.2 42 42.2 42-18.9 42-42.2-18.9-42.2-42-42.2zm-85.1 42.2c0-23.3-18.9-42.2-42-42.2s-42 18.9-42 42.2 18.9 42.2 42 42.2 42-18.9 42-42.2zm85.1 42.2c23.1 0 42-18.9 42-42.2s-18.9-42.2-42-42.2-42 18.9-42 42.2 18.9 42.2 42 42.2zm0 84.4c-23.1 0-42 18.9-42 42.2 0 11.4 4.5 21.5 11.5 29.1l33.4-31.9h15.8c4.6-7.1 7.5-15.5 7.5-24.4 0-10.2-3.4-19.6-9.1-27.1-4.9 7.3-13.2 12.1-22.7 12.1-15.1 0-27.4-12.3-27.4-27.4s12.3-27.4 27.4-27.4c15.1 0 27.4 12.3 27.4 27.4 0 5.2-1.5 10-4 14.2 5.6 7.5 9.1 16.8 9.1 27.1 0 14.2-6.5 26.8-16.7 35.1 12.7 0 32.5 8.7 42 25.8.7-4.7 1.1-9.4 1.1-14.4 0-23.3-18.9-42.2-42-42.2-23.1 0-42 18.9-42 42.2s18.9 42.2 42 42.2h84.4v-84.4c0-23.3-18.9-42.2-42-42.2zm-200.3 35.8l-16.4-27 16.4-27 16.4 27-16.4 27zm85.9-321.2L194.6 60l26.8-45.6L248.2 60l-25 46.4zM264 152c-23.1 0-42 18.9-42 42.2s18.9 42.2 42 42.2 42-18.9 42-42.2S287.1 152 264 152zM92.9 314.9L76.4 296l16.4-18.9 16.4 18.9-16.4 18.9z" />
+                <path d="M86.2 232.8c19.7 0 34.9-15.7 34.9-35.9s-15.2-36-34.9-36c-19.8 0-35.5 15.8-35.5 36 0 20.2 15.8 35.9 35.5 35.9zm38.1 21.4c-13.4-5.6-24.6-5.3-38.2 0-29.7 11.6-53.5 45.2-53.5 80.9v52.3l30.6 29.1 52.3-12.8L128 393l-19.7-20.2 19.7-23.3 19.7 23.3L128 393l12.5 10.7 52.3 12.8 30.6-29.1v-52.3c0-35.7-23.8-69.3-53.5-80.9zm225.7-133.7c-23.1 0-42 18.9-42 42.2s18.9 42.2 42 42.2 42-18.9 42-42.2-18.9-42.2-42-42-42.2zm0 84.4c-23.1 0-42 18.9-42 42.2s18.9 42.2 42 42.2 42-18.9 42-42.2-18.9-42.2-42-42.2zm-85.1 42.2c0-23.3-18.9-42.2-42-42.2s-42 18.9-42 42.2 18.9 42.2 42 42.2 42-18.9 42-42.2zm85.1 42.2c23.1 0 42-18.9 42-42.2 0 11.4 4.5 21.5 11.5 29.1l33.4-31.9h15.8c4.6-7.1 7.5-15.5 7.5-24.4 0-10.2-3.4-19.6-9.1-27.1-4.9 7.3-13.2 12.1-22.7 12.1-15.1 0-27.4-12.3-27.4-27.4s12.3-27.4 27.4-27.4c15.1 0 27.4 12.3 27.4 27.4 0 5.2-1.5 10-4 14.2 5.6 7.5 9.1 16.8 9.1 27.1 0 14.2-6.5 26.8-16.7 35.1 12.7 0 32.5 8.7 42 25.8.7-4.7 1.1-9.4 1.1-14.4 0-23.3-18.9-42.2-42.2-42.2-23.1 0-42 18.9-42 42.2s18.9 42.2 42 42.2h84.4v-84.4c0-23.3-18.9-42.2-42-42.2zm-200.3 35.8l-16.4-27 16.4-27 16.4 27-16.4 27zm85.9-321.2L194.6 60l26.8-45.6L248.2 60l-25 46.4zM264 152c-23.1 0-42 18.9-42 42.2s18.9 42.2 42 42.2 42-18.9 42-42.2S287.1 152 264 152zM92.9 314.9L76.4 296l16.4-18.9 16.4 18.9-16.4 18.9z" />
               </svg>
               Minecraft Account
             </h2>
@@ -956,7 +830,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Purchase History Section - Moved to bottom */}
+        {/* Purchase History Section */}
         <div className="bg-[var(--card-bg)] rounded-lg overflow-hidden mb-8">
           <div
             style={historyHeaderStyle}
@@ -980,13 +854,6 @@ export default function ProfilePage() {
               ) : (
                 <div>
                   <p className="text-gray-400">No purchases found</p>
-                  {userSettings.hideTestPurchases && (
-                    <p className="text-yellow-400 mt-2">
-                      Test mode is active. Purchases are hidden to allow
-                      re-purchasing for testing. Click &quot;Edit Settings&quot;
-                      above to change this setting.
-                    </p>
-                  )}
                 </div>
               )}
             </div>

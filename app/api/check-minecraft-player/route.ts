@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import fs from "fs";
 import path from "path";
 import { checkPlayerExists } from "@/lib/minecraft-server";
+import { getUserRanks } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,10 @@ export async function GET(request: Request) {
     // Normalize the username for consistency
     const normalizedUsername = username.trim().toLowerCase();
 
+    console.log(
+      `[check-minecraft-player] Checking if player exists: ${normalizedUsername}`
+    );
+
     // Step 1: Check if the player exists on the Minecraft server
     const playerExists = await checkPlayerExists(normalizedUsername);
 
@@ -36,24 +41,18 @@ export async function GET(request: Request) {
       });
     }
 
-    // Step 2: Player exists on server, now check user-data for purchased ranks
+    // Step 2: Player exists on server, now get ranks from Supabase
     let ranks: string[] = [];
-
-    // Check the local user data file
     try {
-      const dataDir = path.join(process.cwd(), "data");
-      const userDataPath = path.join(dataDir, "user-data.json");
-
-      if (fs.existsSync(userDataPath)) {
-        const fileContent = fs.readFileSync(userDataPath, "utf8");
-        const userData = JSON.parse(fileContent);
-
-        if (userData.users && userData.users[normalizedUsername]) {
-          ranks = userData.users[normalizedUsername].ranks || [];
-        }
-      }
+      ranks = await getUserRanks(normalizedUsername);
+      console.log(
+        `[check-minecraft-player] Got ranks: ${JSON.stringify(ranks)}`
+      );
     } catch (error) {
-      console.error("Error checking local user data:", error);
+      console.error(
+        "[check-minecraft-player] Error getting user ranks:",
+        error
+      );
       // Continue with empty ranks
     }
 

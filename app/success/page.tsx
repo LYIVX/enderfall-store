@@ -23,13 +23,11 @@ function SuccessContent() {
           } else {
             setStatus("error");
             setErrorDetails(data.error || "Unknown error");
-            console.error("Verification error details:", data);
           }
         })
         .catch((err) => {
           setStatus("error");
           setErrorDetails("Network error occurred");
-          console.error("Fetch error:", err);
         });
     }
   }, [sessionId]);

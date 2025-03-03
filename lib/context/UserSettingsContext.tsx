@@ -11,7 +11,6 @@ export interface UserSettings {
   preferredCurrency: string;
   emailNotifications: boolean;
   theme: string;
-  hideTestPurchases?: boolean;
 }
 
 interface UserSettingsContextType {
@@ -23,7 +22,6 @@ const defaultSettings: UserSettings = {
   preferredCurrency: "GBP",
   emailNotifications: true,
   theme: "dark",
-  hideTestPurchases: false,
 };
 
 const UserSettingsContext = createContext<UserSettingsContextType>({

@@ -1,38 +1,37 @@
 import { NextResponse } from "next/server";
-import { getPendingPurchases } from "@/lib/edge-config";
-import { updateEdgeConfig } from "@/lib/edge-config";
+import { getPendingPurchases } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 
 // Define the maximum age for pending purchases (in hours)
 const MAX_PENDING_AGE_HOURS = 24;
 
 export async function GET(req: Request) {
   try {
-    // Get all pending purchases
-    const pendingPurchases = await getPendingPurchases();
-
+    // Get the current timestamp minus MAX_PENDING_AGE_HOURS
     const now = new Date();
     const maxAgeMs = MAX_PENDING_AGE_HOURS * 60 * 60 * 1000; // Convert hours to milliseconds
+    const cutoffTimestamp = now.getTime() - maxAgeMs;
 
-    // Filter out stale pending purchases
-    const originalLength = pendingPurchases.pendingPurchases.length;
+    // Get all pending purchases before deletion to count them
+    const pendingPurchases = await getPendingPurchases();
+    const originalCount = pendingPurchases.length;
 
-    pendingPurchases.pendingPurchases =
-      pendingPurchases.pendingPurchases.filter((purchase) => {
-        const purchaseDate = new Date(purchase.timestamp);
-        const ageMs = now.getTime() - purchaseDate.getTime();
-        return ageMs < maxAgeMs; // Keep if not stale
-      });
+    // Delete old entries directly from the database
+    const { error, count } = await supabase
+      .from("pending_purchases")
+      .delete({ count: "exact" })
+      .lt("timestamp", cutoffTimestamp);
 
-    // Update Edge Config with the filtered purchases
-    await updateEdgeConfig("pending-purchases", pendingPurchases);
+    if (error) {
+      throw new Error(`Failed to delete stale purchases: ${error.message}`);
+    }
 
-    const removedCount =
-      originalLength - pendingPurchases.pendingPurchases.length;
+    const deletedCount = count || 0;
 
     return NextResponse.json({
       success: true,
-      message: `Cleaned up ${removedCount} stale pending purchases`,
-      remainingCount: pendingPurchases.pendingPurchases.length,
+      message: `Cleaned up ${deletedCount} stale pending purchases`,
+      remainingCount: originalCount - deletedCount,
     });
   } catch (error) {
     console.error("Failed to clean up pending purchases:", error);

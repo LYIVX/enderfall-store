@@ -94,14 +94,16 @@ export async function checkPlayerExists(username: string): Promise<boolean> {
 
   try {
     // Check if the server API URL is configured
-    if (process.env.MINECRAFT_API_URL) {
+    if (process.env.MINECRAFT_SERVER_API_URL) {
       // Try to connect to the Minecraft server API
       try {
-        const apiUrl = `${process.env.MINECRAFT_API_URL}/player/${username.toLowerCase()}`;
+        const apiUrl = `${process.env.MINECRAFT_SERVER_API_URL}/player/${username.toLowerCase()}`;
+        console.log(`Checking player existence at: ${apiUrl}`);
         const response = await fetch(apiUrl, {
           headers: {
             "Content-Type": "application/json",
             "User-Agent": "Minecraft Shop API/1.0",
+            Authorization: `Bearer ${process.env.MINECRAFT_SERVER_API_KEY || ""}`,
           },
         });
 
@@ -113,16 +115,31 @@ export async function checkPlayerExists(username: string): Promise<boolean> {
         console.error("Error connecting to Minecraft server API:", error);
         // Fall back to local check if API is unavailable
       }
+    } else {
+      console.log("No MINECRAFT_SERVER_API_URL configured, using fallback");
     }
 
     // Fall back to checking local player data if API is not available
     const knownPlayers = await getKnownPlayers();
+
+    // For development, consider the player exists if no players are found locally
+    if (knownPlayers.length === 0 && process.env.NODE_ENV === "development") {
+      console.log(
+        "Development mode: Assuming player exists for testing purposes"
+      );
+      return true;
+    }
+
     return knownPlayers.includes(username.toLowerCase());
   } catch (error) {
     console.error("Error checking player existence:", error);
     // For development only, return true to avoid blocking user flows
     // In production, this should return false
-    return process.env.NODE_ENV === "development";
+    if (process.env.NODE_ENV === "development") {
+      console.log("Development fallback: Assuming player exists");
+      return true;
+    }
+    return false;
   }
 }
 

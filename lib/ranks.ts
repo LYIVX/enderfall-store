@@ -64,13 +64,174 @@ export const rankCategories: RankCategory[] = [
   },
 ];
 
-// Stripe price IDs
+// Stripe price IDs from environment variables
 const STRIPE_PRICES = {
-  vip: "price_1QxTikGOFqnNirWjwG7PLoLe",
-  mvp: "price_1QxTaCGOFqnNirWjK1VhvZR6",
-  elite: "price_1QxTjVGOFqnNirWj57F9DTNS",
-  mega: "price_1QyUbVGOFqnNirWjX8Y6zPm9",
+  // Regular ranks
+  shadow_enchanter: process.env.STRIPE_PRICE_SHADOW_ENCHANTER || "",
+  void_walker: process.env.STRIPE_PRICE_VOID_WALKER || "",
+  ethereal_warden: process.env.STRIPE_PRICE_ETHEREAL_WARDEN || "",
+  astral_guardian: process.env.STRIPE_PRICE_ASTRAL_GUARDIAN || "",
+
+  // Regular rank upgrades
+  shadow_enchanter_to_void_walker:
+    process.env.STRIPE_PRICE_SHADOW_ENCHANTER_TO_VOID_WALKER ||
+    process.env.STRIPE_PRICE_SHADOW_ENCHANTER ||
+    "",
+  void_walker_to_ethereal_warden:
+    process.env.STRIPE_PRICE_VOID_WALKER_TO_ETHEREAL_WARDEN ||
+    process.env.STRIPE_PRICE_SHADOW_ENCHANTER ||
+    "",
+  ethereal_warden_to_astral_guardian:
+    process.env.STRIPE_PRICE_ETHEREAL_WARDEN_TO_ASTRAL_GUARDIAN ||
+    process.env.STRIPE_PRICE_SHADOW_ENCHANTER ||
+    "",
+
+  // Towny ranks
+  citizen:
+    process.env.STRIPE_PRICE_CITIZEN ||
+    process.env.STRIPE_PRICE_SHADOW_ENCHANTER ||
+    "",
+  merchant:
+    process.env.STRIPE_PRICE_MERCHANT ||
+    process.env.STRIPE_PRICE_SHADOW_ENCHANTER ||
+    "",
+  councilor:
+    process.env.STRIPE_PRICE_COUNCILOR ||
+    process.env.STRIPE_PRICE_SHADOW_ENCHANTER ||
+    "",
+  mayor:
+    process.env.STRIPE_PRICE_MAYOR ||
+    process.env.STRIPE_PRICE_SHADOW_ENCHANTER ||
+    "",
+  governor:
+    process.env.STRIPE_PRICE_GOVERNOR ||
+    process.env.STRIPE_PRICE_VOID_WALKER ||
+    "",
+  noble:
+    process.env.STRIPE_PRICE_NOBLE ||
+    process.env.STRIPE_PRICE_VOID_WALKER ||
+    "",
+  duke:
+    process.env.STRIPE_PRICE_DUKE ||
+    process.env.STRIPE_PRICE_ETHEREAL_WARDEN ||
+    "",
+  king:
+    process.env.STRIPE_PRICE_KING ||
+    process.env.STRIPE_PRICE_ETHEREAL_WARDEN ||
+    "",
+  emperor:
+    process.env.STRIPE_PRICE_EMPEROR ||
+    process.env.STRIPE_PRICE_ASTRAL_GUARDIAN ||
+    "",
+  divine:
+    process.env.STRIPE_PRICE_DIVINE ||
+    process.env.STRIPE_PRICE_ASTRAL_GUARDIAN ||
+    "",
+
+  // Towny rank upgrades
+  citizen_to_merchant:
+    process.env.STRIPE_PRICE_CITIZEN_TO_MERCHANT ||
+    process.env.STRIPE_PRICE_SHADOW_ENCHANTER ||
+    "",
+  merchant_to_councilor:
+    process.env.STRIPE_PRICE_MERCHANT_TO_COUNCILOR ||
+    process.env.STRIPE_PRICE_SHADOW_ENCHANTER ||
+    "",
+  councilor_to_mayor:
+    process.env.STRIPE_PRICE_COUNCILOR_TO_MAYOR ||
+    process.env.STRIPE_PRICE_SHADOW_ENCHANTER ||
+    "",
+  mayor_to_governor:
+    process.env.STRIPE_PRICE_MAYOR_TO_GOVERNOR ||
+    process.env.STRIPE_PRICE_SHADOW_ENCHANTER ||
+    "",
+  governor_to_noble:
+    process.env.STRIPE_PRICE_GOVERNOR_TO_NOBLE ||
+    process.env.STRIPE_PRICE_SHADOW_ENCHANTER ||
+    "",
+  noble_to_duke:
+    process.env.STRIPE_PRICE_NOBLE_TO_DUKE ||
+    process.env.STRIPE_PRICE_SHADOW_ENCHANTER ||
+    "",
+  duke_to_king:
+    process.env.STRIPE_PRICE_DUKE_TO_KING ||
+    process.env.STRIPE_PRICE_SHADOW_ENCHANTER ||
+    "",
+  king_to_emperor:
+    process.env.STRIPE_PRICE_KING_TO_EMPEROR ||
+    process.env.STRIPE_PRICE_SHADOW_ENCHANTER ||
+    "",
+  emperor_to_divine:
+    process.env.STRIPE_PRICE_EMPEROR_TO_DIVINE ||
+    process.env.STRIPE_PRICE_SHADOW_ENCHANTER ||
+    "",
 } as const;
+
+// Warn if any price IDs are missing
+if (!STRIPE_PRICES.shadow_enchanter)
+  console.warn("Missing STRIPE_PRICE_SHADOW_ENCHANTER environment variable");
+if (!STRIPE_PRICES.void_walker)
+  console.warn("Missing STRIPE_PRICE_VOID_WALKER environment variable");
+if (!STRIPE_PRICES.ethereal_warden)
+  console.warn("Missing STRIPE_PRICE_ETHEREAL_WARDEN environment variable");
+if (!STRIPE_PRICES.astral_guardian)
+  console.warn("Missing STRIPE_PRICE_ASTRAL_GUARDIAN environment variable");
+
+// Warn about upgrade price IDs
+if (!process.env.STRIPE_PRICE_SHADOW_ENCHANTER_TO_VOID_WALKER)
+  console.warn(
+    "Missing STRIPE_PRICE_SHADOW_ENCHANTER_TO_VOID_WALKER environment variable, using fallback"
+  );
+if (!process.env.STRIPE_PRICE_VOID_WALKER_TO_ETHEREAL_WARDEN)
+  console.warn(
+    "Missing STRIPE_PRICE_VOID_WALKER_TO_ETHEREAL_WARDEN environment variable, using fallback"
+  );
+if (!process.env.STRIPE_PRICE_ETHEREAL_WARDEN_TO_ASTRAL_GUARDIAN)
+  console.warn(
+    "Missing STRIPE_PRICE_ETHEREAL_WARDEN_TO_ASTRAL_GUARDIAN environment variable, using fallback"
+  );
+
+// Warn about towny rank price IDs
+if (!process.env.STRIPE_PRICE_CITIZEN)
+  console.warn(
+    "Missing STRIPE_PRICE_CITIZEN environment variable, using fallback"
+  );
+if (!process.env.STRIPE_PRICE_MERCHANT)
+  console.warn(
+    "Missing STRIPE_PRICE_MERCHANT environment variable, using fallback"
+  );
+if (!process.env.STRIPE_PRICE_COUNCILOR)
+  console.warn(
+    "Missing STRIPE_PRICE_COUNCILOR environment variable, using fallback"
+  );
+if (!process.env.STRIPE_PRICE_MAYOR)
+  console.warn(
+    "Missing STRIPE_PRICE_MAYOR environment variable, using fallback"
+  );
+if (!process.env.STRIPE_PRICE_GOVERNOR)
+  console.warn(
+    "Missing STRIPE_PRICE_GOVERNOR environment variable, using fallback"
+  );
+if (!process.env.STRIPE_PRICE_NOBLE)
+  console.warn(
+    "Missing STRIPE_PRICE_NOBLE environment variable, using fallback"
+  );
+if (!process.env.STRIPE_PRICE_DUKE)
+  console.warn(
+    "Missing STRIPE_PRICE_DUKE environment variable, using fallback"
+  );
+if (!process.env.STRIPE_PRICE_KING)
+  console.warn(
+    "Missing STRIPE_PRICE_KING environment variable, using fallback"
+  );
+if (!process.env.STRIPE_PRICE_EMPEROR)
+  console.warn(
+    "Missing STRIPE_PRICE_EMPEROR environment variable, using fallback"
+  );
+if (!process.env.STRIPE_PRICE_DIVINE)
+  console.warn(
+    "Missing STRIPE_PRICE_DIVINE environment variable, using fallback"
+  );
 
 // Common benefits that can be reused across ranks
 const BENEFITS = {
@@ -125,21 +286,35 @@ const BENEFITS = {
 export const ranks: Rank[] = [
   // Regular ranks
   {
-    id: "vip",
-    name: "VIP",
+    id: "shadow_enchanter",
+    name: "Shadow Enchanter",
     price: 9.99,
-    stripePriceId: STRIPE_PRICES.vip,
+    stripePriceId: STRIPE_PRICES.shadow_enchanter,
     features: [
-      "Colored chat",
-      "Access to /fly",
-      "Custom join messages",
-      "5 home locations",
+      "Colored chat with /me and /chat",
+      "/tpa and /tpahere teleport",
+      "/kit Shadow once per week",
+      "5 /sethome locations",
     ],
     benefits: [
-      BENEFITS.coloredChat,
-      BENEFITS.fly,
-      BENEFITS.customJoinMessages,
-      BENEFITS.homeLocations(5),
+      {
+        title: "Expressive Chat",
+        description:
+          "Use colored text in chat and expression commands like /me",
+      },
+      {
+        title: "Player Teleportation",
+        description:
+          "Teleport to players with /tpa and request players to teleport to you with /tpahere",
+      },
+      {
+        title: "Shadow Kit Access",
+        description: "Receive special gear with /kit Shadow once per week",
+      },
+      {
+        title: "Multiple Homes",
+        description: "Set up to 5 home locations for quick teleportation",
+      },
     ],
     color: "from-green-500 to-green-700",
     gradient: "from-green-500 via-emerald-500 to-teal-600",
@@ -148,28 +323,39 @@ export const ranks: Rank[] = [
       boxShadow: "0 4px 20px rgba(16, 185, 129, 0.5)",
     },
     categoryId: "regular",
-    command: "lp user %player% parent add vip",
+    command: "lp user %player% parent add shadow_enchanter",
     order: 1,
   },
   {
-    id: "mvp",
-    name: "MVP",
+    id: "void_walker",
+    name: "Void Walker",
     price: 19.99,
-    stripePriceId: STRIPE_PRICES.mvp,
+    stripePriceId: STRIPE_PRICES.void_walker,
     features: [
-      "All VIP features",
-      "Access to /nick",
-      "Custom particle effects",
-      "10 home locations",
+      "All Shadow Enchanter features",
+      "/nick and /realname commands",
+      "/ptime and /back commands",
+      "10 /sethome locations",
     ],
     benefits: [
       {
-        title: "All VIP Benefits",
-        description: "Includes all benefits from the VIP rank",
+        title: "All Shadow Enchanter Benefits",
+        description: "Includes all benefits from the Shadow Enchanter rank",
       },
-      BENEFITS.nickCommand,
-      BENEFITS.particleEffects,
-      BENEFITS.homeLocations(10),
+      {
+        title: "Identity Masking",
+        description:
+          "Change your display name with /nick and find player's real names with /realname",
+      },
+      {
+        title: "Time Control & Return",
+        description:
+          "Set personal time with /ptime and return to your death location with /back",
+      },
+      {
+        title: "Enhanced Homes",
+        description: "Set up to 10 home locations for quick teleportation",
+      },
     ],
     color: "from-blue-500 to-blue-700",
     gradient: "from-blue-500 via-indigo-500 to-purple-600",
@@ -178,28 +364,39 @@ export const ranks: Rank[] = [
       boxShadow: "0 4px 20px rgba(59, 130, 246, 0.5)",
     },
     categoryId: "regular",
-    command: "lp user %player% parent add mvp",
+    command: "lp user %player% parent add void_walker",
     order: 2,
   },
   {
-    id: "elite",
-    name: "Elite",
+    id: "ethereal_warden",
+    name: "Ethereal Warden",
     price: 29.99,
-    stripePriceId: STRIPE_PRICES.elite,
+    stripePriceId: STRIPE_PRICES.ethereal_warden,
     features: [
-      "All MVP features",
-      "Priority server access",
-      "Custom armor effects",
-      "Unlimited homes",
+      "All Void Walker features",
+      "/fly and /speed commands",
+      "/enderchest and /hat commands",
+      "20 /sethome locations",
     ],
     benefits: [
       {
-        title: "All MVP Benefits",
-        description: "Includes all benefits from the MVP rank",
+        title: "All Void Walker Benefits",
+        description: "Includes all benefits from the Void Walker rank",
       },
-      BENEFITS.priorityAccess,
-      BENEFITS.armorEffects,
-      BENEFITS.unlimitedHomes,
+      {
+        title: "Aerial Movement",
+        description:
+          "Fly freely with /fly and adjust movement speed with /speed",
+      },
+      {
+        title: "Portable Storage & Style",
+        description:
+          "Access your enderchest anywhere with /enderchest and wear any item as a hat with /hat",
+      },
+      {
+        title: "Expanded Homes",
+        description: "Set up to 20 home locations for quick teleportation",
+      },
     ],
     color: "from-purple-500 to-purple-700",
     gradient: "from-purple-500 via-fuchsia-500 to-pink-600",
@@ -208,29 +405,40 @@ export const ranks: Rank[] = [
       boxShadow: "0 4px 20px rgba(139, 92, 246, 0.5)",
     },
     categoryId: "regular",
-    command: "lp user %player% parent add elite",
+    command: "lp user %player% parent add ethereal_warden",
     order: 3,
   },
 
   {
-    id: "mega",
-    name: "Mega",
+    id: "astral_guardian",
+    name: "Astral Guardian",
     price: 39.99,
-    stripePriceId: STRIPE_PRICES.mega,
+    stripePriceId: STRIPE_PRICES.astral_guardian,
     features: [
-      "All Elite features",
-      "Priority server access",
-      "Custom armor effects",
-      "Unlimited homes",
+      "All Ethereal Warden features",
+      "/pweather and /heal commands",
+      "/condense and /repair commands",
+      "Unlimited /sethome locations",
     ],
     benefits: [
       {
-        title: "All Elite Benefits",
-        description: "Includes all benefits from the Elite rank",
+        title: "All Ethereal Warden Benefits",
+        description: "Includes all benefits from the Ethereal Warden rank",
       },
-      BENEFITS.priorityAccess,
-      BENEFITS.armorEffects,
-      BENEFITS.unlimitedHomes,
+      {
+        title: "Weather & Vitality Control",
+        description:
+          "Set personal weather with /pweather and restore health with /heal",
+      },
+      {
+        title: "Item Management",
+        description:
+          "Convert items to blocks with /condense and repair items with /repair",
+      },
+      {
+        title: "Infinite Homes",
+        description: "Set unlimited home locations throughout the server",
+      },
     ],
     color: "from-purple-500 to-purple-700",
     gradient: "from-purple-500 via-fuchsia-500 to-pink-600",
@@ -239,30 +447,32 @@ export const ranks: Rank[] = [
       boxShadow: "0 4px 20px rgba(239, 68, 68, 0.5)",
     },
     categoryId: "regular",
-    command: "lp user %player% parent add elite",
+    command: "lp user %player% parent add astral_guardian",
     order: 4,
   },
 
   // Rank upgrades
   {
-    id: "vip_to_mvp",
-    name: "VIP to MVP",
+    id: "shadow_enchanter_to_void_walker",
+    name: "Shadow Enchanter to Void Walker",
     price: 9.99,
-    stripePriceId: STRIPE_PRICES.vip,
+    stripePriceId: STRIPE_PRICES.shadow_enchanter_to_void_walker,
     features: [
-      "Upgrade from VIP to MVP",
-      "Keep all VIP features",
-      "Get MVP exclusive features",
+      "Upgrade from Shadow Enchanter to Void Walker",
+      "Keep all Shadow Enchanter features",
+      "Get Void Walker exclusive features",
       "Discounted upgrade price",
     ],
     benefits: [
       {
-        title: "VIP to MVP Upgrade",
-        description: "Upgrade from VIP to MVP at a discounted price",
+        title: "Shadow Enchanter to Void Walker Upgrade",
+        description:
+          "Upgrade from Shadow Enchanter to Void Walker at a discounted price",
       },
       {
         title: "Keep All Existing Benefits",
-        description: "You'll retain all benefits from your VIP rank",
+        description:
+          "You'll retain all benefits from your Shadow Enchanter rank",
       },
       BENEFITS.nickCommand,
       BENEFITS.particleEffects,
@@ -275,29 +485,30 @@ export const ranks: Rank[] = [
       boxShadow: "0 4px 20px rgba(59, 130, 246, 0.5)",
     },
     categoryId: "upgrade",
-    requiredRank: "vip",
-    command: "lp user %player% parent add mvp",
+    requiredRank: "shadow_enchanter",
+    command: "lp user %player% parent add void_walker",
     order: 1,
   },
   {
-    id: "mvp_to_elite",
-    name: "MVP to Elite",
+    id: "void_walker_to_ethereal_warden",
+    name: "Void Walker to Ethereal Warden",
     price: 9.99,
-    stripePriceId: STRIPE_PRICES.vip,
+    stripePriceId: STRIPE_PRICES.void_walker_to_ethereal_warden,
     features: [
-      "Upgrade from MVP to Elite",
-      "Keep all MVP features",
-      "Get Elite exclusive features",
+      "Upgrade from Void Walker to Ethereal Warden",
+      "Keep all Void Walker features",
+      "Get Ethereal Warden exclusive features",
       "Discounted upgrade price",
     ],
     benefits: [
       {
-        title: "MVP to Elite Upgrade",
-        description: "Upgrade from MVP to Elite at a discounted price",
+        title: "Void Walker to Ethereal Warden Upgrade",
+        description:
+          "Upgrade from Void Walker to Ethereal Warden at a discounted price",
       },
       {
         title: "Keep All Existing Benefits",
-        description: "You'll retain all benefits from your MVP rank",
+        description: "You'll retain all benefits from your Void Walker rank",
       },
       BENEFITS.priorityAccess,
       BENEFITS.armorEffects,
@@ -310,33 +521,36 @@ export const ranks: Rank[] = [
       boxShadow: "0 4px 20px rgba(139, 92, 246, 0.5)",
     },
     categoryId: "upgrade",
-    requiredRank: "mvp",
-    command: "lp user %player% parent add elite",
+    requiredRank: "void_walker",
+    command: "lp user %player% parent add ethereal_warden",
     order: 2,
   },
   {
-    id: "elite_to_mega",
-    name: "Elite to Mega",
+    id: "ethereal_warden_to_astral_guardian",
+    name: "Ethereal Warden to Astral Guardian",
     price: 9.99,
-    stripePriceId: STRIPE_PRICES.vip,
+    stripePriceId: STRIPE_PRICES.ethereal_warden_to_astral_guardian,
     features: [
-      "Upgrade from Elite to Mega",
-      "Keep all Elite features",
-      "Get Mega exclusive features",
+      "Upgrade from Ethereal Warden to Astral Guardian",
+      "Keep all Ethereal Warden features",
+      "Get Astral Guardian exclusive features",
       "Discounted upgrade price",
     ],
     benefits: [
       {
-        title: "Elite to Mega Upgrade",
-        description: "Upgrade from Elite to Mega at a discounted price",
+        title: "Ethereal Warden to Astral Guardian Upgrade",
+        description:
+          "Upgrade from Ethereal Warden to Astral Guardian at a discounted price",
       },
       {
         title: "Keep All Existing Benefits",
-        description: "You'll retain all benefits from your Elite rank",
+        description:
+          "You'll retain all benefits from your Ethereal Warden rank",
       },
       {
-        title: "Mega Special Features",
-        description: "Access to exclusive Mega-only features and perks",
+        title: "Astral Guardian Special Features",
+        description:
+          "Access to exclusive Astral Guardian-only features and perks",
       },
       {
         title: "Premium Support",
@@ -350,39 +564,164 @@ export const ranks: Rank[] = [
       boxShadow: "0 4px 20px rgba(239, 68, 68, 0.5)",
     },
     categoryId: "upgrade",
-    requiredRank: "elite",
-    command: "lp user %player% parent add mega",
+    requiredRank: "ethereal_warden",
+    command: "lp user %player% parent add astral_guardian",
     order: 3,
   },
 
   // Towny ranks (keeping the existing ones)
   {
-    id: "mayor",
-    name: "Mayor",
-    price: 14.99,
-    stripePriceId: STRIPE_PRICES.vip,
+    id: "citizen",
+    name: "Citizen",
+    price: 4.99,
+    stripePriceId: STRIPE_PRICES.citizen,
     features: [
-      "Create and manage towns",
-      "Set town taxes",
-      "Manage town plots",
-      "Town-wide announcements",
+      "Basic town membership",
+      "Access to /towny and /t",
+      "Use /town spawn",
+      "2 /sethome locations",
     ],
     benefits: [
       {
+        title: "Town Membership",
+        description: "Join existing towns with basic plot permissions",
+      },
+      {
+        title: "Town Commands",
+        description: "Access to basic town info commands like /town",
+      },
+      {
+        title: "Town Teleportation",
+        description: "Use /town spawn to teleport to your town's spawn point",
+      },
+      {
+        title: "Home Points",
+        description:
+          "Set up to 2 home locations with /sethome and teleport with /home",
+      },
+    ],
+    color: "from-slate-400 to-slate-600",
+    gradient: "from-slate-400 via-slate-500 to-slate-600",
+    gradientStyle: {
+      background: "linear-gradient(to right, #94a3b8, #64748b, #475569)",
+      boxShadow: "0 4px 20px rgba(148, 163, 184, 0.5)",
+    },
+    categoryId: "towny",
+    command: "lp user %player% parent add citizen",
+    order: 1,
+  },
+  {
+    id: "merchant",
+    name: "Merchant",
+    price: 9.99,
+    stripePriceId: STRIPE_PRICES.merchant,
+    features: [
+      "All Citizen features",
+      "Create shops with /shop",
+      "5 /sethome locations",
+      "/tpahere command access",
+    ],
+    benefits: [
+      {
+        title: "All Citizen Benefits",
+        description: "Includes all benefits from the Citizen rank",
+      },
+      {
+        title: "Shop Creation",
+        description:
+          "Create chest shops in town commercial plots with /shop create",
+      },
+      {
+        title: "Extended Homes",
+        description:
+          "Set up to 5 home locations with /sethome and teleport with /home",
+      },
+      {
+        title: "Teleport Requests",
+        description: "Request others to teleport to you with /tpahere",
+      },
+    ],
+    color: "from-cyan-400 to-cyan-600",
+    gradient: "from-cyan-400 via-teal-500 to-cyan-600",
+    gradientStyle: {
+      background: "linear-gradient(to right, #22d3ee, #14b8a6, #0891b2)",
+      boxShadow: "0 4px 20px rgba(34, 211, 238, 0.5)",
+    },
+    categoryId: "towny",
+    command: "lp user %player% parent add merchant",
+    order: 2,
+  },
+  {
+    id: "councilor",
+    name: "Councilor",
+    price: 14.99,
+    stripePriceId: STRIPE_PRICES.councilor,
+    features: [
+      "All Merchant features",
+      "Access to /plot commands",
+      "/town claim outpost",
+      "10 /sethome locations",
+    ],
+    benefits: [
+      {
+        title: "All Merchant Benefits",
+        description: "Includes all benefits from the Merchant rank",
+      },
+      {
+        title: "Plot Management",
+        description:
+          "Use /plot commands to help manage town plots and set types",
+      },
+      {
+        title: "Outpost Claiming",
+        description: "Claim outposts for your town using /town claim outpost",
+      },
+      {
+        title: "Extended Homes",
+        description:
+          "Set up to 10 home locations with /sethome and teleport with /home",
+      },
+    ],
+    color: "from-emerald-400 to-emerald-600",
+    gradient: "from-emerald-400 via-emerald-500 to-emerald-600",
+    gradientStyle: {
+      background: "linear-gradient(to right, #34d399, #10b981, #059669)",
+      boxShadow: "0 4px 20px rgba(52, 211, 153, 0.5)",
+    },
+    categoryId: "towny",
+    command: "lp user %player% parent add councilor",
+    order: 3,
+  },
+  {
+    id: "mayor",
+    name: "Mayor",
+    price: 19.99,
+    stripePriceId: STRIPE_PRICES.mayor,
+    features: [
+      "All Councilor features",
+      "/town new and /town set",
+      "/town toggle commands",
+      "15 /sethome locations",
+    ],
+    benefits: [
+      {
+        title: "All Councilor Benefits",
+        description: "Includes all benefits from the Councilor rank",
+      },
+      {
         title: "Town Creation",
-        description: "Create and manage your own town",
+        description:
+          "Create your own town with /town new and customize with /town set",
       },
       {
-        title: "Tax Management",
-        description: "Set custom tax rates for your town",
+        title: "Town Settings",
+        description:
+          "Toggle town settings with /town toggle (pvp, fire, explosions, etc.)",
       },
       {
-        title: "Plot Control",
-        description: "Full control over town plots and claims",
-      },
-      {
-        title: "Town Announcements",
-        description: "Send announcements to all town members",
+        title: "Extended Homes",
+        description:
+          "Set up to 15 home locations with /sethome and teleport with /home",
       },
     ],
     color: "from-yellow-500 to-yellow-700",
@@ -392,19 +731,19 @@ export const ranks: Rank[] = [
       boxShadow: "0 4px 20px rgba(250, 204, 21, 0.5)",
     },
     categoryId: "towny",
-    command: "lp user %player% parent add towny",
-    order: 1,
+    command: "lp user %player% parent add mayor",
+    order: 4,
   },
   {
-    id: "noble",
-    name: "Noble",
+    id: "governor",
+    name: "Governor",
     price: 24.99,
-    stripePriceId: STRIPE_PRICES.mvp,
+    stripePriceId: STRIPE_PRICES.governor,
     features: [
       "All Mayor features",
-      "Create nation alliances",
-      "Set nation taxes",
-      "Nation-wide announcements",
+      "Manage multiple towns",
+      "/town set homeblock",
+      "20 /sethome locations",
     ],
     benefits: [
       {
@@ -412,16 +751,59 @@ export const ranks: Rank[] = [
         description: "Includes all benefits from the Mayor rank",
       },
       {
-        title: "Nation Alliances",
-        description: "Form powerful alliances between nations",
+        title: "Multi-Town Management",
+        description: "Create and manage multiple towns simultaneously",
       },
       {
-        title: "Nation Taxation",
-        description: "Set and collect nation-wide taxes",
+        title: "Home Block Control",
+        description:
+          "Set custom homeblocks with /town set homeblock for strategic spawns",
       },
       {
-        title: "Nation Announcements",
-        description: "Send announcements to all nation members",
+        title: "Extended Homes",
+        description:
+          "Set up to 20 home locations with /sethome and teleport with /home",
+      },
+    ],
+    color: "from-blue-500 to-blue-700",
+    gradient: "from-blue-500 via-blue-600 to-indigo-600",
+    gradientStyle: {
+      background: "linear-gradient(to right, #3b82f6, #2563eb, #4f46e5)",
+      boxShadow: "0 4px 20px rgba(59, 130, 246, 0.5)",
+    },
+    categoryId: "towny",
+    command: "lp user %player% parent add governor",
+    order: 5,
+  },
+  {
+    id: "noble",
+    name: "Noble",
+    price: 29.99,
+    stripePriceId: STRIPE_PRICES.noble,
+    features: [
+      "All Governor features",
+      "/nation new and /n commands",
+      "/baltop and /pay anywhere",
+      "25 /sethome locations",
+    ],
+    benefits: [
+      {
+        title: "All Governor Benefits",
+        description: "Includes all benefits from the Governor rank",
+      },
+      {
+        title: "Nation Creation",
+        description:
+          "Form nations with /nation new and manage with /nation commands",
+      },
+      {
+        title: "Economy Management",
+        description: "Access to /baltop and ability to /pay from anywhere",
+      },
+      {
+        title: "Extended Homes",
+        description:
+          "Set up to 25 home locations with /sethome and teleport with /home",
       },
     ],
     color: "from-red-500 to-red-700",
@@ -431,19 +813,19 @@ export const ranks: Rank[] = [
       boxShadow: "0 4px 20px rgba(239, 68, 68, 0.5)",
     },
     categoryId: "towny",
-    command: "lp user %player% parent add mayor",
-    order: 2,
+    command: "lp user %player% parent add noble",
+    order: 6,
   },
   {
-    id: "king",
-    name: "King",
+    id: "duke",
+    name: "Duke",
     price: 34.99,
-    stripePriceId: STRIPE_PRICES.elite,
+    stripePriceId: STRIPE_PRICES.duke,
     features: [
       "All Noble features",
-      "Rule multiple nations",
-      "Global announcements",
-      "Special king commands",
+      "/nation add ally commands",
+      "/fly in own territory",
+      "35 /sethome locations",
     ],
     benefits: [
       {
@@ -451,16 +833,59 @@ export const ranks: Rank[] = [
         description: "Includes all benefits from the Noble rank",
       },
       {
-        title: "Multi-Nation Rule",
-        description: "Control multiple nations simultaneously",
+        title: "Alliance Formation",
+        description: "Create alliances between nations with /nation add ally",
       },
       {
-        title: "Global Announcements",
-        description: "Send server-wide announcements",
+        title: "Territorial Flight",
+        description: "Use /fly within your town and nation territories",
       },
       {
-        title: "Royal Commands",
-        description: "Access to special king-only commands",
+        title: "Extended Homes",
+        description:
+          "Set up to 35 home locations with /sethome and teleport with /home",
+      },
+    ],
+    color: "from-violet-500 to-violet-700",
+    gradient: "from-violet-500 via-purple-500 to-fuchsia-600",
+    gradientStyle: {
+      background: "linear-gradient(to right, #8b5cf6, #7c3aed, #c026d3)",
+      boxShadow: "0 4px 20px rgba(139, 92, 246, 0.5)",
+    },
+    categoryId: "towny",
+    command: "lp user %player% parent add duke",
+    order: 7,
+  },
+  {
+    id: "king",
+    name: "King",
+    price: 39.99,
+    stripePriceId: STRIPE_PRICES.king,
+    features: [
+      "All Duke features",
+      "/nation set king and /nationchats",
+      "/nick and color codes in chat",
+      "50 /sethome locations",
+    ],
+    benefits: [
+      {
+        title: "All Duke Benefits",
+        description: "Includes all benefits from the Duke rank",
+      },
+      {
+        title: "Royal Authority",
+        description:
+          "Set other players as kings with /nation set king and use all nation chats",
+      },
+      {
+        title: "Custom Identity",
+        description:
+          "Change your nickname with /nick and use color codes in chat",
+      },
+      {
+        title: "Extended Homes",
+        description:
+          "Set up to 50 home locations with /sethome and teleport with /home",
       },
     ],
     color: "from-orange-500 to-orange-700",
@@ -470,25 +895,254 @@ export const ranks: Rank[] = [
       boxShadow: "0 4px 20px rgba(249, 115, 22, 0.5)",
     },
     categoryId: "towny",
-    command: "lp user %player% parent add noble",
-    order: 3,
+    command: "lp user %player% parent add king",
+    order: 8,
+  },
+  {
+    id: "emperor",
+    name: "Emperor",
+    price: 44.99,
+    stripePriceId: STRIPE_PRICES.emperor,
+    features: [
+      "All King features",
+      "/townyadmin and admin commands",
+      "/eco give and /eco take",
+      "Unlimited /sethome locations",
+    ],
+    benefits: [
+      {
+        title: "All King Benefits",
+        description: "Includes all benefits from the King rank",
+      },
+      {
+        title: "Admin Powers",
+        description:
+          "Limited access to /townyadmin commands for empire management",
+      },
+      {
+        title: "Economic Control",
+        description:
+          "Grant and take money with /eco give and /eco take commands",
+      },
+      {
+        title: "Unlimited Homes",
+        description:
+          "Set unlimited home locations with /sethome and teleport with /home",
+      },
+    ],
+    color: "from-amber-500 to-amber-700",
+    gradient: "from-amber-500 via-yellow-500 to-yellow-300",
+    gradientStyle: {
+      background: "linear-gradient(to right, #f59e0b, #eab308, #fde047)",
+      boxShadow: "0 4px 20px rgba(245, 158, 11, 0.5)",
+    },
+    categoryId: "towny",
+    command: "lp user %player% parent add emperor",
+    order: 9,
+  },
+  {
+    id: "divine",
+    name: "Divine Ruler",
+    price: 49.99,
+    stripePriceId: STRIPE_PRICES.divine,
+    features: [
+      "All Emperor features",
+      "/gamemode and /god commands",
+      "/ptime and /pweather control",
+      "/essentials commands",
+    ],
+    benefits: [
+      {
+        title: "All Emperor Benefits",
+        description: "Includes all benefits from the Emperor rank",
+      },
+      {
+        title: "Divine Powers",
+        description:
+          "Change your gamemode with /gamemode and enable godmode with /god",
+      },
+      {
+        title: "Weather Control",
+        description: "Set personal time with /ptime and weather with /pweather",
+      },
+      {
+        title: "Complete Command Access",
+        description:
+          "Access to almost all EssentialsX commands for ultimate control",
+      },
+    ],
+    color: "from-indigo-400 to-purple-700",
+    gradient: "from-indigo-400 via-purple-500 to-pink-400",
+    gradientStyle: {
+      background: "linear-gradient(to right, #818cf8, #a855f7, #f472b6)",
+      boxShadow: "0 4px 20px rgba(129, 140, 248, 0.6)",
+    },
+    categoryId: "towny",
+    command: "lp user %player% parent add divine",
+    order: 10,
   },
 
   // Towny rank upgrades
   {
-    id: "mayor_to_noble",
-    name: "Mayor to Noble",
-    price: 9.99,
-    stripePriceId: STRIPE_PRICES.vip,
-    features: ["Upgrade from Mayor to Noble", "Keep all Mayor features"],
+    id: "citizen_to_merchant",
+    name: "Citizen to Merchant",
+    price: 4.99,
+    stripePriceId: STRIPE_PRICES.citizen_to_merchant,
+    features: ["Upgrade from Citizen to Merchant", "Keep all Citizen features"],
     benefits: [
       {
-        title: "Mayor to Noble Upgrade",
-        description: "Upgrade from Mayor to Noble at a discounted price",
+        title: "Citizen to Merchant Upgrade",
+        description: "Upgrade from Citizen to Merchant at a discounted price",
+      },
+      {
+        title: "Keep All Existing Benefits",
+        description: "You'll retain all benefits from your Citizen rank",
+      },
+      {
+        title: "Town Commerce",
+        description: "Establish and run shops within town borders",
+      },
+      {
+        title: "Market Expansion",
+        description: "Claim additional market plots for business",
+      },
+    ],
+    color: "from-cyan-400 to-cyan-600",
+    gradient: "from-cyan-400 via-teal-500 to-cyan-600",
+    gradientStyle: {
+      background: "linear-gradient(to right, #22d3ee, #14b8a6, #0891b2)",
+      boxShadow: "0 4px 20px rgba(34, 211, 238, 0.5)",
+    },
+    categoryId: "townyUpgrade",
+    requiredRank: "citizen",
+    command: "lp user %player% parent add merchant",
+    order: 1,
+  },
+  {
+    id: "merchant_to_councilor",
+    name: "Merchant to Councilor",
+    price: 4.99,
+    stripePriceId: STRIPE_PRICES.merchant_to_councilor,
+    features: [
+      "Upgrade from Merchant to Councilor",
+      "Keep all Merchant features",
+    ],
+    benefits: [
+      {
+        title: "Merchant to Councilor Upgrade",
+        description: "Upgrade from Merchant to Councilor at a discounted price",
+      },
+      {
+        title: "Keep All Existing Benefits",
+        description: "You'll retain all benefits from your Merchant rank",
+      },
+      {
+        title: "Plot Management",
+        description: "Assist in managing and organizing town plots",
+      },
+      {
+        title: "Membership Control",
+        description: "Invite and approve new town citizens",
+      },
+    ],
+    color: "from-emerald-400 to-emerald-600",
+    gradient: "from-emerald-400 via-emerald-500 to-emerald-600",
+    gradientStyle: {
+      background: "linear-gradient(to right, #34d399, #10b981, #059669)",
+      boxShadow: "0 4px 20px rgba(52, 211, 153, 0.5)",
+    },
+    categoryId: "townyUpgrade",
+    requiredRank: "merchant",
+    command: "lp user %player% parent add councilor",
+    order: 2,
+  },
+  {
+    id: "councilor_to_mayor",
+    name: "Councilor to Mayor",
+    price: 4.99,
+    stripePriceId: STRIPE_PRICES.councilor_to_mayor,
+    features: [
+      "Upgrade from Councilor to Mayor",
+      "Keep all Councilor features",
+    ],
+    benefits: [
+      {
+        title: "Councilor to Mayor Upgrade",
+        description: "Upgrade from Councilor to Mayor at a discounted price",
+      },
+      {
+        title: "Keep All Existing Benefits",
+        description: "You'll retain all benefits from your Councilor rank",
+      },
+      {
+        title: "Town Creation",
+        description: "Create and manage your own town",
+      },
+      {
+        title: "Tax Management",
+        description: "Set custom tax rates for your town",
+      },
+    ],
+    color: "from-yellow-500 to-yellow-700",
+    gradient: "from-yellow-400 via-amber-500 to-orange-600",
+    gradientStyle: {
+      background: "linear-gradient(to right, #facc15, #f59e0b, #f97316)",
+      boxShadow: "0 4px 20px rgba(250, 204, 21, 0.5)",
+    },
+    categoryId: "townyUpgrade",
+    requiredRank: "councilor",
+    command: "lp user %player% parent add mayor",
+    order: 3,
+  },
+  {
+    id: "mayor_to_governor",
+    name: "Mayor to Governor",
+    price: 4.99,
+    stripePriceId: STRIPE_PRICES.mayor_to_governor,
+    features: ["Upgrade from Mayor to Governor", "Keep all Mayor features"],
+    benefits: [
+      {
+        title: "Mayor to Governor Upgrade",
+        description: "Upgrade from Mayor to Governor at a discounted price",
       },
       {
         title: "Keep All Existing Benefits",
         description: "You'll retain all benefits from your Mayor rank",
+      },
+      {
+        title: "Multi-Town Governance",
+        description: "Oversee and manage multiple towns in a region",
+      },
+      {
+        title: "Regional Policy",
+        description: "Establish region-wide rules and policies",
+      },
+    ],
+    color: "from-blue-500 to-blue-700",
+    gradient: "from-blue-500 via-blue-600 to-indigo-600",
+    gradientStyle: {
+      background: "linear-gradient(to right, #3b82f6, #2563eb, #4f46e5)",
+      boxShadow: "0 4px 20px rgba(59, 130, 246, 0.5)",
+    },
+    categoryId: "townyUpgrade",
+    requiredRank: "mayor",
+    command: "lp user %player% parent add governor",
+    order: 4,
+  },
+  {
+    id: "governor_to_noble",
+    name: "Governor to Noble",
+    price: 4.99,
+    stripePriceId: STRIPE_PRICES.governor_to_noble,
+    features: ["Upgrade from Governor to Noble", "Keep all Governor features"],
+    benefits: [
+      {
+        title: "Governor to Noble Upgrade",
+        description: "Upgrade from Governor to Noble at a discounted price",
+      },
+      {
+        title: "Keep All Existing Benefits",
+        description: "You'll retain all benefits from your Governor rank",
       },
       {
         title: "Nation Alliances",
@@ -506,24 +1160,59 @@ export const ranks: Rank[] = [
       boxShadow: "0 4px 20px rgba(239, 68, 68, 0.5)",
     },
     categoryId: "townyUpgrade",
-    requiredRank: "mayor",
+    requiredRank: "governor",
     command: "lp user %player% parent add noble",
-    order: 1,
+    order: 5,
   },
   {
-    id: "noble_to_king",
-    name: "Noble to King",
-    price: 9.99,
-    stripePriceId: STRIPE_PRICES.vip,
-    features: ["Upgrade from Noble to King", "Keep all Noble features"],
+    id: "noble_to_duke",
+    name: "Noble to Duke",
+    price: 4.99,
+    stripePriceId: STRIPE_PRICES.noble_to_duke,
+    features: ["Upgrade from Noble to Duke", "Keep all Noble features"],
     benefits: [
       {
-        title: "Noble to King Upgrade",
-        description: "Upgrade from Noble to King at a discounted price",
+        title: "Noble to Duke Upgrade",
+        description: "Upgrade from Noble to Duke at a discounted price",
       },
       {
         title: "Keep All Existing Benefits",
         description: "You'll retain all benefits from your Noble rank",
+      },
+      {
+        title: "Duchy Management",
+        description: "Rule over a large duchy consisting of multiple regions",
+      },
+      {
+        title: "Trade Controls",
+        description: "Establish and control profitable trade routes",
+      },
+    ],
+    color: "from-violet-500 to-violet-700",
+    gradient: "from-violet-500 via-purple-500 to-fuchsia-600",
+    gradientStyle: {
+      background: "linear-gradient(to right, #8b5cf6, #7c3aed, #c026d3)",
+      boxShadow: "0 4px 20px rgba(139, 92, 246, 0.5)",
+    },
+    categoryId: "townyUpgrade",
+    requiredRank: "noble",
+    command: "lp user %player% parent add duke",
+    order: 6,
+  },
+  {
+    id: "duke_to_king",
+    name: "Duke to King",
+    price: 4.99,
+    stripePriceId: STRIPE_PRICES.duke_to_king,
+    features: ["Upgrade from Duke to King", "Keep all Duke features"],
+    benefits: [
+      {
+        title: "Duke to King Upgrade",
+        description: "Upgrade from Duke to King at a discounted price",
+      },
+      {
+        title: "Keep All Existing Benefits",
+        description: "You'll retain all benefits from your Duke rank",
       },
       {
         title: "Multi-Nation Rule",
@@ -541,9 +1230,83 @@ export const ranks: Rank[] = [
       boxShadow: "0 4px 20px rgba(249, 115, 22, 0.5)",
     },
     categoryId: "townyUpgrade",
-    requiredRank: "noble",
+    requiredRank: "duke",
     command: "lp user %player% parent add king",
-    order: 2,
+    order: 7,
+  },
+  {
+    id: "king_to_emperor",
+    name: "King to Emperor",
+    price: 9.99,
+    stripePriceId: STRIPE_PRICES.king_to_emperor,
+    features: ["Upgrade from King to Emperor", "Keep all King features"],
+    benefits: [
+      {
+        title: "King to Emperor Upgrade",
+        description: "Upgrade from King to Emperor at a discounted price",
+      },
+      {
+        title: "Keep All Existing Benefits",
+        description: "You'll retain all benefits from your King rank",
+      },
+      {
+        title: "Empire Control",
+        description: "Rule over multiple kingdoms as a unified empire",
+      },
+      {
+        title: "Imperial Edicts",
+        description: "Issue server-wide edicts that affect all players",
+      },
+    ],
+    color: "from-amber-500 to-amber-700",
+    gradient: "from-amber-500 via-yellow-500 to-yellow-300",
+    gradientStyle: {
+      background: "linear-gradient(to right, #f59e0b, #eab308, #fde047)",
+      boxShadow: "0 4px 20px rgba(245, 158, 11, 0.5)",
+    },
+    categoryId: "townyUpgrade",
+    requiredRank: "king",
+    command: "lp user %player% parent add emperor",
+    order: 8,
+  },
+  {
+    id: "emperor_to_divine",
+    name: "Emperor to Divine Ruler",
+    price: 4.99,
+    stripePriceId: STRIPE_PRICES.emperor_to_divine,
+    features: [
+      "Upgrade from Emperor to Divine Ruler",
+      "Keep all Emperor features",
+    ],
+    benefits: [
+      {
+        title: "Emperor to Divine Ruler Upgrade",
+        description:
+          "Upgrade from Emperor to Divine Ruler at a discounted price",
+      },
+      {
+        title: "Keep All Existing Benefits",
+        description: "You'll retain all benefits from your Emperor rank",
+      },
+      {
+        title: "Divine Authority",
+        description: "Rule with divine right across the entire server",
+      },
+      {
+        title: "Cosmic Powers",
+        description: "Access to unique cosmetic and gameplay abilities",
+      },
+    ],
+    color: "from-indigo-400 to-purple-700",
+    gradient: "from-indigo-400 via-purple-500 to-pink-400",
+    gradientStyle: {
+      background: "linear-gradient(to right, #818cf8, #a855f7, #f472b6)",
+      boxShadow: "0 4px 20px rgba(129, 140, 248, 0.6)",
+    },
+    categoryId: "townyUpgrade",
+    requiredRank: "emperor",
+    command: "lp user %player% parent add divine",
+    order: 9,
   },
 ];
 
@@ -621,7 +1384,7 @@ export function canPurchaseRank(
       // Determine the destination rank of this upgrade
       let destinationRankId = "";
 
-      // Extract destination rank name from upgrade id (e.g., "vip_to_mvp" -> "mvp")
+      // Extract destination rank name from upgrade id (e.g., "shadow_enchanter_to_void_walker" -> "void_walker")
       const parts = rank.id.split("_to_");
       if (parts.length === 2) {
         destinationRankId = parts[1];

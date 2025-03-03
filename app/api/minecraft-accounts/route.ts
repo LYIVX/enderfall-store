@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import {
-  getSavedAccounts,
   addSavedAccount,
+  getSavedAccounts,
   removeSavedAccount,
-} from "@/lib/edge-config";
+} from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
@@ -15,26 +15,23 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(request: Request) {
   try {
-    // Check if the user is authenticated
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+
+    if (!session || !session.user) {
       return NextResponse.json(
-        { error: "You must be logged in to access saved accounts" },
+        { error: "Authentication required" },
         { status: 401 }
       );
     }
 
-    // Get the saved accounts for the user
     const userId = session.user.id;
-    const savedAccounts = await getSavedAccounts(userId);
+    const accounts = await getSavedAccounts(userId);
 
-    return NextResponse.json({
-      accounts: savedAccounts,
-    });
-  } catch (error: any) {
-    console.error("Error retrieving saved accounts:", error.message);
+    return NextResponse.json({ accounts });
+  } catch (error) {
+    console.error("Error getting Minecraft accounts:", error);
     return NextResponse.json(
-      { error: "Failed to retrieve saved accounts" },
+      { error: "Failed to retrieve accounts" },
       { status: 500 }
     );
   }
@@ -46,60 +43,53 @@ export async function GET(request: Request) {
  */
 export async function POST(request: Request) {
   try {
-    // Check if the user is authenticated
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+
+    if (!session || !session.user) {
       return NextResponse.json(
-        { error: "You must be logged in to save accounts" },
+        { error: "Authentication required" },
         { status: 401 }
       );
     }
 
-    // Parse the request body
-    const body = await request.json();
-    const { username } = body;
-
-    if (!username || typeof username !== "string") {
-      return NextResponse.json(
-        { error: "Valid Minecraft username is required" },
-        { status: 400 }
-      );
-    }
-
-    // Clean the username
-    const cleanUsername = username.trim();
-    if (cleanUsername.length < 3 || cleanUsername.length > 16) {
-      return NextResponse.json(
-        { error: "Minecraft username must be between 3 and 16 characters" },
-        { status: 400 }
-      );
-    }
-
-    // Get the user ID
     const userId = session.user.id;
+    const { username } = await request.json();
 
-    // Add the account to the user's saved accounts
-    const result = await addSavedAccount(userId, cleanUsername);
+    if (!username) {
+      return NextResponse.json(
+        { error: "Minecraft username is required" },
+        { status: 400 }
+      );
+    }
 
-    if (!result.success) {
-      console.error("Edge Config error when saving account:", result.error);
+    // Validate username format
+    if (!/^[a-zA-Z0-9_]{2,16}$/.test(username)) {
       return NextResponse.json(
         {
-          error: result.error || "Failed to save Minecraft account",
-          accounts: result.accounts,
+          error:
+            "Invalid Minecraft username. Must be 2-16 characters and only contain letters, numbers, and underscores.",
         },
+        { status: 400 }
+      );
+    }
+
+    const result = await addSavedAccount(userId, username);
+
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error || "Failed to add account" },
         { status: 500 }
       );
     }
 
     return NextResponse.json({
+      success: true,
       accounts: result.accounts,
-      message: "Account saved successfully",
     });
-  } catch (error: any) {
-    console.error("Error saving Minecraft account:", error.message);
+  } catch (error) {
+    console.error("Error adding Minecraft account:", error);
     return NextResponse.json(
-      { error: "Failed to save Minecraft account" },
+      { error: "Failed to add account" },
       { status: 500 }
     );
   }
@@ -111,51 +101,57 @@ export async function POST(request: Request) {
  */
 export async function DELETE(request: Request) {
   try {
-    // Check if the user is authenticated
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+
+    if (!session || !session.user) {
       return NextResponse.json(
-        { error: "You must be logged in to remove accounts" },
+        { error: "Authentication required" },
         { status: 401 }
       );
     }
 
-    // Parse the request body
-    const body = await request.json();
-    const { username } = body;
+    const userId = session.user.id;
 
-    if (!username || typeof username !== "string") {
+    // Try to get username from query parameters
+    const { searchParams } = new URL(request.url);
+    let username = searchParams.get("username");
+
+    // If not in query parameters, try to get from request body
+    if (!username) {
+      try {
+        const body = await request.json();
+        username = body.username;
+      } catch (e) {
+        // Ignore JSON parse errors
+      }
+    }
+
+    if (!username) {
       return NextResponse.json(
-        { error: "Valid Minecraft username is required" },
+        { error: "Minecraft username is required" },
         { status: 400 }
       );
     }
 
-    // Get the user ID
-    const userId = session.user.id;
+    console.log(`Attempting to delete account ${username} for user ${userId}`);
 
-    // Remove the account from the user's saved accounts
     const result = await removeSavedAccount(userId, username);
 
     if (!result.success) {
-      console.error("Edge Config error when removing account:", result.error);
       return NextResponse.json(
-        {
-          error: result.error || "Failed to remove Minecraft account",
-          accounts: result.accounts,
-        },
+        { error: result.error || "Failed to remove account" },
         { status: 500 }
       );
     }
 
     return NextResponse.json({
+      success: true,
       accounts: result.accounts,
-      message: "Account removed successfully",
     });
-  } catch (error: any) {
-    console.error("Error removing Minecraft account:", error.message);
+  } catch (error) {
+    console.error("Error removing Minecraft account:", error);
     return NextResponse.json(
-      { error: "Failed to remove Minecraft account" },
+      { error: "Failed to remove account" },
       { status: 500 }
     );
   }

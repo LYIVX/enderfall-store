@@ -33,6 +33,10 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your-stripe-publishable-key
 # Minecraft Server
 MINECRAFT_SERVER_API_KEY=your-minecraft-api-key
 MINECRAFT_SERVER_API_URL=http://localhost:8080
+
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=your-project-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ```
 
 ## Installation
@@ -70,6 +74,40 @@ The application can be easily deployed to Vercel:
 ## Minecraft Plugin
 
 The Minecraft plugin code is maintained in a separate repository. Please refer to the plugin documentation for setup instructions.
+
+## Supabase Integration
+
+This project uses [Supabase](https://supabase.com/) as its primary data storage solution. The integration stores:
+
+- **Minecraft Accounts**: Track user-saved Minecraft accounts
+- **User Ranks**: Store rank purchases for Minecraft usernames
+- **Pending Purchases**: Keep track of ongoing purchase sessions
+- **Resets**: Manage data resets for testing and support
+
+### Setup
+
+1. Set up a Supabase project
+2. Add your Supabase credentials to `.env` and `.env.local` files:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=your-project-url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+   ```
+3. Run the setup script to create the required tables:
+   ```
+   node scripts/setup-supabase.js
+   ```
+
+### API
+
+The Supabase client and related functions are available in `lib/supabase.ts`. Key functions include:
+
+- `getSavedAccounts(userId)`: Get a user's saved Minecraft accounts
+- `addSavedAccount(userId, username)`: Add a Minecraft account for a user
+- `getUserRanks(minecraftUsername)`: Get ranks for a Minecraft username
+- `saveUserRankData(minecraftUsername, rankId)`: Save a rank purchase
+- `getPendingPurchases()`: Get all pending purchase sessions
+- `addPendingPurchase(purchase)`: Add a new pending purchase
+- `getResetData(userId)`: Get reset data for a user
 
 ## Contributing
 

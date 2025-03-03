@@ -39,7 +39,6 @@ export default function ServerStatus({ serverIp }: ServerStatusProps) {
         }
       } catch (err) {
         setError("Failed to connect to server status API");
-        console.error(err);
       } finally {
         setLoading(false);
       }

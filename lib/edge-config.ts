@@ -32,14 +32,6 @@ export interface PendingPurchasesData {
   pendingPurchases: PendingPurchase[];
 }
 
-export interface ResetData {
-  [userId: string]: {
-    resetAt: string;
-    sessionIds: string[];
-    active: boolean;
-  };
-}
-
 // Helper function to normalize usernames
 export function normalizeUsername(username: string): string {
   return username.trim().toLowerCase();
@@ -240,30 +232,39 @@ export async function removePendingPurchase(
 ): Promise<{ success: boolean; message: string }> {
   try {
     const pendingPurchases = await getPendingPurchases();
-    const originalLength = pendingPurchases.pendingPurchases.length;
 
-    // First try exact session ID match
+    const initialLength = pendingPurchases.pendingPurchases.length;
+
     pendingPurchases.pendingPurchases =
-      pendingPurchases.pendingPurchases.filter(
-        (purchase) => purchase.sessionId !== sessionId
-      );
+      pendingPurchases.pendingPurchases.filter((purchase) => {
+        // First check by session ID which is the primary identifier
+        if (purchase.sessionId !== sessionId) {
+          return true;
+        }
 
-    // If no match and we have rank ID + username, try matching those
-    if (
-      originalLength === pendingPurchases.pendingPurchases.length &&
-      rankId &&
-      username
-    ) {
-      const normalizedUsername = normalizeUsername(username);
-      pendingPurchases.pendingPurchases =
-        pendingPurchases.pendingPurchases.filter(
-          (purchase) =>
-            !(
-              purchase.rankId === rankId &&
-              normalizeUsername(purchase.minecraftUsername) ===
-                normalizedUsername
-            )
-        );
+        // If additional filters are provided, make sure they match too
+        if (rankId && rankId !== purchase.rankId) {
+          return true;
+        }
+
+        if (
+          username &&
+          normalizeUsername(username) !==
+            normalizeUsername(purchase.minecraftUsername)
+        ) {
+          return true;
+        }
+
+        // If we get here, this purchase matches the filters and should be removed
+        return false;
+      });
+
+    if (pendingPurchases.pendingPurchases.length === initialLength) {
+      // No purchases were removed
+      return {
+        success: true,
+        message: "No matching purchases found to remove",
+      };
     }
 
     await updateEdgeConfig("pending-purchases", pendingPurchases);
@@ -278,43 +279,6 @@ export async function removePendingPurchase(
       success: false,
       message: "Failed to remove pending purchase",
     };
-  }
-}
-
-// Reset Functions
-export async function getResetData(): Promise<ResetData> {
-  try {
-    const resetData = await get<ResetData>("resets");
-    return resetData || {};
-  } catch (error) {
-    console.error("Error getting reset data:", error);
-    return {};
-  }
-}
-
-export async function updateResetData(
-  userId: string,
-  resetActive: boolean,
-  sessionIds?: string[]
-): Promise<boolean> {
-  try {
-    const resets = await getResetData();
-
-    if (resetActive) {
-      resets[userId] = {
-        resetAt: new Date().toISOString(),
-        sessionIds: sessionIds || [],
-        active: true,
-      };
-    } else if (resets[userId]) {
-      resets[userId].active = false;
-    }
-
-    await updateEdgeConfig("resets", resets);
-    return true;
-  } catch (error) {
-    console.error("Error updating reset data:", error);
-    return false;
   }
 }
 
@@ -335,14 +299,9 @@ export async function updateEdgeConfig(
     console.log("Attempting to update Edge Config using API...");
 
     // Only keys that the Edge Config API supports can be updated
-    // minecraft-accounts, user-data, pending-purchases, resets
+    // minecraft-accounts, user-data, pending-purchases
     if (
-      ![
-        "minecraft-accounts",
-        "user-data",
-        "pending-purchases",
-        "resets",
-      ].includes(key)
+      !["minecraft-accounts", "user-data", "pending-purchases"].includes(key)
     ) {
       console.error(`Key ${key} is not supported by Edge Config`);
       return {

@@ -38,6 +38,7 @@ export default function Navbar() {
   // State for dropdowns
   const [isCurrencyMenuOpen, setIsCurrencyMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Refs for dropdown containers
   const currencyMenuRef = useRef<HTMLDivElement>(null);
@@ -103,7 +104,6 @@ export default function Navbar() {
           }
         })
         .catch((error) => {
-          console.error("Failed to fetch Discord profile:", error);
           // Set fallback profile using session data
           if (session.user) {
             setDiscordProfile({
@@ -125,7 +125,7 @@ export default function Navbar() {
               href="/"
               className="text-[var(--text-color)] font-bold text-xl"
             >
-              MC Store
+              Enderfall Store
             </Link>
             <div className="hidden md:block ml-10">
               <div className="flex items-center space-x-4">
@@ -153,9 +153,9 @@ export default function Navbar() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="hidden md:flex items-center space-x-4">
             {/* Currency Dropdown */}
-            <div className="hidden md:block relative" ref={currencyMenuRef}>
+            <div className="relative" ref={currencyMenuRef}>
               <button
                 onClick={() => setIsCurrencyMenuOpen(!isCurrencyMenuOpen)}
                 className="bg-[var(--input-bg)] hover:bg-[var(--card-bg-secondary)] border border-[var(--input-border)] text-[var(--text-color)] rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 w-32 h-10 transition-colors"
@@ -312,8 +312,148 @@ export default function Navbar() {
               </Link>
             )}
           </div>
+
+          {/* Mobile menu button */}
+          <div className="md:hidden flex items-center">
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="text-[var(--text-secondary)] hover:text-[var(--text-color)] p-1 rounded-full transition-colors"
+              aria-label="Toggle mobile menu"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                {isMobileMenuOpen ? (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                ) : (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M4 6h16M4 12h16M4 18h16"
+                  />
+                )}
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Mobile menu */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden bg-[var(--card-bg)] border-t border-[var(--input-border)] pb-3 pt-2">
+          <div className="px-4 sm:px-6 lg:px-8 space-y-3">
+            <Link
+              href="/"
+              className={`${
+                isActive("/")
+                  ? "bg-[var(--button-primary)] text-white"
+                  : "text-[var(--text-secondary)] hover:bg-[var(--card-bg-secondary)] hover:text-[var(--text-color)]"
+              } block px-3 py-2 rounded-md text-base font-medium transition-colors`}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Home
+            </Link>
+            <Link
+              href="/shop"
+              className={`${
+                isActive("/shop")
+                  ? "bg-[var(--button-primary)] text-white"
+                  : "text-[var(--text-secondary)] hover:bg-[var(--card-bg-secondary)] hover:text-[var(--text-color)]"
+              } block px-3 py-2 rounded-md text-base font-medium transition-colors`}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              Shop
+            </Link>
+
+            {/* Currency select for mobile */}
+            <div className="pt-2 pb-1">
+              <p className="px-3 text-sm font-medium text-[var(--text-secondary)]">
+                Currency
+              </p>
+              <div className="mt-1 space-y-1">
+                {(Object.keys(currencySymbols) as Array<CurrencyCode>).map(
+                  (currency) => (
+                    <button
+                      key={currency}
+                      onClick={() => {
+                        handleCurrencyChange(currency);
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={`${
+                        selectedCurrency === currency
+                          ? "bg-[var(--button-primary)] text-white"
+                          : "text-[var(--text-color)] hover:bg-[var(--card-bg-secondary)]"
+                      } block w-full text-left px-3 py-2 text-base transition-colors duration-150`}
+                    >
+                      {currency} ({currencySymbols[currency]})
+                    </button>
+                  )
+                )}
+              </div>
+            </div>
+
+            {/* Profile/Login for mobile */}
+            <div className="pt-2">
+              {status === "authenticated" ? (
+                <div className="space-y-1">
+                  <div className="flex items-center px-3 py-2">
+                    <div className="w-8 h-8 relative mr-3">
+                      <Image
+                        src={discordProfile?.avatar || "/default-avatar.png"}
+                        alt="User Avatar"
+                        width={32}
+                        height={32}
+                        className="rounded-full"
+                        priority
+                        unoptimized
+                      />
+                    </div>
+                    <span className="text-[var(--text-color)] font-medium">
+                      {discordProfile?.username ||
+                        session.user?.name?.split("#")[0] ||
+                        "User"}
+                    </span>
+                  </div>
+                  <Link
+                    href="/profile"
+                    className="block px-3 py-2 text-base text-[var(--text-color)] hover:bg-[var(--button-primary)] hover:text-white transition-colors"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Profile
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      signOut({ callbackUrl: "/" });
+                    }}
+                    className="block w-full text-left px-3 py-2 text-base text-[var(--text-color)] hover:bg-[var(--button-primary)] hover:text-white transition-colors"
+                  >
+                    Sign out
+                  </button>
+                </div>
+              ) : (
+                <Link
+                  href="/api/auth/signin"
+                  className="block w-full text-center px-3 py-2 bg-[var(--button-primary)] hover:bg-[var(--button-primary-hover)] text-white rounded-md text-base font-medium transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Sign in
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </nav>
   );
 }

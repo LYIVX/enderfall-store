@@ -458,6 +458,52 @@ function ShopContent() {
     }
   }, [handleUsernameSearch]);
 
+  // Effect to update available ranks when searchedUserRanks changes
+  useEffect(() => {
+    if (searchedUsername && playerExists) {
+      // Get all ranks
+      const allRanks = getAllRanks();
+      // Filter available ranks based on player's existing ranks
+      const filteredRanks = filterAvailableRanks(allRanks, searchedUserRanks);
+      // Update state
+      setAvailableRanks(filteredRanks);
+
+      // After updating available ranks, check if the current category is visible
+      // If not, switch to the first available category
+      setTimeout(() => {
+        // First check upgrade categories - they have priority for players with ranks
+        const upgradeCategories = ranksConfig
+          .getOrderedCategories()
+          .filter(
+            (cat) =>
+              cat.id.toLowerCase().includes("upgrade") &&
+              isCategoryVisible(cat.id)
+          );
+
+        // Then check regular categories
+        const regularCategories = ranksConfig
+          .getOrderedCategories()
+          .filter(
+            (cat) =>
+              !cat.id.toLowerCase().includes("upgrade") &&
+              isCategoryVisible(cat.id)
+          );
+
+        // If current category is not visible
+        if (!isCategoryVisible(selectedCategoryId)) {
+          // First try to show upgrade categories as they're more relevant for existing players
+          if (upgradeCategories.length > 0) {
+            setSelectedCategoryId(upgradeCategories[0].id);
+          }
+          // Otherwise show a regular category
+          else if (regularCategories.length > 0) {
+            setSelectedCategoryId(regularCategories[0].id);
+          }
+        }
+      }, 0);
+    }
+  }, [searchedUserRanks, playerExists, searchedUsername, selectedCategoryId]);
+
   // Helper to determine if a category should be visible based on available ranks
   const isCategoryVisible = (categoryId: string): boolean => {
     // If a username has been searched but player doesn't exist, don't show any categories

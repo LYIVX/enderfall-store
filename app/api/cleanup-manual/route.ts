@@ -3,26 +3,17 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import {
   getPendingPurchases,
-  updateEdgeConfig,
   normalizeUsername,
-} from "@/lib/edge-config";
-
-// Define the purchase type
-interface PendingPurchase {
-  sessionId: string;
-  rankId: string;
-  minecraftUsername: string;
-  userId: string;
-  timestamp: string;
-  isGift: boolean;
-}
+  supabase,
+  type PendingPurchase,
+} from "@/lib/supabase";
 
 // Type for cleanup criteria
 interface CleanupCriteria {
-  sessionId?: string;
-  rankId?: string;
-  minecraftUsername?: string;
-  userId?: string;
+  session_id?: string;
+  rank_id?: string;
+  minecraft_username?: string;
+  user_id?: string;
   olderThanHours?: number;
 }
 
@@ -61,19 +52,19 @@ export async function GET(req: Request) {
     const olderThanHoursStr = searchParams.get("olderThan");
 
     if (sessionId) {
-      criteria.sessionId = sessionId;
+      criteria.session_id = sessionId;
     }
 
     if (rankId) {
-      criteria.rankId = rankId;
+      criteria.rank_id = rankId;
     }
 
     if (username) {
-      criteria.minecraftUsername = normalizeUsername(username);
+      criteria.minecraft_username = normalizeUsername(username);
     }
 
     if (userId) {
-      criteria.userId = userId;
+      criteria.user_id = userId;
     }
 
     if (olderThanHoursStr) {
@@ -87,10 +78,10 @@ export async function GET(req: Request) {
 
     // Validate that at least one criteria is provided
     if (
-      !criteria.sessionId &&
-      !criteria.rankId &&
-      !criteria.minecraftUsername &&
-      !criteria.userId &&
+      !criteria.session_id &&
+      !criteria.rank_id &&
+      !criteria.minecraft_username &&
+      !criteria.user_id &&
       !criteria.olderThanHours
     ) {
       return NextResponse.json(
@@ -102,77 +93,90 @@ export async function GET(req: Request) {
       );
     }
 
-    // Get all pending purchases
-    const pendingPurchases = await getPendingPurchases();
+    // Build the query
+    let query = supabase.from("pending_purchases").select("*");
 
-    // Keep track of original purchases for comparison
-    const originalPurchases = [...pendingPurchases.pendingPurchases];
-
-    // Apply criteria-based filtering to find purchases to remove
-    const purchasesToRemove = pendingPurchases.pendingPurchases.filter(
-      (purchase) => {
-        // For each criteria, if it's provided and doesn't match, this purchase shouldn't be removed
-
-        // Session ID matching
-        if (criteria.sessionId && purchase.sessionId !== criteria.sessionId) {
-          return false;
-        }
-
-        // Rank ID matching
-        if (criteria.rankId && purchase.rankId !== criteria.rankId) {
-          return false;
-        }
-
-        // Username matching (normalized)
-        if (
-          criteria.minecraftUsername &&
-          normalizeUsername(purchase.minecraftUsername) !==
-            criteria.minecraftUsername
-        ) {
-          return false;
-        }
-
-        // User ID matching
-        if (criteria.userId && purchase.userId !== criteria.userId) {
-          return false;
-        }
-
-        // Age-based matching
-        if (criteria.olderThanHours) {
-          const purchaseTime = new Date(purchase.timestamp).getTime();
-          const cutoffTime =
-            Date.now() - criteria.olderThanHours * 60 * 60 * 1000;
-
-          // Keep purchases that are newer than the cutoff (don't remove them)
-          if (purchaseTime > cutoffTime) {
-            return false;
-          }
-        }
-
-        // If we get here, this purchase matches all provided criteria and should be removed
-        return true;
-      }
-    );
-
-    // Keep purchases that don't match the removal criteria
-    const remainingPurchases = pendingPurchases.pendingPurchases.filter(
-      (purchase) =>
-        !purchasesToRemove.some((p) => p.sessionId === purchase.sessionId)
-    );
-
-    // Update the data if not in dry-run mode
-    if (!dryRun && purchasesToRemove.length > 0) {
-      pendingPurchases.pendingPurchases = remainingPurchases;
-      await updateEdgeConfig("pending-purchases", pendingPurchases);
+    // Apply filters
+    if (criteria.session_id) {
+      query = query.eq("session_id", criteria.session_id);
     }
+
+    if (criteria.rank_id) {
+      query = query.eq("rank_id", criteria.rank_id);
+    }
+
+    if (criteria.minecraft_username) {
+      query = query.eq("minecraft_username", criteria.minecraft_username);
+    }
+
+    if (criteria.user_id) {
+      query = query.eq("user_id", criteria.user_id);
+    }
+
+    if (criteria.olderThanHours) {
+      const cutoffTime = Date.now() - criteria.olderThanHours * 60 * 60 * 1000;
+      query = query.lt("timestamp", cutoffTime);
+    }
+
+    // Get matching purchases
+    const { data: purchasesToRemove, error } = await query;
+
+    if (error) {
+      throw new Error(`Failed to query purchases: ${error.message}`);
+    }
+
+    // If not dry run, delete the purchases
+    let deletedCount = 0;
+    if (!dryRun && purchasesToRemove && purchasesToRemove.length > 0) {
+      // Create a delete query with the same filters
+      let deleteQuery = supabase.from("pending_purchases").delete();
+
+      if (criteria.session_id) {
+        deleteQuery = deleteQuery.eq("session_id", criteria.session_id);
+      }
+
+      if (criteria.rank_id) {
+        deleteQuery = deleteQuery.eq("rank_id", criteria.rank_id);
+      }
+
+      if (criteria.minecraft_username) {
+        deleteQuery = deleteQuery.eq(
+          "minecraft_username",
+          criteria.minecraft_username
+        );
+      }
+
+      if (criteria.user_id) {
+        deleteQuery = deleteQuery.eq("user_id", criteria.user_id);
+      }
+
+      if (criteria.olderThanHours) {
+        const cutoffTime =
+          Date.now() - criteria.olderThanHours * 60 * 60 * 1000;
+        deleteQuery = deleteQuery.lt("timestamp", cutoffTime);
+      }
+
+      const { error: deleteError, count } = await deleteQuery.select();
+
+      if (deleteError) {
+        throw new Error(`Failed to delete purchases: ${deleteError.message}`);
+      }
+
+      deletedCount = count || 0;
+    }
+
+    // Get the total count of remaining purchases
+    const { count: remainingCount } = await supabase
+      .from("pending_purchases")
+      .select("*", { count: "exact", head: true });
 
     return NextResponse.json({
       success: true,
       mode: dryRun ? "dry-run" : "live",
-      message: `Found ${purchasesToRemove.length} purchases matching criteria`,
-      removedCount: purchasesToRemove.length,
-      remainingCount: remainingPurchases.length,
-      removedPurchases: purchasesToRemove,
+      message: `Found ${purchasesToRemove?.length || 0} purchases matching criteria`,
+      removedCount: dryRun ? 0 : deletedCount,
+      remainingCount: remainingCount || 0,
+      removedPurchases: purchasesToRemove || [],
     });
   } catch (error) {
     console.error("Failed to clean up pending purchases:", error);

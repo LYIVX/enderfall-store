@@ -61,6 +61,7 @@ export async function POST(req: Request) {
     const metadata = {
       user_id: session.user.id,
       rank_id: rankId,
+      rank_name: rank.name,
       minecraft_username: minecraftUsername.trim().toLowerCase(),
       is_gift: isGift ? "true" : "false",
       type: "rank_purchase",
@@ -96,6 +97,7 @@ export async function POST(req: Request) {
         pendingPurchases: Array<{
           userId: string;
           rankId: string;
+          rankName: string;
           minecraftUsername: string;
           timestamp: string;
           sessionId: string;
@@ -116,6 +118,7 @@ export async function POST(req: Request) {
       purchasesData.pendingPurchases.push({
         userId: session.user.id,
         rankId: rankId,
+        rankName: rank.name,
         minecraftUsername: minecraftUsername.trim().toLowerCase(),
         timestamp: new Date().toISOString(),
         sessionId: stripeSession.id,

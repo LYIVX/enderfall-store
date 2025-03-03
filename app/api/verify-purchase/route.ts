@@ -10,7 +10,7 @@ import {
   removePendingPurchase,
   normalizeUsername,
   type PendingPurchase,
-} from "@/lib/edge-config";
+} from "@/lib/supabase";
 
 // Function to get session details from pending purchases
 async function getSessionDetails(
@@ -21,8 +21,8 @@ async function getSessionDetails(
 
     // Find matching session ID (with normalization)
     const normalizedSessionId = sessionId.trim();
-    const purchase = pendingPurchases.pendingPurchases.find(
-      (p) => p.sessionId.trim() === normalizedSessionId
+    const purchase = pendingPurchases.find(
+      (p) => p.session_id.trim() === normalizedSessionId
     );
 
     return purchase || null;
@@ -105,13 +105,13 @@ export async function GET(request: Request) {
     }
 
     // Extract data from the Stripe session if available, or use pending purchase data
-    const userId = session?.metadata?.user_id || pendingPurchase?.userId;
-    const rankId = session?.metadata?.rank_id || pendingPurchase?.rankId;
+    const userId = session?.metadata?.user_id || pendingPurchase?.user_id;
+    const rankId = session?.metadata?.rank_id || pendingPurchase?.rank_id;
     const minecraftUsername =
       session?.metadata?.minecraft_username ||
-      pendingPurchase?.minecraftUsername;
+      pendingPurchase?.minecraft_username;
     const isGift =
-      session?.metadata?.is_gift === "true" || pendingPurchase?.isGift;
+      session?.metadata?.is_gift === "true" || pendingPurchase?.is_gift;
 
     // Validate we have the minimum required data
     if (!rankId || !minecraftUsername) {
@@ -197,9 +197,9 @@ export async function POST(request: Request) {
 
     // Activate the rank on the Minecraft server
     const activationResult = await activateRank(
-      pendingPurchase.userId,
-      pendingPurchase.rankId,
-      pendingPurchase.isGift,
+      pendingPurchase.user_id,
+      pendingPurchase.rank_id,
+      pendingPurchase.is_gift,
       pendingPurchase.recipient
     );
 
@@ -213,8 +213,8 @@ export async function POST(request: Request) {
     // Mark the purchase as completed in our database
     await removePendingPurchase(
       sessionId,
-      pendingPurchase.rankId,
-      pendingPurchase.minecraftUsername
+      pendingPurchase.rank_id,
+      pendingPurchase.minecraft_username
     );
 
     return NextResponse.json({

@@ -4,7 +4,7 @@ import { stripe } from "@/lib/stripe";
 import { authOptions } from "@/lib/auth";
 import { ranksConfig, type Rank } from "@/lib/ranks";
 import { isServerOnline } from "@/lib/serverStatus";
-import { addPendingPurchase } from "@/lib/edge-config";
+import { addPendingPurchase } from "@/lib/supabase";
 import Stripe from "stripe";
 
 export async function POST(req: Request) {
@@ -85,12 +85,12 @@ export async function POST(req: Request) {
     // Record the pending purchase
     try {
       await addPendingPurchase({
-        userId: session.user.id,
-        rankId: rankId,
-        minecraftUsername: minecraftUsername.trim().toLowerCase(),
+        user_id: session.user.id,
+        rank_id: rankId,
+        minecraft_username: minecraftUsername.trim().toLowerCase(),
         timestamp: Date.now(),
-        sessionId: stripeSession.id,
-        isGift: !!isGift,
+        session_id: stripeSession.id,
+        is_gift: !!isGift,
         recipient: recipient,
       });
     } catch (error) {
