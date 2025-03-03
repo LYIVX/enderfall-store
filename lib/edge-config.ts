@@ -323,17 +323,23 @@ export async function updateEdgeConfig(key: string, value: any): Promise<void> {
     console.log("Using Vercel API to update Edge Config");
 
     // We'll make a direct POST to the public Edge Config record
-    const requestBody: Record<string, any> = {};
-    requestBody[key] = value;
-
+    // Use the /items endpoint for creating or updating items
     const response = await fetch(
-      `https://edge-config.vercel.com/${edgeConfigId}?token=${token}`,
+      `https://edge-config.vercel.com/${edgeConfigId}/items?token=${token}`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({
+          items: [
+            {
+              operation: "upsert",
+              key: key,
+              value: value,
+            },
+          ],
+        }),
       }
     );
 

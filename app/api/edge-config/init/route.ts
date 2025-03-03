@@ -63,53 +63,56 @@ export async function GET() {
       console.log("Current Edge Config data:", JSON.stringify(testData));
     }
 
-    // Now attempt to update each key individually using POST
-    const results = [];
+    // Now prepare all items for a single request to the items endpoint
+    const itemsToUpsert = Object.entries(initialData).map(([key, value]) => ({
+      operation: "upsert",
+      key,
+      value,
+    }));
 
-    for (const [key, value] of Object.entries(initialData)) {
-      console.log(`Initializing key: ${key}`);
+    console.log("Initializing all Edge Config keys in a single request");
+    console.log(
+      `Using correct API endpoint: https://edge-config.vercel.com/${edgeConfigId}/items?token=${token}`
+    );
 
-      // Create a single key-value pair for this update
-      const requestBody: Record<string, any> = {};
-      requestBody[key] = value;
-
-      const response = await fetch(
-        `https://edge-config.vercel.com/${edgeConfigId}?token=${token}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(requestBody),
-        }
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`Error initializing key ${key}:`, errorText);
-        console.error("Response status:", response.status);
-        results.push({ key, success: false, status: response.status });
-      } else {
-        console.log(`Successfully initialized key: ${key}`);
-        results.push({ key, success: true });
+    // Make a single POST request with all items to be upserted
+    const response = await fetch(
+      `https://edge-config.vercel.com/${edgeConfigId}/items?token=${token}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          items: itemsToUpsert,
+        }),
       }
-    }
+    );
 
-    // Check if any of the operations failed
-    const anyFailed = results.some((result) => !result.success);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Error initializing Edge Config:", errorText);
+      console.error("Response status:", response.status);
+      console.error(
+        "Response headers:",
+        Object.fromEntries(response.headers.entries())
+      );
 
-    if (anyFailed) {
-      const failedResults = results.filter((result) => !result.success);
       throw new Error(
-        `Failed to initialize some Edge Config keys: ${JSON.stringify(failedResults)}`
+        `Failed to initialize Edge Config: Status ${response.status}`
       );
     }
+
+    const responseData = await response.json();
+    console.log(
+      "Edge Config initialization response:",
+      JSON.stringify(responseData)
+    );
 
     return NextResponse.json({
       success: true,
       message: "Edge Config initialized successfully",
       initializedKeys: Object.keys(initialData),
-      results,
     });
   } catch (error) {
     console.error("Error initializing Edge Config:", error);
