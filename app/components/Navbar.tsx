@@ -86,9 +86,17 @@ export default function Navbar() {
 
   useEffect(() => {
     if (session?.user) {
-      // Fetch Discord profile
-      fetch("/api/discord-profile")
-        .then((res) => res.json())
+      // Fetch Discord profile with no-cache headers
+      fetch("/api/discord-profile", {
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+        },
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error("Failed to fetch profile");
+          return res.json();
+        })
         .then((data) => {
           if (data.profile) {
             setDiscordProfile(data.profile);
@@ -96,6 +104,14 @@ export default function Navbar() {
         })
         .catch((error) => {
           console.error("Failed to fetch Discord profile:", error);
+          // Set fallback profile using session data
+          if (session.user) {
+            setDiscordProfile({
+              id: session.user.id,
+              username: session.user.name?.split("#")[0] || "User",
+              avatar: session.user.image || "/default-avatar.png",
+            });
+          }
         });
     }
   }, [session]);
@@ -233,13 +249,17 @@ export default function Navbar() {
                   className="bg-[var(--input-bg)] hover:bg-[var(--card-bg-secondary)] border border-[var(--input-border)] text-[var(--text-color)] rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 w-32 h-10 transition-colors"
                 >
                   <div className="flex items-center justify-center space-x-2">
-                    <Image
-                      src={discordProfile?.avatar || "/default-avatar.png"}
-                      alt="User Avatar"
-                      width={24}
-                      height={24}
-                      className="rounded-full flex-shrink-0"
-                    />
+                    <div className="w-6 h-6 relative flex-shrink-0">
+                      <Image
+                        src={discordProfile?.avatar || "/default-avatar.png"}
+                        alt="User Avatar"
+                        width={24}
+                        height={24}
+                        className="rounded-full"
+                        priority
+                        unoptimized
+                      />
+                    </div>
                     <span className="truncate flex-1 text-center">
                       {discordProfile?.username ||
                         session.user?.name?.split("#")[0] ||
