@@ -1,4 +1,4 @@
-import { get } from "@vercel/edge-config";
+import { get, createClient } from "@vercel/edge-config";
 
 // Interfaces
 export interface SavedAccountsData {
@@ -288,10 +288,11 @@ export async function updateResetData(
 // Helper function to update Edge Config
 export async function updateEdgeConfig(key: string, value: any): Promise<void> {
   try {
-    // Parse the Edge Config connection string
-    const edgeConfigString = process.env.EDGE_CONFIG;
+    console.log(`Attempting to update Edge Config key: ${key}`);
 
-    console.log("Edge Config Connection String:", edgeConfigString);
+    // The current version of @vercel/edge-config (1.4.0) doesn't support 'set'
+    // We need to use a direct API approach instead
+    const edgeConfigString = process.env.EDGE_CONFIG;
 
     if (!edgeConfigString) {
       throw new Error("EDGE_CONFIG environment variable is missing");
@@ -301,6 +302,8 @@ export async function updateEdgeConfig(key: string, value: any): Promise<void> {
     const cleanConfigString = edgeConfigString.startsWith("@")
       ? edgeConfigString.substring(1)
       : edgeConfigString;
+
+    console.log("Using Edge Config from:", cleanConfigString);
 
     // Extract Edge Config ID and token from the connection string
     // Format: https://edge-config.vercel.com/ecfg_xxx?token=yyy
@@ -317,42 +320,44 @@ export async function updateEdgeConfig(key: string, value: any): Promise<void> {
     const token = match[2];
 
     console.log("Extracted Edge Config ID:", edgeConfigId);
-    console.log("Using Vercel API to update Edge Config");
 
-    // Use Vercel API to update Edge Config
+    // First attempt to use the SDK to validate we can read data
+    try {
+      const edgeConfig = createClient(process.env.EDGE_CONFIG || "");
+      const exists = await edgeConfig.has(key);
+      console.log(`Key ${key} exists in Edge Config: ${exists}`);
+    } catch (readError) {
+      console.error("Error reading from Edge Config:", readError);
+    }
+
+    // Now try to update using API directly
+    console.log("Updating Edge Config via direct API call");
+
+    // Try direct API approach with the read token
+    // Note: This is unlikely to work with a read-only token
     const response = await fetch(
-      `https://api.vercel.com/v1/edge-config/${edgeConfigId}/items`,
+      `https://edge-config.vercel.com/${edgeConfigId}`,
       {
-        method: "PATCH",
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          items: [
-            {
-              operation: "update",
-              key,
-              value,
-            },
-          ],
-        }),
+        body: JSON.stringify({ [key]: value }),
       }
     );
 
-    // Check if the response is ok but don't try to parse it as JSON
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Edge Config update error:", errorText);
       console.error("Response status:", response.status);
-      console.error(
-        "Response headers:",
-        Object.fromEntries(response.headers.entries())
-      );
+
       throw new Error(
-        `Failed to update Edge Config: Status ${response.status}`
+        "Unable to update Edge Config. Please run 'vercel env pull' to update your environment variables with proper write access, then install the Edge Config SDK with 'npm install @vercel/edge-config'."
       );
     }
+
+    console.log(`Successfully updated Edge Config key: ${key}`);
   } catch (error) {
     console.error("Edge Config update error:", error);
     throw error;

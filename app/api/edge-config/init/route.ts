@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createClient } from "@vercel/edge-config";
 
 const initialData = {
   "minecraft-accounts": {},
@@ -43,6 +44,22 @@ export async function GET() {
     console.log("Extracted Edge Config ID:", edgeConfigId);
     console.log("Using Edge Config URL for GET:", baseUrlWithToken);
 
+    // First, verify we can read Edge Config data
+    try {
+      // Try using the SDK to test read access
+      console.log("Testing read access with SDK");
+      const edgeConfig = createClient(process.env.EDGE_CONFIG || "");
+
+      // See if at least one of our keys exists
+      const testKey = "test-read-access";
+      const hasTestKey = await edgeConfig.has(testKey);
+      console.log(
+        `Test key existence check: ${testKey} exists = ${hasTestKey}`
+      );
+    } catch (readError) {
+      console.error("Error reading from Edge Config with SDK:", readError);
+    }
+
     // Let's try a simple GET request to verify we can read the Edge Config
     const testResponse = await fetch(baseUrlWithToken, {
       method: "GET",
@@ -55,93 +72,67 @@ export async function GET() {
     if (!testResponse.ok) {
       const testErrorText = await testResponse.text();
       console.error("Edge Config test error:", testErrorText);
+      throw new Error(`Cannot read Edge Config: Status ${testResponse.status}`);
     } else {
       const testData = await testResponse.json();
       console.log("Current Edge Config data:", JSON.stringify(testData));
     }
 
-    console.log("Creating a single item to test write permission");
-
-    // Try directly using the Vercel REST API
-    // https://vercel.com/docs/api/edge-config/introduction
-    const testItemResponse = await fetch(
-      `https://api.vercel.com/v1/edge-config/${edgeConfigId}/items`,
-      {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          items: [
-            {
-              operation: "update",
-              key: "test-write",
-              value: { initialized: true, timestamp: Date.now() },
-            },
-          ],
-        }),
-      }
-    );
-
-    console.log("Test write response status:", testItemResponse.status);
-
-    if (!testItemResponse.ok) {
-      const writeErrorText = await testItemResponse.text();
-      console.error("Edge Config write test error:", writeErrorText);
-      console.error(
-        "Response headers:",
-        Object.fromEntries(testItemResponse.headers.entries())
-      );
-      throw new Error(
-        `Cannot write to Edge Config. Status: ${testItemResponse.status}. You may need a token with write permissions.`
-      );
-    }
-
-    // Since we can write, now attempt to update with our initial data
+    // Now try to initialize all the required keys
     const results = [];
 
-    // Prepare all items for a batch update
-    const itemsToUpdate = Object.entries(initialData).map(([key, value]) => ({
-      operation: "update",
-      key,
-      value,
-    }));
+    for (const [key, value] of Object.entries(initialData)) {
+      console.log(`Initializing key: ${key}`);
 
-    console.log("Initializing all Edge Config keys in a single request");
+      // Try to update the Edge Config using direct API call
+      const response = await fetch(
+        `https://edge-config.vercel.com/${edgeConfigId}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ [key]: value }),
+        }
+      );
 
-    const response = await fetch(
-      `https://api.vercel.com/v1/edge-config/${edgeConfigId}/items`,
-      {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          items: itemsToUpdate,
-        }),
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Error initializing key ${key}:`, errorText);
+        console.error("Response status:", response.status);
+
+        results.push({
+          key,
+          success: false,
+          status: response.status,
+          error: response.status === 403 ? "No write permission" : errorText,
+        });
+      } else {
+        console.log(`Successfully initialized key: ${key}`);
+        results.push({ key, success: true });
       }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Error initializing Edge Config:", errorText);
-      console.error("Response status:", response.status);
-      console.error(
-        "Response headers:",
-        Object.fromEntries(response.headers.entries())
-      );
-      throw new Error(
-        `Failed to initialize Edge Config: Status ${response.status}`
-      );
     }
 
-    const responseData = await response.json();
-    console.log(
-      "Edge Config initialization response:",
-      JSON.stringify(responseData)
-    );
+    // Check if any operations failed
+    const anyFailed = results.some((result) => !result.success);
+
+    if (anyFailed) {
+      // If we have a 403 error, provide clear instructions
+      if (results.some((result) => result.status === 403)) {
+        throw new Error(
+          "Your Edge Config token doesn't have write permissions. Please follow these steps:\n" +
+            "1. Run 'vercel env pull' to get a token with write access\n" +
+            "2. Make sure you're logged in with 'vercel login'\n" +
+            "3. Check that your Edge Config is properly linked to your project"
+        );
+      }
+
+      const failedResults = results.filter((result) => !result.success);
+      throw new Error(
+        `Failed to initialize some Edge Config keys: ${JSON.stringify(failedResults)}`
+      );
+    }
 
     // Verify the data was set correctly
     const verifyResponse = await fetch(baseUrlWithToken, {
@@ -163,6 +154,7 @@ export async function GET() {
       success: true,
       message: "Edge Config initialized successfully",
       initializedKeys: Object.keys(initialData),
+      note: "If initialization failed with permission errors, make sure to run 'vercel env pull' to get updated environment variables with proper write access.",
     });
   } catch (error) {
     console.error("Error initializing Edge Config:", error);
@@ -173,6 +165,8 @@ export async function GET() {
             ? error.message
             : "Failed to initialize Edge Config",
         status: "error",
+        helpMessage:
+          "To fix permission issues, run 'vercel env pull' to update your environment variables with write access.",
       },
       { status: 500 }
     );
