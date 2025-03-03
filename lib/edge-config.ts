@@ -319,11 +319,11 @@ export async function updateEdgeConfig(key: string, value: any): Promise<void> {
     console.log("Extracted Edge Config ID:", edgeConfigId);
     console.log(
       "Using Edge Config URL:",
-      `https://edge-config.vercel.com/${edgeConfigId}/items?token=${token}`
+      `https://edge-config.vercel.com/${edgeConfigId}?token=${token}`
     );
 
     const response = await fetch(
-      `https://edge-config.vercel.com/${edgeConfigId}/items?token=${token}`,
+      `https://edge-config.vercel.com/${edgeConfigId}?token=${token}`,
       {
         method: "PATCH",
         headers: {

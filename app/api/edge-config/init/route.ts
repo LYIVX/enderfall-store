@@ -40,7 +40,7 @@ export async function GET() {
     console.log("Extracted Edge Config ID:", edgeConfigId);
     console.log(
       "Using Edge Config URL:",
-      `https://edge-config.vercel.com/${edgeConfigId}/items?token=${token}`
+      `https://edge-config.vercel.com/${edgeConfigId}?token=${token}`
     );
 
     // Let's try a simple GET request first to verify the connection
@@ -65,7 +65,7 @@ export async function GET() {
 
     // Now attempt the PATCH to update the items
     const response = await fetch(
-      `https://edge-config.vercel.com/${edgeConfigId}/items?token=${token}`,
+      `https://edge-config.vercel.com/${edgeConfigId}?token=${token}`,
       {
         method: "PATCH",
         headers: {
