@@ -288,15 +288,25 @@ export async function updateResetData(
 // Helper function to update Edge Config
 export async function updateEdgeConfig(key: string, value: any): Promise<void> {
   try {
-    // Get Edge Config ID and token from environment variables
-    const edgeConfigId = process.env.EDGE_CONFIG_ID;
-    const token = process.env.EDGE_CONFIG_TOKEN;
+    // Parse the Edge Config connection string
+    const edgeConfigString = process.env.EDGE_CONFIG;
 
-    if (!edgeConfigId || !token) {
-      throw new Error(
-        "Edge Config ID or token is missing in environment variables"
-      );
+    if (!edgeConfigString) {
+      throw new Error("EDGE_CONFIG environment variable is missing");
     }
+
+    // Extract Edge Config ID and token from the connection string
+    // Format: @https://edge-config.vercel.com/ecfg_xxx?token=yyy
+    const match = edgeConfigString.match(
+      /edge-config\.vercel\.com\/([^?]+)\?token=([^&]+)/
+    );
+
+    if (!match || match.length < 3) {
+      throw new Error("Invalid EDGE_CONFIG format");
+    }
+
+    const edgeConfigId = match[1];
+    const token = match[2];
 
     const response = await fetch(
       `https://edge-config.vercel.com/${edgeConfigId}/items?token=${token}`,
