@@ -186,11 +186,11 @@ async function saveUserRankData(
           message: "Failed to apply rank on Minecraft server",
         };
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error calling Minecraft server API:", {
-        error: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
+        error: error?.message || "Unknown error",
+        response: error?.response?.data,
+        status: error?.response?.status,
       });
       return {
         success: false,
