@@ -501,117 +501,163 @@ function logDiagnostic(message: string, data?: any) {
 
 // The main webhook handler
 export async function POST(req: Request) {
-  const startTime = new Date().toISOString();
-  console.log(`[${startTime}] Stripe webhook received - starting processing`);
+  const body = await req.text();
+  const sig = headers().get("stripe-signature") as string;
+
+  if (!sig) {
+    return NextResponse.json(
+      { error: "Missing Stripe signature" },
+      { status: 400 }
+    );
+  }
+
+  if (!webhookSecret) {
+    console.error("Missing STRIPE_WEBHOOK_SECRET environment variable");
+    return NextResponse.json(
+      { error: "Webhook secret not configured" },
+      { status: 500 }
+    );
+  }
+
+  // Ensure data directory exists for logging
+  ensureDataDirectoryExists();
+
+  let event: Stripe.Event;
 
   try {
-    const payload = await req.text();
-    console.log(
-      `[${startTime}] Webhook payload received:`,
-      payload.substring(0, 100) + "..."
-    );
+    // Verify the event came from Stripe
+    event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
 
-    const signature = req.headers.get("stripe-signature") as string;
-    console.log(
-      `[${startTime}] Stripe signature:`,
-      signature?.substring(0, 20) + "..."
-    );
+    // Log the event type for monitoring
+    console.log(`Webhook received: ${event.type}`);
 
-    let event: Stripe.Event;
+    // Handle different event types
+    switch (event.type) {
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
 
-    try {
-      event = stripe.webhooks.constructEvent(payload, signature, webhookSecret);
-      console.log(`[${startTime}] Event constructed:`, {
-        type: event.type,
-        id: event.id,
-      });
-    } catch (err) {
-      console.error(
-        `[${startTime}] Webhook signature verification failed:`,
-        err
-      );
-      return NextResponse.json(
-        { message: "Webhook signature verification failed" },
-        { status: 400 }
-      );
-    }
-
-    // Process the event
-    if (event.type === "checkout.session.completed") {
-      console.log(`[${startTime}] Processing checkout.session.completed event`);
-      const session = event.data.object as Stripe.Checkout.Session;
-
-      // Extract metadata from the completed checkout session
-      const metadata = session.metadata || {};
-      console.log(`[${startTime}] Session metadata:`, metadata);
-
-      const rankId = metadata.rank_id;
-      const minecraftUsername = metadata.minecraft_username;
-      const isGift = metadata.is_gift === "true";
-
-      // Validate required metadata
-      if (!rankId || !minecraftUsername) {
-        console.error(`[${startTime}] Missing required metadata:`, {
-          rankId,
-          minecraftUsername,
+        // Log the successful payment
+        logDiagnostic("Payment succeeded", {
+          sessionId: session.id,
+          customerId: session.customer,
+          amount: session.amount_total,
+          metadata: session.metadata,
         });
-        return NextResponse.json(
-          { message: "Missing required metadata" },
-          { status: 400 }
-        );
+
+        // Make sure the payment status is paid
+        if (session.payment_status !== "paid") {
+          logDiagnostic("Payment not completed yet", {
+            sessionId: session.id,
+            status: session.payment_status,
+          });
+          return NextResponse.json({ received: true });
+        }
+
+        // Extract metadata
+        const metadata = session.metadata as {
+          user_id?: string;
+          rank_id?: string;
+          rank_name?: string;
+          minecraft_username?: string;
+          is_gift?: string;
+          type?: string;
+        };
+
+        // Validate metadata
+        if (!metadata || !metadata.rank_id || !metadata.minecraft_username) {
+          logDiagnostic("Invalid metadata in session", {
+            sessionId: session.id,
+            metadata,
+          });
+          return NextResponse.json({ received: true });
+        }
+
+        // Process the purchase
+        try {
+          // Save the user's rank data
+          const saveResult = await saveUserRankData(
+            metadata.minecraft_username,
+            metadata.rank_id
+          );
+
+          // Log the result
+          logDiagnostic("Rank saved", {
+            sessionId: session.id,
+            result: saveResult,
+          });
+
+          // Clean up the pending purchase
+          await removePendingPurchase(
+            session.id,
+            metadata.rank_id,
+            metadata.minecraft_username
+          );
+
+          return NextResponse.json({ received: true, processed: true });
+        } catch (error) {
+          logDiagnostic("Error processing purchase", {
+            sessionId: session.id,
+            error: error instanceof Error ? error.message : String(error),
+          });
+          return NextResponse.json({
+            received: true,
+            error: "Processing error",
+          });
+        }
       }
 
-      // Save the user's rank data
-      console.log(`[${startTime}] Calling saveUserRankData with:`, {
-        minecraftUsername,
-        rankId,
-      });
-      const saveResult = await saveUserRankData(minecraftUsername, rankId);
-      console.log(`[${startTime}] saveUserRankData result:`, saveResult);
-
-      if (!saveResult.success) {
-        console.error(
-          `[${startTime}] Failed to save user rank data:`,
-          saveResult.message
-        );
-        return NextResponse.json(
-          { message: saveResult.message },
-          { status: 500 }
-        );
+      case "checkout.session.async_payment_succeeded": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        logDiagnostic("Async payment succeeded", { sessionId: session.id });
+        // Process similar to checkout.session.completed
+        // The implementation would be almost identical to the checkout.session.completed case
+        return NextResponse.json({ received: true });
       }
 
-      // Try to clean up the pending purchase
-      console.log(`[${startTime}] Cleaning up pending purchase:`, {
-        sessionId: session.id,
-      });
-      const cleanupResult = await removePendingPurchase(
-        session.id,
-        rankId,
-        minecraftUsername
-      );
-      console.log(`[${startTime}] Cleanup result:`, cleanupResult);
+      case "checkout.session.async_payment_failed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        logDiagnostic("Async payment failed", { sessionId: session.id });
+        // Handle failed payment (e.g., notify user, cleanup pending purchase)
+        return NextResponse.json({ received: true });
+      }
 
-      return NextResponse.json({
-        success: true,
-        message: "Rank applied successfully",
-        metadata: {
-          username: minecraftUsername,
-          rank: rankId,
-          timestamp: startTime,
-        },
-      });
+      case "payment_intent.succeeded": {
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        logDiagnostic("Payment intent succeeded", {
+          paymentIntentId: paymentIntent.id,
+        });
+        return NextResponse.json({ received: true });
+      }
+
+      case "payment_intent.payment_failed": {
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        const errorMessage = paymentIntent.last_payment_error?.message;
+        logDiagnostic("Payment failed", {
+          paymentIntentId: paymentIntent.id,
+          error: errorMessage,
+        });
+        return NextResponse.json({ received: true });
+      }
+
+      default: {
+        // For other event types, just acknowledge receipt
+        logDiagnostic(`Unhandled event type: ${event.type}`);
+        return NextResponse.json({ received: true });
+      }
     }
+  } catch (err) {
+    const error = err as Error;
+    console.error(`Webhook Error: ${error.message}`);
 
-    console.log(`[${startTime}] Ignoring non-checkout event:`, event.type);
-    return NextResponse.json({ received: true });
-  } catch (error: any) {
-    console.error(`[${startTime}] Webhook processing error:`, {
-      message: error.message,
+    // Log detailed error information
+    logDiagnostic("Webhook error", {
+      error: error.message,
       stack: error.stack,
     });
+
     return NextResponse.json(
-      { message: "Webhook processing error" },
-      { status: 500 }
+      { error: `Webhook Error: ${error.message}` },
+      { status: 400 }
     );
   }
 }
