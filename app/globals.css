@@ -1,0 +1,116 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background-gradient-from: #1a202c;
+  --background-gradient-to: #2d3748;
+  --text-color: #ffffff;
+  --card-bg: #2d3748;
+  --card-bg-secondary: #4a5568;
+  --input-bg: #4a5568;
+  --input-border: #718096;
+  --button-primary: #805ad5;
+  --button-primary-hover: #6b46c1;
+  --button-secondary: #4a5568;
+  --button-secondary-hover: #2d3748;
+  --button-success: #48bb78;
+  --button-success-hover: #38a169;
+  --button-danger: #f56565;
+  --button-danger-hover: #e53e3e;
+  --text-secondary: #a0aec0;
+}
+
+.light-theme {
+  --background-gradient-from: #f7fafc;
+  --background-gradient-to: #edf2f7;
+  --text-color: #1a202c;
+  --card-bg: #ffffff;
+  --card-bg-secondary: #edf2f7;
+  --input-bg: #f7fafc;
+  --input-border: #cbd5e0;
+  --button-primary: #805ad5;
+  --button-primary-hover: #6b46c1;
+  --button-secondary: #e2e8f0;
+  --button-secondary-hover: #cbd5e0;
+  --button-success: #48bb78;
+  --button-success-hover: #38a169;
+  --button-danger: #f56565;
+  --button-danger-hover: #e53e3e;
+  --text-secondary: #718096;
+}
+
+.dark-theme {
+  --background-gradient-from: #1a202c;
+  --background-gradient-to: #2d3748;
+  --text-color: #ffffff;
+  --card-bg: #2d3748;
+  --card-bg-secondary: #4a5568;
+  --input-bg: #4a5568;
+  --input-border: #718096;
+  --button-primary: #805ad5;
+  --button-primary-hover: #6b46c1;
+  --button-secondary: #4a5568;
+  --button-secondary-hover: #2d3748;
+  --button-success: #48bb78;
+  --button-success-hover: #38a169;
+  --button-danger: #f56565;
+  --button-danger-hover: #e53e3e;
+  --text-secondary: #a0aec0;
+}
+
+@layer utilities {
+  /* Add any custom utility classes here */
+  @keyframes shine {
+    0% {
+      transform: translateX(-100%) skewX(-12deg);
+    }
+    100% {
+      transform: translateX(200%) skewX(-12deg);
+    }
+  }
+
+  .animate-shine {
+    animation: shine 3s infinite ease-in-out;
+  }
+
+  /* Enhanced tooltip styles */
+  .tooltip {
+    @apply absolute invisible opacity-0 transition-all duration-300 transform translate-y-2 z-20;
+    box-shadow:
+      0 10px 25px -5px rgba(0, 0, 0, 0.3),
+      0 10px 10px -5px rgba(0, 0, 0, 0.2);
+  }
+
+  .tooltip-visible {
+    @apply visible opacity-100 translate-y-0;
+    animation: tooltipPulse 0.3s ease-out;
+  }
+
+  @keyframes tooltipPulse {
+    0% {
+      transform: scale(0.95) translateY(4px);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(1) translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .tooltip::before {
+    content: "";
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    left: 0;
+    top: 0;
+    background: linear-gradient(
+      to bottom right,
+      rgba(255, 255, 255, 0.05),
+      transparent
+    );
+    border-radius: inherit;
+    z-index: -1;
+  }
+}

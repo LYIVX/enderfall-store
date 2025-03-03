@@ -1,0 +1,146 @@
+import fs from "fs";
+import path from "path";
+
+// Define types for user data
+interface PlayerData {
+  username: string;
+  [key: string]: any;
+}
+
+interface UsersData {
+  players: PlayerData[];
+}
+
+/**
+ * Resolves the path to the Minecraft plugin data directory
+ */
+export function resolvePluginPath(): string {
+  // First try to get path from environment variable
+  const configuredPath = process.env.MINECRAFT_PLUGIN_PATH;
+
+  // If configured path exists, use it
+  if (configuredPath) {
+    const resolvedPath = path.resolve(configuredPath);
+    return resolvedPath;
+  }
+
+  // Default path - uses 'data/plugin' in the project directory
+  return path.join(process.cwd(), "data", "plugin");
+}
+
+/**
+ * Gets the path to the users.json file
+ */
+export function getUsersFilePath(): string {
+  const pluginPath = resolvePluginPath();
+  const usersFilePath = path.join(pluginPath, "users.json");
+
+  // If the file exists, return the path
+  if (fs.existsSync(usersFilePath)) {
+    return usersFilePath;
+  }
+
+  // If the file doesn't exist, check alternative locations
+  const altLocations = [
+    path.join(process.cwd(), "data", "users.json"),
+    path.join(process.cwd(), "public", "data", "users.json"),
+  ];
+
+  for (const altPath of altLocations) {
+    if (fs.existsSync(altPath)) {
+      return altPath;
+    }
+  }
+
+  // If no file is found, use the default location
+  return usersFilePath;
+}
+
+/**
+ * Read the users file from the Minecraft server plugin
+ * @returns An array of known player usernames
+ */
+export async function getKnownPlayers(): Promise<string[]> {
+  try {
+    const usersFilePath = getUsersFilePath();
+
+    // Read and parse the JSON file
+    const userData: UsersData = JSON.parse(
+      fs.readFileSync(usersFilePath, "utf-8")
+    );
+
+    if (!userData.players || !Array.isArray(userData.players)) {
+      console.warn("Invalid users file format, expected players array");
+      return [];
+    }
+
+    // Extract usernames from the players array
+    return userData.players
+      .filter((player: PlayerData) => player.username)
+      .map((player: PlayerData) => player.username.toLowerCase());
+  } catch (error) {
+    console.error("Error reading Minecraft users file:", error);
+    return [];
+  }
+}
+
+/**
+ * Check if a player exists in the Minecraft server's data
+ * @param username The username to check
+ * @returns True if the player exists, false otherwise
+ */
+export async function checkPlayerExists(username: string): Promise<boolean> {
+  if (!username) return false;
+
+  try {
+    // Check if the server API URL is configured
+    if (process.env.MINECRAFT_API_URL) {
+      // Try to connect to the Minecraft server API
+      try {
+        const apiUrl = `${process.env.MINECRAFT_API_URL}/player/${username.toLowerCase()}`;
+        const response = await fetch(apiUrl, {
+          headers: {
+            "Content-Type": "application/json",
+            "User-Agent": "Minecraft Shop API/1.0",
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          return !data.error; // Return true if there's no error
+        }
+      } catch (error) {
+        console.error("Error connecting to Minecraft server API:", error);
+        // Fall back to local check if API is unavailable
+      }
+    }
+
+    // Fall back to checking local player data if API is not available
+    const knownPlayers = await getKnownPlayers();
+    return knownPlayers.includes(username.toLowerCase());
+  } catch (error) {
+    console.error("Error checking player existence:", error);
+    // For development only, return true to avoid blocking user flows
+    // In production, this should return false
+    return process.env.NODE_ENV === "development";
+  }
+}
+
+/**
+ * Get player ranks from the Minecraft server's data
+ * @param username The username to get ranks for
+ * @returns An array of rank IDs
+ */
+export async function getPlayerRanks(username: string): Promise<string[]> {
+  if (!username) return [];
+
+  try {
+    // We would need to read from the ranks.yml file
+    // This is a placeholder - you would need to implement proper YAML parsing
+    // or another solution based on your plugin's data storage
+    return [];
+  } catch (error) {
+    console.error("Error getting player ranks:", error);
+    return [];
+  }
+}

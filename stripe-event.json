@@ -1,0 +1,102 @@
+{
+  "id": "evt_test_123",
+  "object": "event",
+  "api_version": "2020-08-27",
+  "created": 1740758952,
+  "data": {
+    "object": {
+      "id": "cs_test_123",
+      "object": "checkout.session",
+      "after_expiration": null,
+      "allow_promotion_codes": null,
+      "amount_subtotal": 999,
+      "amount_total": 999,
+      "automatic_tax": {
+        "enabled": false,
+        "status": null
+      },
+      "billing_address_collection": null,
+      "cancel_url": "http://localhost:3000/shop",
+      "client_reference_id": null,
+      "consent": null,
+      "consent_collection": null,
+      "created": 1740758952,
+      "currency": "usd",
+      "custom_text": {
+        "shipping_address": null,
+        "submit": null
+      },
+      "customer": "cus_test_123",
+      "customer_creation": "always",
+      "customer_details": {
+        "address": {
+          "city": null,
+          "country": "US",
+          "line1": null,
+          "line2": null,
+          "postal_code": null,
+          "state": null
+        },
+        "email": "test@example.com",
+        "name": "Test User",
+        "phone": null,
+        "tax_exempt": "none",
+        "tax_ids": []
+      },
+      "customer_email": "test@example.com",
+      "expires_at": 1740845352,
+      "invoice": null,
+      "invoice_creation": {
+        "enabled": false,
+        "invoice_data": {
+          "account_tax_ids": null,
+          "custom_fields": null,
+          "description": null,
+          "footer": null,
+          "metadata": {},
+          "rendering_options": null
+        }
+      },
+      "livemode": false,
+      "locale": null,
+      "metadata": {
+        "type": "rank_purchase",
+        "user_id": "847618421448507415",
+        "rank_id": "vip"
+      },
+      "mode": "payment",
+      "payment_intent": "pi_test_123",
+      "payment_link": null,
+      "payment_method_collection": "always",
+      "payment_method_options": {},
+      "payment_method_types": ["card"],
+      "payment_status": "paid",
+      "phone_number_collection": {
+        "enabled": false
+      },
+      "recovered_from": null,
+      "setup_intent": null,
+      "shipping_address_collection": null,
+      "shipping_cost": null,
+      "shipping_details": null,
+      "shipping_options": [],
+      "status": "complete",
+      "submit_type": null,
+      "subscription": null,
+      "success_url": "http://localhost:3000/success?session_id={CHECKOUT_SESSION_ID}",
+      "total_details": {
+        "amount_discount": 0,
+        "amount_shipping": 0,
+        "amount_tax": 0
+      },
+      "url": null
+    }
+  },
+  "livemode": false,
+  "pending_webhooks": 1,
+  "request": {
+    "id": "req_test_123",
+    "idempotency_key": "test_123"
+  },
+  "type": "checkout.session.completed"
+}
