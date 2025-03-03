@@ -10,23 +10,20 @@ const initialData = {
 export async function GET() {
   try {
     // Initialize Edge Config using the API
-    const response = await fetch(
-      `https://api.vercel.com/v1/edge-config/${process.env.EDGE_CONFIG}/items`,
-      {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${process.env.EDGE_CONFIG}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          items: Object.entries(initialData).map(([key, value]) => ({
-            operation: "upsert",
-            key,
-            value,
-          })),
-        }),
-      }
-    );
+    const response = await fetch(`https://edge-config.vercel.com/v1/items`, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${process.env.EDGE_CONFIG}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        items: Object.entries(initialData).map(([key, value]) => ({
+          operation: "upsert",
+          key,
+          value,
+        })),
+      }),
+    });
 
     if (!response.ok) {
       const error = await response.json();
