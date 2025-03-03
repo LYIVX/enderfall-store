@@ -1,15 +1,13 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
-import fs from "fs";
-import path from "path";
+import {
+  getSavedAccounts,
+  addSavedAccount,
+  removeSavedAccount,
+} from "@/lib/edge-config";
 
-// Interface for the saved Minecraft accounts
-interface SavedAccountsData {
-  [userId: string]: {
-    accounts: string[];
-  };
-}
+export const dynamic = "force-dynamic";
 
 /**
  * API Route: GET /api/minecraft-accounts
@@ -138,135 +136,5 @@ export async function DELETE(request: Request) {
       { error: "Failed to remove Minecraft account" },
       { status: 500 }
     );
-  }
-}
-
-/**
- * Helper function to get saved accounts from the data file
- */
-async function getSavedAccounts(userId: string): Promise<string[]> {
-  try {
-    const dataFilePath = path.join(
-      process.cwd(),
-      "data",
-      "saved-minecraft-accounts.json"
-    );
-
-    // If the file doesn't exist, return an empty array
-    if (!fs.existsSync(dataFilePath)) {
-      return [];
-    }
-
-    // Read and parse the file
-    const fileData = fs.readFileSync(dataFilePath, "utf8");
-    const savedAccountsData: SavedAccountsData = JSON.parse(fileData);
-
-    // Return the user's saved accounts if they exist
-    if (savedAccountsData[userId]) {
-      return savedAccountsData[userId].accounts || [];
-    }
-
-    return [];
-  } catch (error) {
-    console.error("Error getting saved accounts:", error);
-    return [];
-  }
-}
-
-/**
- * Helper function to add a saved account to the data file
- */
-async function addSavedAccount(
-  userId: string,
-  username: string
-): Promise<string[]> {
-  try {
-    const dataDir = path.join(process.cwd(), "data");
-    const dataFilePath = path.join(dataDir, "saved-minecraft-accounts.json");
-
-    // Ensure the data directory exists
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-    }
-
-    // Initialize with empty data if the file doesn't exist
-    let savedAccountsData: SavedAccountsData = {};
-
-    // Read existing data if available
-    if (fs.existsSync(dataFilePath)) {
-      try {
-        const fileData = fs.readFileSync(dataFilePath, "utf8");
-        savedAccountsData = JSON.parse(fileData);
-      } catch {
-        // Continue with empty structure if there's an error
-      }
-    }
-
-    // Initialize user's accounts if not yet created
-    if (!savedAccountsData[userId]) {
-      savedAccountsData[userId] = { accounts: [] };
-    }
-
-    // Check if account already exists
-    if (!savedAccountsData[userId].accounts.includes(username)) {
-      // Add the account to the user's saved accounts
-      savedAccountsData[userId].accounts.push(username);
-
-      // Limit the number of saved accounts to 5
-      if (savedAccountsData[userId].accounts.length > 5) {
-        savedAccountsData[userId].accounts.shift(); // Remove the oldest account
-      }
-    }
-
-    // Write the updated data back to the file
-    fs.writeFileSync(dataFilePath, JSON.stringify(savedAccountsData, null, 2));
-
-    return savedAccountsData[userId].accounts;
-  } catch (error) {
-    console.error("Error adding saved account:", error);
-    return [];
-  }
-}
-
-/**
- * Helper function to remove a saved account from the data file
- */
-async function removeSavedAccount(
-  userId: string,
-  username: string
-): Promise<string[]> {
-  try {
-    const dataFilePath = path.join(
-      process.cwd(),
-      "data",
-      "saved-minecraft-accounts.json"
-    );
-
-    // If the file doesn't exist, return an empty array
-    if (!fs.existsSync(dataFilePath)) {
-      return [];
-    }
-
-    // Read and parse the file
-    const fileData = fs.readFileSync(dataFilePath, "utf8");
-    let savedAccountsData: SavedAccountsData = JSON.parse(fileData);
-
-    // If the user doesn't have any saved accounts, return an empty array
-    if (!savedAccountsData[userId]) {
-      return [];
-    }
-
-    // Filter out the account to be removed
-    savedAccountsData[userId].accounts = savedAccountsData[
-      userId
-    ].accounts.filter((account) => account !== username);
-
-    // Write the updated data back to the file
-    fs.writeFileSync(dataFilePath, JSON.stringify(savedAccountsData, null, 2));
-
-    return savedAccountsData[userId].accounts;
-  } catch (error) {
-    console.error("Error removing saved account:", error);
-    return [];
   }
 }

@@ -1,61 +1,28 @@
 import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import axios from "axios";
-import fs from "fs";
-import path from "path";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/options";
 import { Stripe } from "stripe";
-
-// Define interfaces for type safety
-interface PendingPurchase {
-  userId: string;
-  rankId: string;
-  minecraftUsername: string;
-  timestamp: number;
-  sessionId: string;
-  isGift: boolean;
-  recipient?: string;
-}
-
-interface UserRanks {
-  ranks: string[];
-}
-
-interface UserData {
-  users: Record<string, UserRanks>;
-}
-
-// Add a helper function to normalize session IDs for comparison
-function normalizeSessionId(id: string): string {
-  // Remove common prefixes and get only the unique part
-  return id.replace(/^(cs_test_|cs_live_)/, "");
-}
-
-// Helper function to normalize Minecraft usernames for consistent storage and lookup
-function normalizeUsername(username: string): string {
-  return username.trim().toLowerCase();
-}
+import {
+  getPendingPurchases,
+  saveUserRankData,
+  removePendingPurchase,
+  normalizeUsername,
+  type PendingPurchase,
+} from "@/lib/edge-config";
 
 // Function to get session details from pending purchases
 async function getSessionDetails(
   sessionId: string
 ): Promise<PendingPurchase | null> {
   try {
-    const dataDir = path.join(process.cwd(), "data");
-    const pendingPurchasesPath = path.join(dataDir, "pending-purchases.json");
-
-    if (!fs.existsSync(pendingPurchasesPath)) {
-      return null;
-    }
-
-    const data = fs.readFileSync(pendingPurchasesPath, "utf8");
-    const pendingPurchases = JSON.parse(data);
+    const pendingPurchases = await getPendingPurchases();
 
     // Find matching session ID (with normalization)
     const normalizedSessionId = sessionId.trim();
     const purchase = pendingPurchases.pendingPurchases.find(
-      (p: PendingPurchase) => p.sessionId.trim() === normalizedSessionId
+      (p) => p.sessionId.trim() === normalizedSessionId
     );
 
     return purchase || null;
@@ -103,40 +70,6 @@ async function activateRank(
       success: false,
       error: error instanceof Error ? error.message : "Unknown error occurred",
     };
-  }
-}
-
-/**
- * Marks a purchase as completed in the database
- */
-async function completePurchase(sessionId: string): Promise<boolean> {
-  try {
-    const dataDir = path.join(process.cwd(), "data");
-    const pendingPurchasesPath = path.join(dataDir, "pending-purchases.json");
-
-    if (!fs.existsSync(pendingPurchasesPath)) {
-      return false;
-    }
-
-    const data = fs.readFileSync(pendingPurchasesPath, "utf8");
-    const purchasesData = JSON.parse(data);
-
-    // Remove the completed purchase
-    purchasesData.pendingPurchases = purchasesData.pendingPurchases.filter(
-      (purchase: PendingPurchase) => purchase.sessionId !== sessionId
-    );
-
-    // Write back to file
-    fs.writeFileSync(
-      pendingPurchasesPath,
-      JSON.stringify(purchasesData, null, 2),
-      "utf8"
-    );
-
-    return true;
-  } catch (error) {
-    console.error("Error completing purchase:", error);
-    return false;
   }
 }
 
@@ -188,104 +121,23 @@ export async function GET(request: Request) {
       );
     }
 
-    // Access the saveUserRankData function from webhook handler
-    // This is a workaround - in a production system, you'd have a shared utility
-    // But for our specific case, we're forcing a direct save
+    // Save the user's rank data
     try {
-      // Create data directory if it doesn't exist
-      const dataDir = path.join(process.cwd(), "data");
-      if (!fs.existsSync(dataDir)) {
-        fs.mkdirSync(dataDir, { recursive: true });
-      }
-
-      // Create or update user-data.json
-      const userDataPath = path.join(dataDir, "user-data.json");
-
-      // Initialize with empty data or read existing
-      let userData: UserData = { users: {} };
-      if (fs.existsSync(userDataPath)) {
-        try {
-          const data = fs.readFileSync(userDataPath, "utf8");
-          userData = JSON.parse(data);
-        } catch (error) {
-          // Continue with empty structure if there's an error
-        }
-      }
-
-      // Update user data
-      const normalizedUsername = normalizeUsername(minecraftUsername);
-      if (!userData.users[normalizedUsername]) {
-        userData.users[normalizedUsername] = { ranks: [] };
-      }
-
-      // Process rank properly, especially for upgrades
-      if (rankId.includes("_to_")) {
-        // Extract source and destination ranks
-        const [sourceRankId, destinationRankId] = rankId.split("_to_");
-
-        // Get current ranks
-        let userRanks = [...userData.users[normalizedUsername].ranks];
-
-        // 1. Remove all upgrade paths
-        userRanks = userRanks.filter((r) => !r.includes("_to_"));
-
-        // 2. Remove the source rank
-        userRanks = userRanks.filter((r) => r !== sourceRankId);
-
-        // 3. Add the destination rank if not already there
-        if (!userRanks.includes(destinationRankId)) {
-          userRanks.push(destinationRankId);
-        }
-
-        // Update the user's ranks
-        userData.users[normalizedUsername].ranks = userRanks;
-      } else {
-        // Regular rank - add if not already owned
-        if (!userData.users[normalizedUsername].ranks.includes(rankId)) {
-          userData.users[normalizedUsername].ranks.push(rankId);
-        }
-      }
-
-      // Save updated data - direct write for speed
-      fs.writeFileSync(userDataPath, JSON.stringify(userData, null, 2), "utf8");
+      await saveUserRankData(minecraftUsername, rankId);
 
       // Clean up the pending purchase in the background
       if (pendingPurchase) {
         // Use a non-blocking approach to clean up the purchase
         setTimeout(async () => {
           try {
-            const pendingPurchasesPath = path.join(
-              dataDir,
-              "pending-purchases.json"
-            );
-            if (fs.existsSync(pendingPurchasesPath)) {
-              const pendingData = fs.readFileSync(pendingPurchasesPath, "utf8");
-              const pendingPurchases = JSON.parse(pendingData);
-
-              // Filter out this purchase by rank ID and username
-              pendingPurchases.pendingPurchases =
-                pendingPurchases.pendingPurchases.filter(
-                  (purchase: any) =>
-                    !(
-                      purchase.rankId === rankId &&
-                      normalizeUsername(purchase.minecraftUsername) ===
-                        normalizedUsername
-                    )
-                );
-
-              fs.writeFileSync(
-                pendingPurchasesPath,
-                JSON.stringify(pendingPurchases, null, 2),
-                "utf8"
-              );
-            }
+            await removePendingPurchase(sessionId, rankId, minecraftUsername);
           } catch (error) {
-            // Error handling
+            console.error("Error cleaning up pending purchase:", error);
           }
         }, 0);
       }
     } catch (error) {
-      // Error handling
+      console.error("Error saving user rank data:", error);
     }
 
     // Even with errors, return success to avoid confusing the user
@@ -359,7 +211,11 @@ export async function POST(request: Request) {
     }
 
     // Mark the purchase as completed in our database
-    await completePurchase(sessionId);
+    await removePendingPurchase(
+      sessionId,
+      pendingPurchase.rankId,
+      pendingPurchase.minecraftUsername
+    );
 
     return NextResponse.json({
       success: true,

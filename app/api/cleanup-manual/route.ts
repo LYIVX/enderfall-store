@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import {
+  getPendingPurchases,
+  updateEdgeConfig,
+  normalizeUsername,
+} from "@/lib/edge-config";
 
 // Define the purchase type
 interface PendingPurchase {
@@ -23,11 +26,6 @@ interface CleanupCriteria {
   olderThanHours?: number;
 }
 
-// Helper function to normalize Minecraft usernames for consistent storage and lookup
-function normalizeUsername(username: string): string {
-  return username.trim().toLowerCase();
-}
-
 /**
  * Manually clean up pending purchases by various criteria
  * This can be used by admins to remove stuck pending purchases
@@ -42,7 +40,7 @@ function normalizeUsername(username: string): string {
  */
 export async function GET(req: Request) {
   try {
-    // Check if user is authenticated and has admin rights
+    // Check authentication
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -51,36 +49,33 @@ export async function GET(req: Request) {
       );
     }
 
-    // In a real system, you'd check if the user is an admin here
-    // For the sake of this implementation, we'll allow all authenticated users
-
-    // Extract parameters/criteria
+    // Parse query parameters
     const { searchParams } = new URL(req.url);
-
     const criteria: CleanupCriteria = {};
 
-    // Single parameter criteria
-    if (searchParams.has("sessionId")) {
-      criteria.sessionId = searchParams.get("sessionId") || undefined;
+    // Get criteria from query parameters
+    const sessionId = searchParams.get("sessionId");
+    const rankId = searchParams.get("rankId");
+    const username = searchParams.get("username");
+    const userId = searchParams.get("userId");
+    const olderThanHoursStr = searchParams.get("olderThan");
+
+    if (sessionId) {
+      criteria.sessionId = sessionId;
     }
 
-    if (searchParams.has("rankId")) {
-      criteria.rankId = searchParams.get("rankId") || undefined;
+    if (rankId) {
+      criteria.rankId = rankId;
     }
 
-    if (searchParams.has("username")) {
-      const username = searchParams.get("username") || undefined;
-      if (username) {
-        // Normalize the username for consistent matching
-        criteria.minecraftUsername = normalizeUsername(username);
-      }
+    if (username) {
+      criteria.minecraftUsername = normalizeUsername(username);
     }
 
-    if (searchParams.has("userId")) {
-      criteria.userId = searchParams.get("userId") || undefined;
+    if (userId) {
+      criteria.userId = userId;
     }
 
-    const olderThanHoursStr = searchParams.get("olderThan") || undefined;
     if (olderThanHoursStr) {
       const olderThanHours = parseInt(olderThanHoursStr, 10);
       if (!isNaN(olderThanHours) && olderThanHours > 0) {
@@ -107,31 +102,15 @@ export async function GET(req: Request) {
       );
     }
 
-    // Read the pending purchases file
-    const dataFilePath = path.join(
-      process.cwd(),
-      "data",
-      "pending-purchases.json"
-    );
-
-    if (!fs.existsSync(dataFilePath)) {
-      return NextResponse.json({
-        success: true,
-        message: "No pending purchases file exists",
-        removedCount: 0,
-      });
-    }
-
-    // Read the file content
-    const data = fs.readFileSync(dataFilePath, "utf8");
-    const purchasesData = JSON.parse(data);
+    // Get all pending purchases
+    const pendingPurchases = await getPendingPurchases();
 
     // Keep track of original purchases for comparison
-    const originalPurchases = [...purchasesData.pendingPurchases];
+    const originalPurchases = [...pendingPurchases.pendingPurchases];
 
     // Apply criteria-based filtering to find purchases to remove
-    const purchasesToRemove = purchasesData.pendingPurchases.filter(
-      (purchase: PendingPurchase) => {
+    const purchasesToRemove = pendingPurchases.pendingPurchases.filter(
+      (purchase) => {
         // For each criteria, if it's provided and doesn't match, this purchase shouldn't be removed
 
         // Session ID matching
@@ -176,38 +155,29 @@ export async function GET(req: Request) {
     );
 
     // Keep purchases that don't match the removal criteria
-    const remainingPurchases = purchasesData.pendingPurchases.filter(
-      (purchase: PendingPurchase) =>
-        !purchasesToRemove.some(
-          (p: PendingPurchase) => p.sessionId === purchase.sessionId
-        )
+    const remainingPurchases = pendingPurchases.pendingPurchases.filter(
+      (purchase) =>
+        !purchasesToRemove.some((p) => p.sessionId === purchase.sessionId)
     );
 
     // Update the data if not in dry-run mode
     if (!dryRun && purchasesToRemove.length > 0) {
-      purchasesData.pendingPurchases = remainingPurchases;
-      fs.writeFileSync(dataFilePath, JSON.stringify(purchasesData, null, 2));
+      pendingPurchases.pendingPurchases = remainingPurchases;
+      await updateEdgeConfig("pending-purchases", pendingPurchases);
     }
 
     return NextResponse.json({
       success: true,
-      dryRun: dryRun,
+      mode: dryRun ? "dry-run" : "live",
+      message: `Found ${purchasesToRemove.length} purchases matching criteria`,
       removedCount: purchasesToRemove.length,
       remainingCount: remainingPurchases.length,
       removedPurchases: purchasesToRemove,
-      criteria: {
-        sessionId: criteria.sessionId,
-        rankId: criteria.rankId,
-        minecraftUsername: criteria.minecraftUsername,
-        userId: criteria.userId,
-        olderThanHours: criteria.olderThanHours,
-      },
     });
   } catch (error) {
-    console.error("Error cleaning up pending purchases:", error);
+    console.error("Failed to clean up pending purchases:", error);
     return NextResponse.json(
       {
-        success: false,
         error: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }

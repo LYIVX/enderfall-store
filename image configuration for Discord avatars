@@ -1,0 +1,5 @@
+[33mcommit e631dd8e966aabcb0b552114effac69495b97e80[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: LYIVX <tommyleee1@googlemail.com>
+Date:   Mon Mar 3 15:11:09 2025 +0000
+
+    fix: Add mc-heads.net to allowed image domains and improve navbar dropdown alignment

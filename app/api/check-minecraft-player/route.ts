@@ -5,6 +5,8 @@ import fs from "fs";
 import path from "path";
 import { checkPlayerExists } from "@/lib/minecraft-server";
 
+export const dynamic = "force-dynamic";
+
 /**
  * API Route: GET /api/check-minecraft-player
  * Checks if a Minecraft player exists and returns their details

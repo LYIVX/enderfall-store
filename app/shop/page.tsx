@@ -449,11 +449,11 @@ function ShopContent() {
     [searchUsername]
   );
 
+  // Effect to handle URL parameters
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const username = params.get("username");
     if (username) {
-      setSearchUsername(username);
       handleUsernameSearch(username);
     }
   }, [handleUsernameSearch]);

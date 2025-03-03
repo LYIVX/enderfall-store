@@ -1,62 +1,38 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
+import { getPendingPurchases } from "@/lib/edge-config";
+import { updateEdgeConfig } from "@/lib/edge-config";
 
 // Define the maximum age for pending purchases (in hours)
 const MAX_PENDING_AGE_HOURS = 24;
 
 export async function GET(req: Request) {
   try {
-    const dataFilePath = path.join(
-      process.cwd(),
-      "data",
-      "pending-purchases.json"
-    );
-
-    // Check if file exists
-    if (!fs.existsSync(dataFilePath)) {
-      return NextResponse.json({
-        success: true,
-        message: "No pending purchases file exists",
-      });
-    }
-
-    // Read existing data
-    const data = fs.readFileSync(dataFilePath, "utf8");
-    const purchasesData = JSON.parse(data) as {
-      pendingPurchases: Array<{
-        sessionId: string;
-        timestamp: string;
-      }>;
-    };
+    // Get all pending purchases
+    const pendingPurchases = await getPendingPurchases();
 
     const now = new Date();
     const maxAgeMs = MAX_PENDING_AGE_HOURS * 60 * 60 * 1000; // Convert hours to milliseconds
 
     // Filter out stale pending purchases
-    const originalLength = purchasesData.pendingPurchases.length;
+    const originalLength = pendingPurchases.pendingPurchases.length;
 
-    purchasesData.pendingPurchases = purchasesData.pendingPurchases.filter(
-      (purchase) => {
+    pendingPurchases.pendingPurchases =
+      pendingPurchases.pendingPurchases.filter((purchase) => {
         const purchaseDate = new Date(purchase.timestamp);
         const ageMs = now.getTime() - purchaseDate.getTime();
         return ageMs < maxAgeMs; // Keep if not stale
-      }
-    );
+      });
 
-    // Write updated data back to file
-    fs.writeFileSync(
-      dataFilePath,
-      JSON.stringify(purchasesData, null, 2),
-      "utf8"
-    );
+    // Update Edge Config with the filtered purchases
+    await updateEdgeConfig("pending-purchases", pendingPurchases);
 
-    const removedCount = originalLength - purchasesData.pendingPurchases.length;
+    const removedCount =
+      originalLength - pendingPurchases.pendingPurchases.length;
 
     return NextResponse.json({
       success: true,
       message: `Cleaned up ${removedCount} stale pending purchases`,
-      remainingCount: purchasesData.pendingPurchases.length,
+      remainingCount: pendingPurchases.pendingPurchases.length,
     });
   } catch (error) {
     console.error("Failed to clean up pending purchases:", error);

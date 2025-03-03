@@ -1,9 +1,21 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/options";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+interface DiscordUser {
+  id: string;
+  username: string;
+  discriminator: string;
+  avatar: string | null;
+  global_name?: string;
+}
 
 export async function GET(req: Request) {
   try {
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
 
     if (!session?.user) {
       return NextResponse.json(
@@ -24,23 +36,42 @@ export async function GET(req: Request) {
       headers: {
         Authorization: `Bearer ${session.accessToken}`,
       },
+      cache: "no-store",
     });
 
     if (!response.ok) {
       throw new Error(`Discord API error: ${response.status}`);
     }
 
-    const data = await response.json();
+    const data: DiscordUser = await response.json();
 
-    return NextResponse.json({
-      profile: {
-        username: data.username,
-        discriminator: data.discriminator,
-        avatar: data.avatar
-          ? `https://cdn.discordapp.com/avatars/${data.id}/${data.avatar}.png`
-          : null,
+    // Get the display name (prefer global_name if available)
+    const displayName = data.global_name || data.username;
+
+    // Construct the avatar URL with size parameter
+    let avatarUrl;
+    if (data.avatar) {
+      const extension = data.avatar.startsWith("a_") ? "gif" : "png";
+      avatarUrl = `https://cdn.discordapp.com/avatars/${data.id}/${data.avatar}.${extension}?size=128`;
+    } else {
+      const defaultAvatarNumber = parseInt(data.discriminator) % 5;
+      avatarUrl = `https://cdn.discordapp.com/embed/avatars/${defaultAvatarNumber}.png?size=128`;
+    }
+
+    return NextResponse.json(
+      {
+        profile: {
+          id: data.id,
+          username: displayName,
+          avatar: avatarUrl,
+        },
       },
-    });
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+        },
+      }
+    );
   } catch (error) {
     console.error("Failed to fetch Discord profile:", error);
     return NextResponse.json(

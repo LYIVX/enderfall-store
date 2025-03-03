@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { stripe } from "@/lib/stripe";
 import { authOptions } from "@/lib/auth";
-import fs from "fs";
-import path from "path";
+import { getResetData, updateResetData } from "@/lib/edge-config";
 
 interface ResetRecord {
   resetAt: string;
@@ -62,42 +61,12 @@ export async function POST(req: Request) {
       `Found ${userCheckouts.length} purchases to ${resetActive ? "hide" : "show"} for user ${session.user.id}`
     );
 
-    // Initialize or load existing resets file
-    const dataDir = path.join(process.cwd(), "data");
-    const resetsPath = path.join(dataDir, "resets.json");
-
-    // Make sure the data directory exists
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-    }
-
-    // Initialize or load existing resets
-    let resets: ResetData = {};
-    if (fs.existsSync(resetsPath)) {
-      const fileContent = fs.readFileSync(resetsPath, "utf8");
-      try {
-        resets = JSON.parse(fileContent) as ResetData;
-      } catch (e) {
-        console.error("Error parsing resets.json, creating new file", e);
-      }
-    }
-
-    if (resetActive) {
-      // Enable reset - hide purchases
-      resets[session.user.id] = {
-        resetAt: new Date().toISOString(),
-        sessionIds: userCheckouts.map((checkout) => checkout.id),
-        active: true,
-      };
-    } else {
-      // Disable reset - show purchases
-      if (resets[session.user.id]) {
-        resets[session.user.id].active = false;
-      }
-    }
-
-    // Save the updated resets
-    fs.writeFileSync(resetsPath, JSON.stringify(resets, null, 2), "utf8");
+    // Update reset data
+    await updateResetData(
+      session.user.id,
+      resetActive,
+      resetActive ? userCheckouts.map((checkout) => checkout.id) : []
+    );
 
     return NextResponse.json({
       success: true,
@@ -132,29 +101,8 @@ export async function GET(req: Request) {
       );
     }
 
-    const dataDir = path.join(process.cwd(), "data");
-    const resetsPath = path.join(dataDir, "resets.json");
-
-    // If no reset data file exists, reset is not active
-    if (!fs.existsSync(resetsPath)) {
-      return NextResponse.json({
-        active: false,
-      });
-    }
-
-    // Check if user has an active reset
-    const fileContent = fs.readFileSync(resetsPath, "utf8");
-    let resets: ResetData = {};
-
-    try {
-      resets = JSON.parse(fileContent) as ResetData;
-    } catch (e) {
-      console.error("Error parsing resets.json", e);
-      return NextResponse.json({
-        active: false,
-      });
-    }
-
+    // Get reset data
+    const resets = await getResetData();
     const userReset = resets[session.user.id];
 
     return NextResponse.json({

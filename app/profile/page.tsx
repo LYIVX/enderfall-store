@@ -382,7 +382,7 @@ interface Purchase {
 interface DiscordProfile {
   username: string;
   avatar: string;
-  id?: string;
+  id: string;
 }
 
 export default function ProfilePage() {
@@ -487,7 +487,9 @@ export default function ProfilePage() {
       fetch("/api/discord-profile")
         .then((res) => res.json())
         .then((data) => {
-          setDiscordProfile(data.profile);
+          if (data.profile) {
+            setDiscordProfile(data.profile);
+          }
         })
         .catch((error) => {
           console.error("Failed to fetch Discord profile:", error);
@@ -864,6 +866,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
+        {/* Discord Account Section */}
         <div className="bg-[var(--card-bg)] rounded-lg overflow-hidden mb-8">
           <div
             style={discordHeaderStyle}
@@ -883,18 +886,20 @@ export default function ProfilePage() {
           <div className="p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                {session.user.image && (
+                {discordProfile?.avatar && (
                   <Image
-                    src={session.user.image}
-                    alt={session.user.name || "Discord Profile"}
-                    width={36}
-                    height={36}
-                    className="w-16 h-16 rounded-full"
+                    src={discordProfile.avatar}
+                    alt={discordProfile.username || "Discord Profile"}
+                    width={64}
+                    height={64}
+                    className="rounded-full"
                   />
                 )}
                 <div>
-                  <h2 className="text-xl font-bold">{session.user.name}</h2>
-                  <p className="text-gray-400">{session.user.email}</p>
+                  <h2 className="text-xl font-bold">
+                    {discordProfile?.username || session.user?.name}
+                  </h2>
+                  <p className="text-gray-400">{session.user?.email}</p>
                 </div>
               </div>
               <button
