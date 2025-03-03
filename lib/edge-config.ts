@@ -1,4 +1,6 @@
-import { get } from "@vercel/edge-config";
+import { createClient } from "@vercel/edge-config";
+
+const edgeConfig = createClient(process.env.EDGE_CONFIG_CONNECTION_STRING);
 
 // Interfaces
 export interface SavedAccountsData {
@@ -45,7 +47,8 @@ export function normalizeUsername(username: string): string {
 // Minecraft Accounts Functions
 export async function getSavedAccounts(userId: string): Promise<string[]> {
   try {
-    const accounts = await get<SavedAccountsData>("minecraft-accounts");
+    const accounts =
+      await edgeConfig.get<SavedAccountsData>("minecraft-accounts");
     return accounts?.[userId]?.accounts || [];
   } catch (error) {
     console.error("Error getting saved accounts:", error);
@@ -60,7 +63,7 @@ export async function addSavedAccount(
   try {
     // Get all accounts first
     const allAccounts =
-      (await get<SavedAccountsData>("minecraft-accounts")) || {};
+      (await edgeConfig.get<SavedAccountsData>("minecraft-accounts")) || {};
 
     // Get current user accounts
     const currentAccounts = allAccounts[userId]?.accounts || [];
@@ -98,7 +101,7 @@ export async function removeSavedAccount(
   try {
     // Get all accounts first
     const allAccounts =
-      (await get<SavedAccountsData>("minecraft-accounts")) || {};
+      (await edgeConfig.get<SavedAccountsData>("minecraft-accounts")) || {};
 
     // Get current user accounts
     const currentAccounts = allAccounts[userId]?.accounts || [];
@@ -124,7 +127,7 @@ export async function removeSavedAccount(
 // User Data Functions
 export async function getUserData(): Promise<UserData> {
   try {
-    const userData = await get<UserData>("user-data");
+    const userData = await edgeConfig.get<UserData>("user-data");
     return userData || { users: {} };
   } catch (error) {
     console.error("Error getting user data:", error);
@@ -178,7 +181,7 @@ export async function saveUserRankData(
 export async function getPendingPurchases(): Promise<PendingPurchasesData> {
   try {
     const pendingPurchases =
-      await get<PendingPurchasesData>("pending-purchases");
+      await edgeConfig.get<PendingPurchasesData>("pending-purchases");
     return pendingPurchases || { pendingPurchases: [] };
   } catch (error) {
     console.error("Error getting pending purchases:", error);
@@ -251,7 +254,7 @@ export async function removePendingPurchase(
 // Reset Functions
 export async function getResetData(): Promise<ResetData> {
   try {
-    const resetData = await get<ResetData>("resets");
+    const resetData = await edgeConfig.get<ResetData>("resets");
     return resetData || {};
   } catch (error) {
     console.error("Error getting reset data:", error);
