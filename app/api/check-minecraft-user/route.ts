@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { checkPlayerExists } from "@/lib/minecraft-server";
 import { getUserRanks } from "@/lib/supabase";
+import { URL } from "url";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,22 @@ export async function GET(request: Request) {
       `[check-minecraft-user] Checking if player exists: ${normalizedUsername}`
     );
 
+    // Extract the server hostname from the MINECRAFT_SERVER_API_URL
+    let serverHostname = "play.enderfall.co.uk"; // Default fallback
+    try {
+      const apiUrl = process.env.MINECRAFT_SERVER_API_URL;
+      if (apiUrl) {
+        const url = new URL(apiUrl);
+        serverHostname = url.hostname;
+        console.log(
+          `[check-minecraft-user] Using server hostname: ${serverHostname}`
+        );
+      }
+    } catch (error) {
+      console.error(`[check-minecraft-user] Error parsing API URL:`, error);
+      // Use default fallback
+    }
+
     // Step 1: Check if the player exists on the Minecraft server
     let playerExists = false;
     try {
@@ -59,6 +76,7 @@ export async function GET(request: Request) {
       return NextResponse.json({
         exists: false,
         message: "Player has never joined the server",
+        serverHostname: serverHostname,
       });
     }
 
@@ -82,6 +100,7 @@ export async function GET(request: Request) {
       exists: true,
       username: normalizedUsername,
       ranks,
+      serverHostname: serverHostname,
     };
     console.log(
       `[check-minecraft-user] Returning result: ${JSON.stringify(result)}`

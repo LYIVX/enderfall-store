@@ -79,6 +79,7 @@ function ShopContent() {
   const [availableRanks, setAvailableRanks] = useState<Rank[]>([]);
   const [playerExists, setPlayerExists] = useState(false);
   const [searchedUserRanks, setSearchedUserRanks] = useState<string[]>([]);
+  const [serverHostname, setServerHostname] = useState<string>("");
 
   // Add state for saved Minecraft accounts
   const [savedAccounts, setSavedAccounts] = useState<string[]>([]);
@@ -434,6 +435,9 @@ function ShopContent() {
           if (data.exists) {
             setSearchedUsername(usernameToSearch);
             setSearchedUserRanks(data.ranks || []);
+            setServerHostname(data.serverHostname || "");
+          } else {
+            setServerHostname(data.serverHostname || "");
           }
         } else {
           setSearchError(data.error || "Failed to check username");
@@ -846,33 +850,24 @@ function ShopContent() {
             <div className="mt-4 text-red-500">{searchError}</div>
           )}
 
-          {playerExists && searchedUsername && (
-            <div className="mt-4 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 p-4 rounded-lg flex items-center">
-              <Image
-                src={`https://mc-heads.net/avatar/${searchedUsername}/48.png`}
-                alt={`${searchedUsername}'s avatar`}
-                width={48}
-                height={48}
-                className="mr-4"
-              />
-              <div>
-                <div className="font-bold">{searchedUsername}</div>
-                <div>
-                  {searchedUserRanks.length > 0 ? (
-                    <>
-                      Current ranks:{" "}
-                      {searchedUserRanks
-                        .map((rankId) => {
-                          const rank = ranksConfig.getRankById(rankId);
-                          return rank ? rank.name : rankId;
-                        })
-                        .join(", ")}
-                    </>
-                  ) : (
-                    "No ranks yet"
-                  )}
-                </div>
-              </div>
+          {searchedUsername && (
+            <div className="mt-4 bg-gray-800 p-3 rounded">
+              <p className="text-green-400">
+                Searching for:{" "}
+                <span className="font-semibold">{searchedUsername}</span>
+              </p>
+              {serverHostname && (
+                <p className="text-blue-300 text-sm mt-1">
+                  Server: <span className="font-mono">{serverHostname}</span>
+                </p>
+              )}
+              <p className="text-sm text-[var(--text-secondary)] mt-1">
+                {playerExists
+                  ? `Found player with ${
+                      searchedUserRanks.length ? searchedUserRanks.length : "no"
+                    } rank(s)`
+                  : "Player not found on this server"}
+              </p>
             </div>
           )}
         </div>
