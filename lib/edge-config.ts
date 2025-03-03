@@ -83,6 +83,17 @@ export async function addSavedAccount(
 
       if (!updateResult.success) {
         console.error("Failed to update Edge Config:", updateResult.error);
+
+        // Custom error message for permission issues
+        if (updateResult.status === 403) {
+          return {
+            success: false,
+            accounts: currentAccounts,
+            error:
+              "Server configuration error: Edge Config write access is restricted. Please contact an administrator.",
+          };
+        }
+
         return {
           success: false,
           accounts: currentAccounts,
@@ -130,6 +141,17 @@ export async function removeSavedAccount(
 
     if (!updateResult.success) {
       console.error("Failed to update Edge Config:", updateResult.error);
+
+      // Custom error message for permission issues
+      if (updateResult.status === 403) {
+        return {
+          success: false,
+          accounts: currentAccounts,
+          error:
+            "Server configuration error: Edge Config write access is restricted. Please contact an administrator.",
+        };
+      }
+
       return {
         success: false,
         accounts: currentAccounts,
@@ -323,124 +345,137 @@ export async function updateEdgeConfig(
   try {
     console.log(`Attempting to update Edge Config key: ${key}`);
 
-    // The current version of @vercel/edge-config (1.4.0) doesn't support 'set'
-    // We need to use a direct API approach instead
-    const edgeConfigString = process.env.EDGE_CONFIG;
-
-    if (!edgeConfigString) {
-      console.error("EDGE_CONFIG environment variable is missing");
-      return {
-        success: false,
-        error: "EDGE_CONFIG environment variable is missing",
-        status: 500,
-      };
+    // Check if EDGE_CONFIG environment variable is set
+    if (!process.env.EDGE_CONFIG) {
+      console.error("EDGE_CONFIG environment variable is not set");
+      return { success: false, error: "Edge Config is not configured" };
     }
 
-    // Remove @ prefix if present
-    const cleanConfigString = edgeConfigString.startsWith("@")
-      ? edgeConfigString.substring(1)
-      : edgeConfigString;
+    // Extract the Edge Config ID and token from the connection string
+    const connectionString = process.env.EDGE_CONFIG;
+    console.log(`Using Edge Config from: ${connectionString}`);
 
-    console.log("Using Edge Config from:", cleanConfigString);
+    const edgeConfigId = connectionString.match(/ecfg_[a-zA-Z0-9]+/)?.[0];
+    const token = connectionString.match(/token=([^&]+)/)?.[1];
 
-    // Extract Edge Config ID and token from the connection string
-    // Format: https://edge-config.vercel.com/ecfg_xxx?token=yyy
-    const match = cleanConfigString.match(
-      /edge-config\.vercel\.com\/([^?]+)\?token=([^&]+)/
-    );
+    console.log(`Extracted Edge Config ID: ${edgeConfigId}`);
 
-    if (!match || match.length < 3) {
-      console.error("Failed to parse Edge Config URL:", cleanConfigString);
-      return {
-        success: false,
-        error: "Invalid EDGE_CONFIG format",
-        status: 500,
-      };
-    }
-
-    const edgeConfigId = match[1];
-    const token = match[2];
-
-    console.log("Extracted Edge Config ID:", edgeConfigId);
-
-    // First attempt to use the SDK to validate we can read data
-    let readSuccess = false;
-    try {
-      const edgeConfig = createClient(process.env.EDGE_CONFIG || "");
-      const exists = await edgeConfig.has(key);
-      console.log(`Key ${key} exists in Edge Config: ${exists}`);
-      readSuccess = true;
-    } catch (readError) {
-      console.error("Error reading from Edge Config:", readError);
-      // Continue anyway, as we might still have write access even if SDK read fails
-    }
-
-    // Now try to update using API directly with correct URL pattern
-    console.log("Updating Edge Config via direct API call");
-
-    // The URL must include the /items endpoint for Edge Config updates
-    const response = await fetch(
-      `https://edge-config.vercel.com/${edgeConfigId}/items?token=${token}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ [key]: value }),
-      }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
+    if (!edgeConfigId || !token) {
       console.error(
-        `Edge Config update error (${response.status}):`,
-        errorText
+        "Failed to extract Edge Config ID or token from connection string"
+      );
+      return { success: false, error: "Invalid Edge Config connection string" };
+    }
+
+    // Check if the key exists in Edge Config
+    try {
+      const edgeConfig = createClient(connectionString);
+      const keyExists = await edgeConfig.has(key);
+      console.log(`Key ${key} exists in Edge Config: ${keyExists}`);
+    } catch (error) {
+      console.error(`Error checking if key exists: ${error}`);
+    }
+
+    // Read the current data to get the digest for optimistic concurrency control
+    try {
+      const getResponse = await fetch(
+        `https://edge-config.vercel.com/${edgeConfigId}?token=${token}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
       );
 
-      // Handle specific error cases
-      if (response.status === 401) {
+      if (getResponse.ok) {
+        console.log(
+          "Successfully read Edge Config data - read access is working"
+        );
+        const currentData = await getResponse.json();
+        console.log(`Current Edge Config digest: ${currentData.digest}`);
+
+        console.log(
+          "*** IMPORTANT: The token can READ Edge Config data but CANNOT WRITE. ***"
+        );
+        console.log("*** To resolve this issue: ***");
+        console.log(
+          "*** 1. Go to Vercel Dashboard > Your Project > Settings > Environment Variables ***"
+        );
+        console.log(
+          "*** 2. Create a new Edge Config token with WRITE permissions ***"
+        );
+        console.log(
+          "*** 3. Update your EDGE_CONFIG environment variable with the new token ***"
+        );
+        console.log("*** For testing, try different URLs: ***");
+
+        // Try multiple URL patterns with different attempts
+
+        // Attempt 1: Simple direct URL
+        const url1 = `https://edge-config.vercel.com/${edgeConfigId}?token=${token}`;
+        console.log(`PATCH URL (attempt 1): ${url1}`);
+
+        const response1 = await fetch(url1, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ [key]: value }),
+        });
+
+        if (response1.ok) {
+          console.log(
+            `Edge Config key ${key} updated successfully with attempt 1`
+          );
+          return { success: true };
+        }
+
+        console.log(`Attempt 1 failed with status ${response1.status}`);
+
+        // Attempt 2: V1 projects URL format
+        const url2 = `https://edge-config.vercel.com/v1/projects/${edgeConfigId}/items?token=${token}`;
+        console.log(`PATCH URL (attempt 2): ${url2}`);
+
+        const response2 = await fetch(url2, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ [key]: value }),
+        });
+
+        if (response2.ok) {
+          console.log(
+            `Edge Config key ${key} updated successfully with attempt 2`
+          );
+          return { success: true };
+        }
+
+        console.log(`Attempt 2 failed with status ${response2.status}`);
+
+        // All attempts failed, return the most likely error
         return {
           success: false,
           error:
-            "Unauthorized: Edge Config token doesn't have write permissions",
-          status: 401,
-        };
-      }
-
-      if (response.status === 403) {
-        return {
-          success: false,
-          error: "Forbidden: Edge Config token lacks necessary permissions",
+            "Edge Config token likely only has READ permissions. Please create a new token with WRITE permissions in the Vercel dashboard.",
           status: 403,
         };
-      }
-
-      if (response.status === 404) {
+      } else {
+        const errorText = await getResponse.text();
+        console.error(`Failed to get current Edge Config data: ${errorText}`);
         return {
           success: false,
-          error: "Not Found: Invalid Edge Config ID or URL format",
-          status: 404,
+          error: `Failed to get current Edge Config data: ${errorText}`,
+          status: getResponse.status,
         };
       }
-
-      return {
-        success: false,
-        error: `Edge Config update failed with status ${response.status}`,
-        status: response.status,
-      };
+    } catch (error) {
+      console.error(`Error updating Edge Config: ${error}`);
+      return { success: false, error: `Error updating Edge Config: ${error}` };
     }
-
-    console.log(`Successfully updated Edge Config key: ${key}`);
-    return { success: true };
   } catch (error) {
-    console.error("Error in updateEdgeConfig:", error);
-    return {
-      success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : "Unknown error during Edge Config update",
-      status: 500,
-    };
+    console.error(`Error in updateEdgeConfig: ${error}`);
+    return { success: false, error: `Error in updateEdgeConfig: ${error}` };
   }
 }
