@@ -398,6 +398,8 @@ export async function GET(request: Request) {
     const username = searchParams.get("username");
     const shouldReset = searchParams.get("reset") === "true";
     const checkWebhook = searchParams.get("check_webhook") === "true";
+    const checkPendingRanks =
+      searchParams.get("check_pending_ranks") === "true";
 
     // Get the session from the server component
     const session = await getServerSession(authOptions);
@@ -405,6 +407,78 @@ export async function GET(request: Request) {
     // Check admin permission
     if (!session?.user?.email?.endsWith("@example.com")) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    // Special mode to check pending ranks
+    if (checkPendingRanks) {
+      try {
+        const dataDir = path.join(process.cwd(), "data");
+        const pendingRanksPath = path.join(dataDir, "pending-ranks.json");
+        const pendingPurchasesPath = path.join(
+          dataDir,
+          "pending-purchases.json"
+        );
+        const userDataPath = path.join(dataDir, "user-data.json");
+
+        const result: any = {
+          pendingRanks: [],
+          pendingPurchases: [],
+          userData: {},
+        };
+
+        // Check pending ranks
+        if (fs.existsSync(pendingRanksPath)) {
+          const pendingRanksContent = fs.readFileSync(pendingRanksPath, "utf8");
+          const pendingRanksData = JSON.parse(pendingRanksContent);
+          result.pendingRanks = pendingRanksData.pendingRanks || [];
+        }
+
+        // Check pending purchases
+        if (fs.existsSync(pendingPurchasesPath)) {
+          const pendingPurchasesContent = fs.readFileSync(
+            pendingPurchasesPath,
+            "utf8"
+          );
+          const pendingPurchasesData = JSON.parse(pendingPurchasesContent);
+          result.pendingPurchases = pendingPurchasesData.pendingPurchases || [];
+        }
+
+        // Check user data for a specific user if provided
+        if (username && fs.existsSync(userDataPath)) {
+          const userDataContent = fs.readFileSync(userDataPath, "utf8");
+          const userData = JSON.parse(userDataContent);
+
+          if (userData.users && userData.users[username.toLowerCase()]) {
+            result.userData = userData.users[username.toLowerCase()];
+          } else {
+            result.userData = { message: "User not found in user data" };
+          }
+        }
+
+        return NextResponse.json({
+          message: "Diagnostic information retrieved",
+          ...result,
+          serverConfig: {
+            lobby: {
+              ip: servers.lobby.ip,
+              apiPort: servers.lobby.apiPort,
+            },
+            towny: {
+              ip: servers.towny.ip,
+              apiPort: servers.towny.apiPort,
+            },
+          },
+        });
+      } catch (errorUnknown: unknown) {
+        const error = errorUnknown as Error;
+        return NextResponse.json(
+          {
+            message: "Failed to check pending ranks",
+            error: error.message,
+          },
+          { status: 500 }
+        );
+      }
     }
 
     // Special mode to check webhook status
@@ -555,15 +629,31 @@ interface ServerConfig {
 const servers = {
   lobby: {
     name: "Lobby",
-    ip: process.env.MINECRAFT_LOBBY_IP,
+    ip: process.env.MINECRAFT_LOBBY_IP || "localhost",
     apiPort: parseInt(process.env.MINECRAFT_LOBBY_API_PORT || "8090"),
   },
   towny: {
     name: "Towny",
-    ip: process.env.MINECRAFT_TOWNY_IP,
+    ip: process.env.MINECRAFT_TOWNY_IP || "localhost",
     apiPort: parseInt(process.env.MINECRAFT_TOWNY_API_PORT || "8137"),
   },
 };
+
+// Log server configuration on startup for debugging
+console.log("Server configuration loaded:", {
+  lobby: {
+    ip: servers.lobby.ip,
+    apiPort: servers.lobby.apiPort,
+    hasIp: !!process.env.MINECRAFT_LOBBY_IP,
+    hasPort: !!process.env.MINECRAFT_LOBBY_API_PORT,
+  },
+  towny: {
+    ip: servers.towny.ip,
+    apiPort: servers.towny.apiPort,
+    hasIp: !!process.env.MINECRAFT_TOWNY_IP,
+    hasPort: !!process.env.MINECRAFT_TOWNY_API_PORT,
+  },
+});
 
 // Helper function to determine if a rank is a towny rank
 function isTownyRank(rankId: string): boolean {
@@ -677,38 +767,143 @@ async function applyRankAcrossServers(
   username: string,
   rankId: string
 ): Promise<boolean> {
-  console.log("[Rank Application] Starting rank application across servers:", {
-    username,
-    rankId,
-  });
+  const correlationId = Math.random().toString(36).substring(7);
+  console.log(
+    `[${correlationId}][Rank Application] Starting rank application across servers:`,
+    {
+      username,
+      rankId,
+    }
+  );
 
   const isTowny = isTownyRank(rankId);
-  console.log("[Rank Application] Rank type:", isTowny ? "Towny" : "Regular");
+  console.log(
+    `[${correlationId}][Rank Application] Rank type:`,
+    isTowny ? "Towny" : "Regular"
+  );
 
-  let success = true;
+  // Add the rank to local storage first (for backup in case server communication fails)
+  try {
+    const dataDir = path.join(process.cwd(), "data");
+    const pendingRanksPath = path.join(dataDir, "pending-ranks.json");
 
-  if (isTowny) {
-    console.log("[Rank Application] Applying Towny rank to Towny server only");
-    success = await applyRankToServer(servers.towny, username, rankId);
-  } else {
-    console.log("[Rank Application] Applying regular rank to all servers");
-    const lobbySuccess = await applyRankToServer(
-      servers.lobby,
-      username,
-      rankId
-    );
-    const townySuccess = await applyRankToServer(
-      servers.towny,
-      username,
-      rankId
-    );
-    success = lobbySuccess && townySuccess;
+    // Ensure data directory exists
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
 
-    console.log("[Rank Application] Application results:", {
-      lobby: lobbySuccess,
-      towny: townySuccess,
-      overall: success,
+    // Create or read the pending ranks file
+    let pendingRanksData: {
+      pendingRanks: Array<{
+        username: string;
+        rankId: string;
+        timestamp: string;
+      }>;
+    } = { pendingRanks: [] };
+
+    if (fs.existsSync(pendingRanksPath)) {
+      try {
+        const pendingRanksContent = fs.readFileSync(pendingRanksPath, "utf8");
+        pendingRanksData = JSON.parse(pendingRanksContent);
+      } catch (error) {
+        // Continue with empty array if parsing fails
+        console.error(
+          `[${correlationId}][Rank Application] Error parsing pending ranks:`,
+          error
+        );
+      }
+    }
+
+    // Add this rank to pending ranks as a backup
+    pendingRanksData.pendingRanks.push({
+      username: username.toLowerCase(),
+      rankId,
+      timestamp: new Date().toISOString(),
     });
+
+    // Write back to file
+    fs.writeFileSync(
+      pendingRanksPath,
+      JSON.stringify(pendingRanksData, null, 2),
+      "utf8"
+    );
+    console.log(
+      `[${correlationId}][Rank Application] Added rank to pending ranks backup file`
+    );
+  } catch (error) {
+    console.error(
+      `[${correlationId}][Rank Application] Error saving to pending ranks:`,
+      error
+    );
+    // Continue processing even if local backup fails
+  }
+
+  // Try with retry logic
+  const MAX_RETRIES = 3;
+  let success = false;
+  let attempts = 0;
+
+  while (!success && attempts < MAX_RETRIES) {
+    attempts++;
+    try {
+      if (isTowny) {
+        console.log(
+          `[${correlationId}][Rank Application] Applying Towny rank to Towny server only (attempt ${attempts})`
+        );
+        success = await applyRankToServer(servers.towny, username, rankId);
+      } else {
+        console.log(
+          `[${correlationId}][Rank Application] Applying regular rank to all servers (attempt ${attempts})`
+        );
+        const lobbySuccess = await applyRankToServer(
+          servers.lobby,
+          username,
+          rankId
+        );
+        const townySuccess = await applyRankToServer(
+          servers.towny,
+          username,
+          rankId
+        );
+        success = lobbySuccess && townySuccess;
+
+        console.log(
+          `[${correlationId}][Rank Application] Application results (attempt ${attempts}):`,
+          {
+            lobby: lobbySuccess,
+            towny: townySuccess,
+            overall: success,
+          }
+        );
+      }
+
+      if (!success && attempts < MAX_RETRIES) {
+        // Wait before retrying (exponential backoff)
+        const waitTime = Math.pow(2, attempts) * 1000;
+        console.log(
+          `[${correlationId}][Rank Application] Retry in ${waitTime}ms...`
+        );
+        await new Promise((resolve) => setTimeout(resolve, waitTime));
+      }
+    } catch (error) {
+      console.error(
+        `[${correlationId}][Rank Application] Error in attempt ${attempts}:`,
+        error
+      );
+      if (attempts < MAX_RETRIES) {
+        const waitTime = Math.pow(2, attempts) * 1000;
+        console.log(
+          `[${correlationId}][Rank Application] Retry in ${waitTime}ms...`
+        );
+        await new Promise((resolve) => setTimeout(resolve, waitTime));
+      }
+    }
+  }
+
+  if (!success) {
+    console.error(
+      `[${correlationId}][Rank Application] Failed after ${MAX_RETRIES} attempts`
+    );
   }
 
   return success;
@@ -905,6 +1100,17 @@ export async function POST(req: Request) {
             // Get purchase details
             const rankId = metadata.rank_id;
             const minecraftUsername = metadata.minecraft_username;
+
+            console.log(
+              `[${correlationId}][Stripe Webhook] Metadata received:`,
+              {
+                allMetadataKeys: Object.keys(metadata),
+                allMetadataValues: Object.values(metadata),
+                rankId,
+                minecraftUsername,
+                fullMetadata: metadata,
+              }
+            );
 
             if (!rankId || !minecraftUsername) {
               console.error(
