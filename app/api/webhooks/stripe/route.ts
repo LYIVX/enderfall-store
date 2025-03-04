@@ -547,30 +547,51 @@ async function applyRankToServer(
   rankId: string
 ): Promise<boolean> {
   try {
-    const apiUrl = `http://${server.ip}:${server.apiPort}/apply-rank`;
+    console.log(`[Server: ${server.name}] Attempting to apply rank:`, {
+      username,
+      rankId,
+      serverIp: server.ip,
+      serverPort: server.apiPort,
+    });
+
+    const apiUrl = `http://${server.ip}:${server.apiPort}/api/apply-rank`;
+    console.log(`[Server: ${server.name}] Making request to:`, apiUrl);
+
+    const apiKey = process.env.MINECRAFT_SERVER_API_KEY;
+    console.log(`[Server: ${server.name}] Using API key:`, {
+      exists: !!apiKey,
+      length: apiKey?.length,
+      preview: apiKey?.substring(0, 5) + "...",
+    });
+
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.MINECRAFT_SERVER_API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         username,
-        rankId,
+        rank: rankId,
       }),
     });
 
+    console.log(`[Server: ${server.name}] Response status:`, response.status);
+    const responseText = await response.text();
+    console.log(`[Server: ${server.name}] Response body:`, responseText);
+
     if (!response.ok) {
       console.error(
-        `Failed to apply rank on ${server.name}:`,
-        await response.text()
+        `[Server: ${server.name}] Failed to apply rank:`,
+        responseText
       );
       return false;
     }
 
+    console.log(`[Server: ${server.name}] Successfully applied rank`);
     return true;
   } catch (error) {
-    console.error(`Error applying rank on ${server.name}:`, error);
+    console.error(`[Server: ${server.name}] Error applying rank:`, error);
     return false;
   }
 }
@@ -580,14 +601,21 @@ async function applyRankAcrossServers(
   username: string,
   rankId: string
 ): Promise<boolean> {
+  console.log("[Rank Application] Starting rank application across servers:", {
+    username,
+    rankId,
+  });
+
   const isTowny = isTownyRank(rankId);
+  console.log("[Rank Application] Rank type:", isTowny ? "Towny" : "Regular");
+
   let success = true;
 
   if (isTowny) {
-    // Apply towny ranks only to towny server
+    console.log("[Rank Application] Applying Towny rank to Towny server only");
     success = await applyRankToServer(servers.towny, username, rankId);
   } else {
-    // Apply regular ranks to both servers
+    console.log("[Rank Application] Applying regular rank to all servers");
     const lobbySuccess = await applyRankToServer(
       servers.lobby,
       username,
@@ -599,6 +627,12 @@ async function applyRankAcrossServers(
       rankId
     );
     success = lobbySuccess && townySuccess;
+
+    console.log("[Rank Application] Application results:", {
+      lobby: lobbySuccess,
+      towny: townySuccess,
+      overall: success,
+    });
   }
 
   return success;
@@ -606,54 +640,71 @@ async function applyRankAcrossServers(
 
 export async function POST(req: Request) {
   try {
+    console.log("[Stripe Webhook] Received webhook request");
     const body = await req.text();
     const headersList = headers();
     const signature = headersList.get("stripe-signature");
 
     if (!signature || !process.env.STRIPE_WEBHOOK_SECRET) {
+      console.error("[Stripe Webhook] Missing signature or webhook secret");
       return NextResponse.json(
         { error: "Missing signature or webhook secret" },
         { status: 400 }
       );
     }
 
+    console.log("[Stripe Webhook] Verifying webhook signature");
     const event = stripe.webhooks.constructEvent(
       body,
       signature,
       process.env.STRIPE_WEBHOOK_SECRET
     );
 
+    console.log("[Stripe Webhook] Event type:", event.type);
+
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
       const metadata = session.metadata;
 
+      console.log("[Stripe Webhook] Session metadata:", metadata);
+
       if (!metadata) {
+        console.error("[Stripe Webhook] No metadata found in session");
         throw new Error("No metadata found in session");
       }
 
       const { minecraft_username, rank_id } = metadata;
 
       if (!minecraft_username || !rank_id) {
+        console.error("[Stripe Webhook] Missing required metadata");
         throw new Error("Missing required metadata");
       }
+
+      console.log("[Stripe Webhook] Applying rank:", {
+        username: minecraft_username,
+        rankId: rank_id,
+      });
 
       // Apply the rank across appropriate servers
       const success = await applyRankAcrossServers(minecraft_username, rank_id);
 
       if (!success) {
-        console.error("Failed to apply rank across all required servers");
+        console.error(
+          "[Stripe Webhook] Failed to apply rank across all required servers"
+        );
         return NextResponse.json(
           { error: "Failed to apply rank" },
           { status: 500 }
         );
       }
 
+      console.log("[Stripe Webhook] Successfully applied rank");
       return NextResponse.json({ success: true });
     }
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error("Webhook error:", error);
+    console.error("[Stripe Webhook] Error:", error);
     return NextResponse.json(
       { error: "Webhook handler failed" },
       { status: 400 }

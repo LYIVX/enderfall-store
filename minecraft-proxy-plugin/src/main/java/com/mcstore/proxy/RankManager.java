@@ -15,6 +15,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.UUID;
 
 public class RankManager {
     private final WebsiteProxyPlugin plugin;
@@ -160,6 +161,10 @@ public class RankManager {
         String serverName = server.getServerInfo().getName();
         String serverHost = server.getServerInfo().getAddress().getHostString();
         int apiPort = plugin.getConfig().getSurvivalServer().getApiPort();
+        String correlationId = UUID.randomUUID().toString().substring(0, 8);
+
+        logger.info("[{}] Starting rank application process. Server: {}, Username: {}, Rank: {}, Host: {}:{}",
+            correlationId, serverName, username, rankId, serverHost, apiPort);
 
         try {
             URL url = new URL(String.format("http://%s:%d/api/ranks/apply", serverHost, apiPort));
@@ -167,29 +172,46 @@ public class RankManager {
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type", "application/json");
             conn.setRequestProperty("X-API-Key", plugin.getConfig().getApiKey());
+            conn.setRequestProperty("X-Correlation-ID", correlationId);
             conn.setDoOutput(true);
 
             String jsonInput = String.format("{\"username\":\"%s\",\"rankId\":\"%s\"}", username, rankId);
+            logger.debug("[{}] Sending request to {}: {}", correlationId, url, jsonInput);
+
             try (OutputStream os = conn.getOutputStream()) {
                 byte[] input = jsonInput.getBytes(StandardCharsets.UTF_8);
                 os.write(input, 0, input.length);
             }
 
             int responseCode = conn.getResponseCode();
+            String responseBody = "";
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(
+                    responseCode >= 400 ? conn.getErrorStream() : conn.getInputStream()))) {
+                StringBuilder response = new StringBuilder();
+                String line;
+                while ((line = br.readLine()) != null) {
+                    response.append(line);
+                }
+                responseBody = response.toString();
+            }
+
+            logger.debug("[{}] Received response. Code: {}, Body: {}", 
+                correlationId, responseCode, responseBody);
+
             if (responseCode == HttpURLConnection.HTTP_OK) {
-                logger.info("Successfully applied rank {} to player {} on server {}", 
-                    rankId, username, serverName);
+                logger.info("[{}] Successfully applied rank {} to player {} on server {}", 
+                    correlationId, rankId, username, serverName);
                 playerRanks.computeIfAbsent(username.toLowerCase(), k -> new HashSet<>()).add(rankId);
                 saveRankData();
                 return true;
             } else {
-                logger.error("Failed to apply rank {} to player {} on server {}: HTTP {}", 
-                    rankId, username, serverName, responseCode);
+                logger.error("[{}] Failed to apply rank {} to player {} on server {}. Status: {}, Response: {}", 
+                    correlationId, rankId, username, serverName, responseCode, responseBody);
                 return false;
             }
         } catch (IOException e) {
-            logger.error("Error applying rank {} to player {} on server {}: {}", 
-                rankId, username, serverName, e.getMessage());
+            logger.error("[{}] Error applying rank {} to player {} on server {}: {}", 
+                correlationId, rankId, username, serverName, e.getMessage(), e);
             return false;
         }
     }

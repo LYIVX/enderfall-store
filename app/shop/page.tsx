@@ -871,9 +871,19 @@ function ShopContent() {
                   <h3 className="text-lg font-semibold">{searchedUsername}</h3>
                   {playerExists ? (
                     <p className="text-sm text-[var(--text-secondary)]">
-                      {searchedUserRanks.length > 0
-                        ? `Current Ranks: ${searchedUserRanks.join(", ")}`
-                        : "No ranks owned"}
+                      {searchedUserRanks.length > 0 ? (
+                        <>
+                          Current ranks:{" "}
+                          {searchedUserRanks
+                            .map((rankId) => {
+                              const rank = ranksConfig.getRankById(rankId);
+                              return rank ? rank.name : rankId;
+                            })
+                            .join(", ")}
+                        </>
+                      ) : (
+                        "No ranks yet"
+                      )}
                     </p>
                   ) : (
                     <p className="text-sm text-red-500">
