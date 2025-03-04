@@ -9,8 +9,9 @@ import path from "path";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { getRankById } from "@/lib/ranks";
+import crypto from "crypto";
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!.trim();
 
 // Define types for better type safety
 interface UserRanks {
@@ -396,6 +397,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const username = searchParams.get("username");
     const shouldReset = searchParams.get("reset") === "true";
+    const checkWebhook = searchParams.get("check_webhook") === "true";
 
     // Get the session from the server component
     const session = await getServerSession(authOptions);
@@ -403,6 +405,48 @@ export async function GET(request: Request) {
     // Check admin permission
     if (!session?.user?.email?.endsWith("@example.com")) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    // Special mode to check webhook status
+    if (checkWebhook) {
+      try {
+        // List recent Stripe events
+        const events = await stripe.events.list({
+          limit: 10,
+          type: "checkout.session.completed",
+        });
+
+        // Check if we have any recent successful checkout sessions
+        const successfulCheckouts = events.data.filter((event) => {
+          const session = event.data.object as Stripe.Checkout.Session;
+          return session.payment_status === "paid";
+        });
+
+        // Return information about recent checkouts
+        return NextResponse.json({
+          message: "Webhook status check",
+          recentEvents: events.data.map((event) => {
+            const session = event.data.object as Stripe.Checkout.Session;
+            return {
+              id: event.id,
+              type: event.type,
+              created: new Date(event.created * 1000).toISOString(),
+              sessionId: session.id,
+              paymentStatus: session.payment_status,
+              metadata: session.metadata,
+            };
+          }),
+        });
+      } catch (errorUnknown) {
+        const error = errorUnknown as Error;
+        return NextResponse.json(
+          {
+            message: "Failed to check webhook status",
+            error: error.message,
+          },
+          { status: 500 }
+        );
+      }
     }
 
     if (!username) {
@@ -671,74 +715,341 @@ async function applyRankAcrossServers(
 }
 
 export async function POST(req: Request) {
+  const correlationId = Math.random().toString(36).substring(7);
+
   try {
-    console.log("[Stripe Webhook] Received webhook request");
+    console.log(`[${correlationId}][Stripe Webhook] Received webhook request`);
+
+    // Log raw request details
+    const rawHeaders = Object.fromEntries(req.headers.entries());
+    console.log(`[${correlationId}][Stripe Webhook] Raw request headers:`, {
+      headers: rawHeaders,
+      method: req.method,
+      url: req.url,
+    });
+
     const body = await req.text();
     const headersList = headers();
     const signature = headersList.get("stripe-signature");
 
-    if (!signature || !process.env.STRIPE_WEBHOOK_SECRET) {
-      console.error("[Stripe Webhook] Missing signature or webhook secret");
+    // Ensure webhook secret is properly formatted
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET?.trim();
+
+    // Log webhook secret details (safely)
+    console.log(`[${correlationId}][Stripe Webhook] Webhook secret details:`, {
+      length: webhookSecret?.length,
+      start: webhookSecret?.substring(0, 10) + "...",
+      containsNewlines: webhookSecret?.includes("\n"),
+      containsSpaces: webhookSecret?.includes(" "),
+      containsCarriageReturn: webhookSecret?.includes("\r"),
+      charCodes: webhookSecret
+        ? Array.from(webhookSecret)
+            .slice(0, 5)
+            .map((c) => c.charCodeAt(0))
+        : [],
+    });
+
+    console.log(`[${correlationId}][Stripe Webhook] Request details:`, {
+      bodyLength: body.length,
+      bodyPreview: body.substring(0, 100) + "...",
+      signature,
+      hasWebhookSecret: !!webhookSecret,
+      webhookSecretLength: webhookSecret?.length,
+      signatureLength: signature?.length,
+      contentType: headersList.get("content-type"),
+      contentLength: headersList.get("content-length"),
+    });
+
+    if (!signature || !webhookSecret) {
+      console.error(
+        `[${correlationId}][Stripe Webhook] Missing signature or webhook secret`,
+        {
+          hasSignature: !!signature,
+          hasWebhookSecret: !!webhookSecret,
+        }
+      );
       return NextResponse.json(
         { error: "Missing signature or webhook secret" },
         { status: 400 }
       );
     }
 
-    console.log("[Stripe Webhook] Verifying webhook signature");
-    const event = stripe.webhooks.constructEvent(
-      body,
-      signature,
-      process.env.STRIPE_WEBHOOK_SECRET
+    console.log(
+      `[${correlationId}][Stripe Webhook] Verifying webhook signature`
     );
 
-    console.log("[Stripe Webhook] Event type:", event.type);
+    try {
+      // Parse the signature header
+      const signatureParts = signature.split(",");
+      const timestampPart = signatureParts.find((part) =>
+        part.startsWith("t=")
+      );
+      const signaturePart = signatureParts.find((part) =>
+        part.startsWith("v1=")
+      );
 
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object;
-      const metadata = session.metadata;
-
-      console.log("[Stripe Webhook] Session metadata:", metadata);
-
-      if (!metadata) {
-        console.error("[Stripe Webhook] No metadata found in session");
-        throw new Error("No metadata found in session");
+      if (!timestampPart || !signaturePart) {
+        throw new Error("Invalid signature format");
       }
 
-      const { minecraft_username, rank_id } = metadata;
+      const timestamp = timestampPart.substring(2);
+      const receivedSignature = signaturePart.substring(3);
 
-      if (!minecraft_username || !rank_id) {
-        console.error("[Stripe Webhook] Missing required metadata");
-        throw new Error("Missing required metadata");
-      }
+      // Reconstruct the signed payload exactly as in the test script
+      const signedPayload = `${timestamp}.${body}`;
 
-      console.log("[Stripe Webhook] Applying rank:", {
-        username: minecraft_username,
-        rankId: rank_id,
+      // Log the exact values we're using for verification
+      console.log(`[${correlationId}][Stripe Webhook] Verification details:`, {
+        timestamp,
+        receivedSignature,
+        signedPayloadLength: signedPayload.length,
+        signedPayloadPreview: signedPayload.substring(0, 100) + "...",
+        webhookSecretLength: webhookSecret.length,
+        webhookSecretStart: webhookSecret.substring(0, 10) + "...",
+        bodyLength: body.length,
+        bodyPreview: body.substring(0, 100) + "...",
       });
 
-      // Apply the rank across appropriate servers
-      const success = await applyRankAcrossServers(minecraft_username, rank_id);
+      // Generate our own signature using the same method as the test script
+      const expectedSignature = crypto
+        .createHmac("sha256", webhookSecret)
+        .update(signedPayload)
+        .digest("hex");
 
-      if (!success) {
-        console.error(
-          "[Stripe Webhook] Failed to apply rank across all required servers"
-        );
-        return NextResponse.json(
-          { error: "Failed to apply rank" },
-          { status: 500 }
-        );
+      // Log the comparison
+      console.log(`[${correlationId}][Stripe Webhook] Signature comparison:`, {
+        receivedSignature,
+        expectedSignature,
+        match: receivedSignature === expectedSignature,
+        signedPayloadLength: signedPayload.length,
+      });
+
+      if (receivedSignature !== expectedSignature) {
+        throw new Error("Signature mismatch");
       }
 
-      console.log("[Stripe Webhook] Successfully applied rank");
-      return NextResponse.json({ success: true });
-    }
+      // Try to parse and validate the event structure
+      let event;
+      try {
+        event = JSON.parse(body);
 
-    return NextResponse.json({ received: true });
-  } catch (error) {
-    console.error("[Stripe Webhook] Error:", error);
+        // Validate event structure
+        if (!event.type) {
+          throw new Error("Invalid event: missing event type");
+        }
+
+        if (!event.data || !event.data.object) {
+          throw new Error("Invalid event: missing event data");
+        }
+
+        console.log(
+          `[${correlationId}][Stripe Webhook] Event parsed successfully:`,
+          {
+            id: event.id,
+            type: event.type,
+            hasData: !!event.data,
+            hasObject: !!(event.data && event.data.object),
+            dataKeys: Object.keys(event.data),
+            objectKeys: event.data.object ? Object.keys(event.data.object) : [],
+          }
+        );
+
+        // Process the specific event type
+        if (event.type === "checkout.session.completed") {
+          console.log(
+            `[${correlationId}][Stripe Webhook] Processing checkout.session.completed event`
+          );
+
+          try {
+            const session = event.data.object;
+
+            // Verify that this is a paid session
+            if (session.payment_status !== "paid") {
+              console.log(
+                `[${correlationId}][Stripe Webhook] Skipping unpaid session`,
+                {
+                  sessionId: session.id,
+                  paymentStatus: session.payment_status,
+                }
+              );
+              return NextResponse.json({
+                success: false,
+                message: "Payment not completed",
+                eventType: event.type,
+                eventId: event.id,
+              });
+            }
+
+            // Extract metadata
+            const metadata = session.metadata;
+            if (
+              !metadata ||
+              !metadata.type ||
+              metadata.type !== "rank_purchase"
+            ) {
+              console.log(
+                `[${correlationId}][Stripe Webhook] Not a rank purchase`,
+                {
+                  sessionId: session.id,
+                  metadata,
+                }
+              );
+              return NextResponse.json({
+                success: true,
+                message: "Not a rank purchase, no action taken",
+                eventType: event.type,
+                eventId: event.id,
+              });
+            }
+
+            // Get purchase details
+            const rankId = metadata.rank_id;
+            const minecraftUsername = metadata.minecraft_username;
+
+            if (!rankId || !minecraftUsername) {
+              console.error(
+                `[${correlationId}][Stripe Webhook] Missing required metadata`,
+                {
+                  sessionId: session.id,
+                  rankId,
+                  minecraftUsername,
+                }
+              );
+              return NextResponse.json({
+                success: false,
+                message: "Missing required metadata",
+                eventType: event.type,
+                eventId: event.id,
+              });
+            }
+
+            console.log(
+              `[${correlationId}][Stripe Webhook] Processing rank purchase`,
+              {
+                sessionId: session.id,
+                rankId,
+                minecraftUsername,
+              }
+            );
+
+            // Save user rank data and apply it on the server
+            const saveResult = await saveUserRankData(
+              minecraftUsername,
+              rankId
+            );
+
+            if (!saveResult.success) {
+              console.error(
+                `[${correlationId}][Stripe Webhook] Failed to save rank data`,
+                {
+                  sessionId: session.id,
+                  rankId,
+                  minecraftUsername,
+                  error: saveResult.message,
+                }
+              );
+            }
+
+            // Apply the rank across servers
+            const serverApplyResult = await applyRankAcrossServers(
+              minecraftUsername,
+              rankId
+            );
+
+            // Remove the pending purchase record
+            await removePendingPurchase(session.id);
+
+            console.log(
+              `[${correlationId}][Stripe Webhook] Rank purchase processed`,
+              {
+                sessionId: session.id,
+                rankId,
+                minecraftUsername,
+                saveSuccess: saveResult.success,
+                serverApplySuccess: serverApplyResult,
+              }
+            );
+
+            return NextResponse.json({
+              success: true,
+              message: "Rank purchase processed successfully",
+              eventType: event.type,
+              eventId: event.id,
+              rankId,
+              username: minecraftUsername,
+              applied: saveResult.success && serverApplyResult,
+            });
+          } catch (processErrorUnknown) {
+            const processError = processErrorUnknown as Error;
+            console.error(
+              `[${correlationId}][Stripe Webhook] Error processing checkout session`,
+              {
+                error: processError.message,
+                stack: processError.stack,
+              }
+            );
+            return NextResponse.json(
+              {
+                success: false,
+                message: `Error processing checkout: ${processError.message}`,
+                eventType: event.type,
+                eventId: event.id,
+              },
+              { status: 500 }
+            );
+          }
+        }
+
+        // If we get here, signature verification and event parsing succeeded
+        return NextResponse.json({
+          success: true,
+          message: "Webhook signature verified and event parsed successfully",
+          eventType: event.type,
+          eventId: event.id,
+        });
+      } catch (parseErr: any) {
+        console.error(
+          `[${correlationId}][Stripe Webhook] Event parsing failed:`,
+          {
+            error: parseErr.message,
+            bodyPreview: body.substring(0, 200) + "...",
+          }
+        );
+        throw parseErr;
+      }
+    } catch (err: any) {
+      console.error(
+        `[${correlationId}][Stripe Webhook] Signature verification failed:`,
+        {
+          error: err.message,
+          type: err.type,
+          stack: err.stack,
+          bodyLength: body.length,
+          bodyPreview: body.substring(0, 100) + "...",
+          signature,
+          webhookSecretLength: webhookSecret.length,
+          webhookSecretStart: webhookSecret.substring(0, 10) + "...",
+        }
+      );
+      return NextResponse.json(
+        { error: `Webhook signature verification failed: ${err.message}` },
+        { status: 400 }
+      );
+    }
+  } catch (error: any) {
+    console.error(`[${correlationId}][Stripe Webhook] Error:`, {
+      message: error.message,
+      stack: error.stack,
+      type: error.type || error.constructor.name,
+      code: error.code,
+      cause: error.cause,
+    });
     return NextResponse.json(
-      { error: "Webhook handler failed" },
+      {
+        error: "Webhook handler failed",
+        message: error.message,
+        correlationId,
+      },
       { status: 400 }
     );
   }
