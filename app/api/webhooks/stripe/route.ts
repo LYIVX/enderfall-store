@@ -719,31 +719,20 @@ async function applyRankToServer(
   try {
     const correlationId = Math.random().toString(36).substring(7);
 
-    // Check if server IP is configured
-    if (!server.ip) {
-      console.error(
-        `[${correlationId}][Server: ${server.name}] Server IP not configured`
-      );
-      return false;
-    }
+    // Always use the main Minecraft server API URL
+    const apiUrl = `${process.env.MINECRAFT_SERVER_API_URL}/api/apply-rank`;
 
     console.log(
-      `[${correlationId}][Server: ${server.name}] Attempting to apply rank:`,
+      `[${correlationId}][Server: ${server.name}] Attempting to apply rank using main API URL:`,
       {
         username,
         rankId,
-        serverIp: server.ip,
-        serverPort: server.apiPort,
+        apiUrl,
+        serverName: server.name,
       }
     );
 
-    const apiUrl = `http://${server.ip}:${server.apiPort}/api/apply-rank`;
-    console.log(
-      `[${correlationId}][Server: ${server.name}] Making request to:`,
-      apiUrl
-    );
-
-    // Get API key from environment, with fallback for test environment
+    // Get API key from environment
     const apiKey = process.env.MINECRAFT_SERVER_API_KEY;
     if (!apiKey) {
       console.error(
@@ -764,11 +753,13 @@ async function applyRankToServer(
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
         "X-Correlation-ID": correlationId,
+        "X-Server-Name": server.name.toLowerCase(), // Add server name to header so API knows which server this is for
       },
       body: JSON.stringify({
         username,
         rankId: rankId,
         rank: rankId,
+        server: server.name.toLowerCase(), // Include server name in the request body
       }),
     });
 
@@ -842,6 +833,71 @@ async function applyRankAcrossServers(
     }
   );
 
+  // Add additional direct application to the main plugin API (this is our most reliable method)
+  try {
+    if (!process.env.MINECRAFT_SERVER_API_URL) {
+      console.error(
+        `[${correlationId}][Rank Application] MINECRAFT_SERVER_API_URL is not configured`
+      );
+    } else {
+      console.log(
+        `[${correlationId}][Rank Application] Directly applying rank to main API endpoint`,
+        {
+          url: `${process.env.MINECRAFT_SERVER_API_URL}/api/apply-rank`,
+          username,
+          rankId,
+        }
+      );
+
+      const apiKey = process.env.MINECRAFT_SERVER_API_KEY;
+      if (!apiKey) {
+        console.error(
+          `[${correlationId}][Rank Application] MINECRAFT_SERVER_API_KEY is not configured`
+        );
+      } else {
+        // Direct application to the main API endpoint
+        const response = await fetch(
+          `${process.env.MINECRAFT_SERVER_API_URL}/api/apply-rank`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${apiKey}`,
+              "X-Correlation-ID": correlationId,
+            },
+            body: JSON.stringify({
+              username,
+              rankId,
+              rank: rankId,
+              applyGlobally: true, // Signal that this should be applied to all servers
+            }),
+          }
+        );
+
+        if (response.ok) {
+          console.log(
+            `[${correlationId}][Rank Application] Successfully applied rank directly to main API endpoint`
+          );
+          return true;
+        } else {
+          console.error(
+            `[${correlationId}][Rank Application] Failed to apply rank directly to main API endpoint:`,
+            {
+              status: response.status,
+              statusText: response.statusText,
+            }
+          );
+        }
+      }
+    }
+  } catch (error) {
+    console.error(
+      `[${correlationId}][Rank Application] Error applying rank directly to main API endpoint:`,
+      error
+    );
+  }
+
+  // Fall back to server-specific applications if direct application fails
   const isTowny = isTownyRank(rankId);
   console.log(
     `[${correlationId}][Rank Application] Rank type:`,
