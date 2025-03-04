@@ -504,20 +504,20 @@ export const dynamic = "force-dynamic";
 
 interface ServerConfig {
   name: string;
-  ip: string;
+  ip: string | undefined;
   apiPort: number;
 }
 
 const servers = {
   lobby: {
     name: "Lobby",
-    ip: process.env.MINECRAFT_LOBBY_IP || "",
-    apiPort: parseInt(process.env.MINECRAFT_LOBBY_API_PORT || "8081"),
+    ip: process.env.MINECRAFT_LOBBY_IP,
+    apiPort: parseInt(process.env.MINECRAFT_LOBBY_API_PORT || "8090"),
   },
   towny: {
     name: "Towny",
-    ip: process.env.MINECRAFT_TOWNY_IP || "",
-    apiPort: parseInt(process.env.MINECRAFT_TOWNY_API_PORT || "8082"),
+    ip: process.env.MINECRAFT_TOWNY_IP,
+    apiPort: parseInt(process.env.MINECRAFT_TOWNY_API_PORT || "8137"),
   },
 };
 
@@ -547,18 +547,41 @@ async function applyRankToServer(
   rankId: string
 ): Promise<boolean> {
   try {
-    console.log(`[Server: ${server.name}] Attempting to apply rank:`, {
-      username,
-      rankId,
-      serverIp: server.ip,
-      serverPort: server.apiPort,
-    });
+    const correlationId = Math.random().toString(36).substring(7);
+
+    // Check if server IP is configured
+    if (!server.ip) {
+      console.error(
+        `[${correlationId}][Server: ${server.name}] Server IP not configured`
+      );
+      return false;
+    }
+
+    console.log(
+      `[${correlationId}][Server: ${server.name}] Attempting to apply rank:`,
+      {
+        username,
+        rankId,
+        serverIp: server.ip,
+        serverPort: server.apiPort,
+      }
+    );
 
     const apiUrl = `http://${server.ip}:${server.apiPort}/api/apply-rank`;
-    console.log(`[Server: ${server.name}] Making request to:`, apiUrl);
+    console.log(
+      `[${correlationId}][Server: ${server.name}] Making request to:`,
+      apiUrl
+    );
 
     const apiKey = process.env.MINECRAFT_SERVER_API_KEY;
-    console.log(`[Server: ${server.name}] Using API key:`, {
+    if (!apiKey) {
+      console.error(
+        `[${correlationId}][Server: ${server.name}] API key not configured`
+      );
+      return false;
+    }
+
+    console.log(`[${correlationId}][Server: ${server.name}] Using API key:`, {
       exists: !!apiKey,
       length: apiKey?.length,
       preview: apiKey?.substring(0, 5) + "...",
@@ -569,6 +592,7 @@ async function applyRankToServer(
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
+        "X-Correlation-ID": correlationId,
       },
       body: JSON.stringify({
         username,
@@ -576,19 +600,27 @@ async function applyRankToServer(
       }),
     });
 
-    console.log(`[Server: ${server.name}] Response status:`, response.status);
+    console.log(
+      `[${correlationId}][Server: ${server.name}] Response status:`,
+      response.status
+    );
     const responseText = await response.text();
-    console.log(`[Server: ${server.name}] Response body:`, responseText);
+    console.log(
+      `[${correlationId}][Server: ${server.name}] Response body:`,
+      responseText
+    );
 
     if (!response.ok) {
       console.error(
-        `[Server: ${server.name}] Failed to apply rank:`,
+        `[${correlationId}][Server: ${server.name}] Failed to apply rank:`,
         responseText
       );
       return false;
     }
 
-    console.log(`[Server: ${server.name}] Successfully applied rank`);
+    console.log(
+      `[${correlationId}][Server: ${server.name}] Successfully applied rank`
+    );
     return true;
   } catch (error) {
     console.error(`[Server: ${server.name}] Error applying rank:`, error);
