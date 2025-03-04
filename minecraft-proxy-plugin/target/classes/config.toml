@@ -1,0 +1,54 @@
+# API Configuration
+[api]
+port = 8113
+key = "test_minecraft_key_123"
+
+# Server Configuration
+[servers]
+# Lobby server configuration
+[servers.lobby]
+name = "lobby"
+host = "194.164.96.27"
+port = 25610
+api_port = 8090
+
+# Survival server configuration
+[servers.survival]
+name = "survival"
+host = "185.206.148.170"
+port = 25579
+api_port = 8137
+
+# Rank Configuration
+[ranks]
+# List of Towny-specific ranks
+towny_ranks = [
+    "citizen",
+    "merchant",
+    "councilor",
+    "mayor",
+    "governor",
+    "noble",
+    "duke",
+    "king",
+    "emperor",
+    "divine"
+]
+
+# List of Towny upgrade paths
+[ranks.towny_upgrades]
+citizen_to_merchant = "merchant"
+merchant_to_councilor = "councilor"
+councilor_to_mayor = "mayor"
+mayor_to_governor = "governor"
+governor_to_noble = "noble"
+noble_to_duke = "duke"
+duke_to_king = "king"
+king_to_emperor = "emperor"
+emperor_to_divine = "divine"
+
+# General plugin settings
+[settings]
+debug = true  # Enable debug logging to see more details
+save_interval = 300
+sync_interval = 300 

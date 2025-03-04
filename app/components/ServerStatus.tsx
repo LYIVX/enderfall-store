@@ -5,9 +5,24 @@ interface ServerStatusProps {
   serverIp: string;
 }
 
+interface ServerInfo {
+  name: string;
+  online: boolean;
+  version?: string;
+  players?: {
+    online: number;
+    max: number;
+  };
+}
+
 interface ServerData {
   online: boolean;
   version?: string;
+  players?: {
+    online: number;
+    max: number;
+  };
+  servers: ServerInfo[];
 }
 
 export default function ServerStatus({ serverIp }: ServerStatusProps) {
@@ -25,20 +40,16 @@ export default function ServerStatus({ serverIp }: ServerStatusProps) {
     const fetchServerStatus = async () => {
       setLoading(true);
       try {
-        // Using https://api.mcsrvstat.us/ to get server status
-        const response = await fetch(`https://api.mcsrvstat.us/2/${serverIp}`);
+        const response = await fetch("/api/server-status");
         const data = await response.json();
 
-        if (data && data.online !== undefined) {
-          setServerData({
-            online: data.online,
-            version: data.version,
-          });
+        if (data && typeof data.online !== "undefined") {
+          setServerData(data);
         } else {
           setError("Could not fetch server status");
         }
       } catch (err) {
-        setError("Failed to connect to server status API");
+        setError("Failed to connect to server API");
       } finally {
         setLoading(false);
       }
@@ -50,7 +61,7 @@ export default function ServerStatus({ serverIp }: ServerStatusProps) {
     const intervalId = setInterval(fetchServerStatus, 60000);
 
     return () => clearInterval(intervalId);
-  }, [serverIp]);
+  }, []);
 
   if (loading) {
     return (
@@ -122,25 +133,64 @@ export default function ServerStatus({ serverIp }: ServerStatusProps) {
         </h2>
       </div>
       <div className="border-t-0 p-8">
-        <div className="space-y-4">
-          {serverData?.online ? (
-            <p className="text-green-500 text-lg font-semibold">
-              ✓ Server is online
-            </p>
-          ) : (
-            <p className="text-red-500 text-lg font-semibold">
-              ✗ Server is offline
-            </p>
-          )}
-          <p className="text-[var(--text-color)] text-lg">
-            IP: <span className="font-mono text-cyan-400">{serverIp}</span>
-          </p>
-          {serverData?.online && serverData.version && (
+        <div className="space-y-6">
+          {/* Overall Status */}
+          <div className="space-y-4">
+            {serverData?.online ? (
+              <p className="text-green-500 text-lg font-semibold">
+                ✓ Network is online
+              </p>
+            ) : (
+              <p className="text-red-500 text-lg font-semibold">
+                ✗ Network is offline
+              </p>
+            )}
             <p className="text-[var(--text-color)] text-lg">
-              Version:{" "}
-              <span className="text-purple-400">{serverData.version}</span>
+              IP: <span className="font-mono text-cyan-400">{serverIp}</span>
             </p>
-          )}
+            {serverData?.players && (
+              <p className="text-[var(--text-color)] text-lg">
+                Total Players:{" "}
+                <span className="text-emerald-400">
+                  {serverData.players.online}/{serverData.players.max}
+                </span>
+              </p>
+            )}
+          </div>
+
+          {/* Individual Server Status */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-[var(--text-color)]">
+              Server Status:
+            </h3>
+            <div className="grid gap-4">
+              {serverData?.servers.map((server) => (
+                <div
+                  key={server.name}
+                  className="bg-[var(--card-bg-secondary)] p-4 rounded-lg"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[var(--text-color)] font-medium">
+                      {server.name}
+                    </span>
+                    {server.online ? (
+                      <span className="text-green-500">✓ Online</span>
+                    ) : (
+                      <span className="text-red-500">✗ Offline</span>
+                    )}
+                  </div>
+                  {server.online && server.players && (
+                    <p className="text-[var(--text-color)] text-sm mt-2">
+                      Players:{" "}
+                      <span className="text-emerald-400">
+                        {server.players.online}/{server.players.max}
+                      </span>
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>

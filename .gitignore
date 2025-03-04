@@ -75,3 +75,27 @@ minecraft-plugin/*.iml
 Thumbs.db 
 .vercel
 .env*.local
+
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# Gradle
+.gradle
+**/build/
+!src/**/build/
+
+# IDE
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+
+# Compiled class file
+*.class
+
+# Log file
+*.log

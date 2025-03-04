@@ -66,7 +66,11 @@ export default function Home() {
             </div>
           </div>
 
-          <ServerStatus serverIp="play.enderfall.co.uk" />
+          <ServerStatus
+            serverIp={
+              process.env.NEXT_PUBLIC_SERVER_IP || "play.enderfall.co.uk"
+            }
+          />
         </div>
 
         <div className="text-center">

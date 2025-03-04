@@ -8,6 +8,7 @@ import fs from "fs";
 import path from "path";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
+import { getRankById } from "@/lib/ranks";
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
@@ -499,176 +500,163 @@ function logDiagnostic(message: string, data?: any) {
   // Removed console logging
 }
 
-// The main webhook handler
-export async function POST(req: Request) {
-  const body = await req.text();
-  const sig = headers().get("stripe-signature") as string;
+export const dynamic = "force-dynamic";
 
-  if (!sig) {
-    return NextResponse.json(
-      { error: "Missing Stripe signature" },
-      { status: 400 }
-    );
-  }
+interface ServerConfig {
+  name: string;
+  ip: string;
+  apiPort: number;
+}
 
-  if (!webhookSecret) {
-    console.error("Missing STRIPE_WEBHOOK_SECRET environment variable");
-    return NextResponse.json(
-      { error: "Webhook secret not configured" },
-      { status: 500 }
-    );
-  }
+const servers = {
+  lobby: {
+    name: "Lobby",
+    ip: process.env.MINECRAFT_LOBBY_IP || "",
+    apiPort: parseInt(process.env.MINECRAFT_LOBBY_API_PORT || "8081"),
+  },
+  towny: {
+    name: "Towny",
+    ip: process.env.MINECRAFT_TOWNY_IP || "",
+    apiPort: parseInt(process.env.MINECRAFT_TOWNY_API_PORT || "8082"),
+  },
+};
 
-  // Ensure data directory exists for logging
-  ensureDataDirectoryExists();
+// Helper function to determine if a rank is a towny rank
+function isTownyRank(rankId: string): boolean {
+  return (
+    rankId.toLowerCase().startsWith("towny_") ||
+    [
+      "citizen",
+      "merchant",
+      "councilor",
+      "mayor",
+      "governor",
+      "noble",
+      "duke",
+      "king",
+      "emperor",
+      "divine",
+    ].includes(rankId.toLowerCase())
+  );
+}
 
-  let event: Stripe.Event;
-
+// Helper function to apply rank to a specific server
+async function applyRankToServer(
+  server: ServerConfig,
+  username: string,
+  rankId: string
+): Promise<boolean> {
   try {
-    // Verify the event came from Stripe
-    event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
-
-    // Log the event type for monitoring
-    console.log(`Webhook received: ${event.type}`);
-
-    // Handle different event types
-    switch (event.type) {
-      case "checkout.session.completed": {
-        const session = event.data.object as Stripe.Checkout.Session;
-
-        // Log the successful payment
-        logDiagnostic("Payment succeeded", {
-          sessionId: session.id,
-          customerId: session.customer,
-          amount: session.amount_total,
-          metadata: session.metadata,
-        });
-
-        // Make sure the payment status is paid
-        if (session.payment_status !== "paid") {
-          logDiagnostic("Payment not completed yet", {
-            sessionId: session.id,
-            status: session.payment_status,
-          });
-          return NextResponse.json({ received: true });
-        }
-
-        // Extract metadata
-        const metadata = session.metadata as {
-          user_id?: string;
-          rank_id?: string;
-          rank_name?: string;
-          minecraft_username?: string;
-          is_gift?: string;
-          type?: string;
-        };
-
-        // Validate metadata
-        if (!metadata || !metadata.rank_id || !metadata.minecraft_username) {
-          logDiagnostic("Invalid metadata in session", {
-            sessionId: session.id,
-            metadata,
-          });
-          return NextResponse.json({ received: true });
-        }
-
-        // Process the purchase
-        try {
-          // Save the user's rank data
-          const saveResult = await saveUserRankData(
-            metadata.minecraft_username,
-            metadata.rank_id
-          );
-
-          // Log the result
-          logDiagnostic("Rank saved", {
-            sessionId: session.id,
-            result: saveResult,
-          });
-
-          // Clean up the pending purchase
-          await removePendingPurchase(
-            session.id,
-            metadata.rank_id,
-            metadata.minecraft_username
-          );
-
-          return NextResponse.json({ received: true, processed: true });
-        } catch (error) {
-          logDiagnostic("Error processing purchase", {
-            sessionId: session.id,
-            error: error instanceof Error ? error.message : String(error),
-          });
-          return NextResponse.json({
-            received: true,
-            error: "Processing error",
-          });
-        }
-      }
-
-      case "checkout.session.async_payment_succeeded": {
-        const session = event.data.object as Stripe.Checkout.Session;
-        logDiagnostic("Async payment succeeded", { sessionId: session.id });
-        // Process similar to checkout.session.completed
-        // The implementation would be almost identical to the checkout.session.completed case
-        return NextResponse.json({ received: true });
-      }
-
-      case "checkout.session.async_payment_failed": {
-        const session = event.data.object as Stripe.Checkout.Session;
-        logDiagnostic("Async payment failed", { sessionId: session.id });
-        // Handle failed payment (e.g., notify user, cleanup pending purchase)
-        return NextResponse.json({ received: true });
-      }
-
-      case "payment_intent.succeeded": {
-        const paymentIntent = event.data.object as Stripe.PaymentIntent;
-        logDiagnostic("Payment intent succeeded", {
-          paymentIntentId: paymentIntent.id,
-        });
-        return NextResponse.json({ received: true });
-      }
-
-      case "payment_intent.payment_failed": {
-        const paymentIntent = event.data.object as Stripe.PaymentIntent;
-        const errorMessage = paymentIntent.last_payment_error?.message;
-        logDiagnostic("Payment failed", {
-          paymentIntentId: paymentIntent.id,
-          error: errorMessage,
-        });
-        return NextResponse.json({ received: true });
-      }
-
-      default: {
-        // For other event types, just acknowledge receipt
-        logDiagnostic(`Unhandled event type: ${event.type}`);
-        return NextResponse.json({ received: true });
-      }
-    }
-  } catch (err) {
-    const error = err as Error;
-    console.error(`Webhook Error: ${error.message}`);
-
-    // Log detailed error information
-    logDiagnostic("Webhook error", {
-      error: error.message,
-      stack: error.stack,
+    const apiUrl = `http://${server.ip}:${server.apiPort}/apply-rank`;
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.MINECRAFT_SERVER_API_KEY}`,
+      },
+      body: JSON.stringify({
+        username,
+        rankId,
+      }),
     });
 
+    if (!response.ok) {
+      console.error(
+        `Failed to apply rank on ${server.name}:`,
+        await response.text()
+      );
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error(`Error applying rank on ${server.name}:`, error);
+    return false;
+  }
+}
+
+// Function to apply rank across appropriate servers
+async function applyRankAcrossServers(
+  username: string,
+  rankId: string
+): Promise<boolean> {
+  const isTowny = isTownyRank(rankId);
+  let success = true;
+
+  if (isTowny) {
+    // Apply towny ranks only to towny server
+    success = await applyRankToServer(servers.towny, username, rankId);
+  } else {
+    // Apply regular ranks to both servers
+    const lobbySuccess = await applyRankToServer(
+      servers.lobby,
+      username,
+      rankId
+    );
+    const townySuccess = await applyRankToServer(
+      servers.towny,
+      username,
+      rankId
+    );
+    success = lobbySuccess && townySuccess;
+  }
+
+  return success;
+}
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.text();
+    const headersList = headers();
+    const signature = headersList.get("stripe-signature");
+
+    if (!signature || !process.env.STRIPE_WEBHOOK_SECRET) {
+      return NextResponse.json(
+        { error: "Missing signature or webhook secret" },
+        { status: 400 }
+      );
+    }
+
+    const event = stripe.webhooks.constructEvent(
+      body,
+      signature,
+      process.env.STRIPE_WEBHOOK_SECRET
+    );
+
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object;
+      const metadata = session.metadata;
+
+      if (!metadata) {
+        throw new Error("No metadata found in session");
+      }
+
+      const { minecraft_username, rank_id } = metadata;
+
+      if (!minecraft_username || !rank_id) {
+        throw new Error("Missing required metadata");
+      }
+
+      // Apply the rank across appropriate servers
+      const success = await applyRankAcrossServers(minecraft_username, rank_id);
+
+      if (!success) {
+        console.error("Failed to apply rank across all required servers");
+        return NextResponse.json(
+          { error: "Failed to apply rank" },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({ success: true });
+    }
+
+    return NextResponse.json({ received: true });
+  } catch (error) {
+    console.error("Webhook error:", error);
     return NextResponse.json(
-      { error: `Webhook Error: ${error.message}` },
+      { error: "Webhook handler failed" },
       { status: 400 }
     );
   }
 }
-
-// Ensure data directory exists
-function ensureDataDirectoryExists() {
-  const dataDir = path.join(process.cwd(), "data");
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
-  }
-  return dataDir;
-}
-
-export const dynamic = "force-dynamic";

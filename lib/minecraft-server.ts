@@ -93,12 +93,36 @@ export async function checkPlayerExists(username: string): Promise<boolean> {
   if (!username) return false;
 
   try {
-    // Check if the server API URL is configured
+    // First try the proxy server API
+    if (process.env.MINECRAFT_PROXY_API_URL) {
+      try {
+        const apiUrl = `${process.env.MINECRAFT_PROXY_API_URL}/player/${username.toLowerCase()}`;
+        console.log(`Checking player existence at proxy: ${apiUrl}`);
+        const response = await fetch(apiUrl, {
+          headers: {
+            "Content-Type": "application/json",
+            "User-Agent": "Minecraft Shop API/1.0",
+            Authorization: `Bearer ${process.env.MINECRAFT_PROXY_API_KEY || ""}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (!data.error && data.exists) {
+            return true;
+          }
+        }
+      } catch (error) {
+        console.error("Error connecting to proxy API:", error);
+        // Fall through to next check if proxy is unavailable
+      }
+    }
+
+    // Then try the server API
     if (process.env.MINECRAFT_SERVER_API_URL) {
-      // Try to connect to the Minecraft server API
       try {
         const apiUrl = `${process.env.MINECRAFT_SERVER_API_URL}/player/${username.toLowerCase()}`;
-        console.log(`Checking player existence at: ${apiUrl}`);
+        console.log(`Checking player existence at server: ${apiUrl}`);
         const response = await fetch(apiUrl, {
           headers: {
             "Content-Type": "application/json",
@@ -109,17 +133,19 @@ export async function checkPlayerExists(username: string): Promise<boolean> {
 
         if (response.ok) {
           const data = await response.json();
-          return !data.error; // Return true if there's no error
+          if (!data.error) {
+            return true;
+          }
         }
       } catch (error) {
-        console.error("Error connecting to Minecraft server API:", error);
+        console.error("Error connecting to server API:", error);
         // Fall back to local check if API is unavailable
       }
     } else {
       console.log("No MINECRAFT_SERVER_API_URL configured, using fallback");
     }
 
-    // Fall back to checking local player data if API is not available
+    // Fall back to checking local player data if APIs are not available
     const knownPlayers = await getKnownPlayers();
 
     // For development, consider the player exists if no players are found locally
@@ -134,7 +160,6 @@ export async function checkPlayerExists(username: string): Promise<boolean> {
   } catch (error) {
     console.error("Error checking player existence:", error);
     // For development only, return true to avoid blocking user flows
-    // In production, this should return false
     if (process.env.NODE_ENV === "development") {
       console.log("Development fallback: Assuming player exists");
       return true;

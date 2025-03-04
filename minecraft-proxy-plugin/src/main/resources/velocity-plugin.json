@@ -1,0 +1,9 @@
+{
+  "id": "websiteplugin",
+  "name": "WebsitePlugin",
+  "version": "1.0.0",
+  "description": "EnderFall website integration plugin for Velocity",
+  "authors": ["EnderFall Team"],
+  "dependencies": [],
+  "main": "com.mcstore.proxy.WebsiteProxyPlugin"
+}
