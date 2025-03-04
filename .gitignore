@@ -33,8 +33,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Minecraft Plugin
+# Minecraft Plugins
 /minecraft-plugin/
+/minecraft-proxy-plugin/
 /server/
 
 # IDE
@@ -66,10 +67,13 @@ yarn-error.log*
 *.sln
 *.sw?
 
-# Minecraft plugin
+# Minecraft plugin builds
 minecraft-plugin/target/
 minecraft-plugin/.idea/
 minecraft-plugin/*.iml
+minecraft-proxy-plugin/target/
+minecraft-proxy-plugin/.idea/
+minecraft-proxy-plugin/*.iml
 
 # OS files
 Thumbs.db 
