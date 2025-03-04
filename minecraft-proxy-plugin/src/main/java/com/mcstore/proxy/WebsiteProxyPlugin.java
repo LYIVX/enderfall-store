@@ -27,6 +27,7 @@ public class WebsiteProxyPlugin {
     private Config config;
     private RankManager rankManager;
     private ApiServer apiServer;
+    private PlayerListener playerListener;
 
     @Inject
     public WebsiteProxyPlugin(ProxyServer server, Logger logger, @DataDirectory Path dataDirectory) {
@@ -44,11 +45,12 @@ public class WebsiteProxyPlugin {
         this.rankManager = new RankManager(this);
         this.apiServer = new ApiServer(this);
         
+        // Initialize and register event listener
+        this.playerListener = new PlayerListener(this);
+        server.getEventManager().register(this, this.playerListener);
+        
         // Start API server
         this.apiServer.start();
-        
-        // Register event listener
-        server.getEventManager().register(this, new PlayerListener(this));
         
         logger.info("WebsitePlugin has been enabled!");
     }
@@ -122,5 +124,9 @@ public class WebsiteProxyPlugin {
             }
         }
         return success;
+    }
+
+    public PlayerListener getPlayerListener() {
+        return playerListener;
     }
 } 

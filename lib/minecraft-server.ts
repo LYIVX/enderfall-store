@@ -11,6 +11,16 @@ interface UsersData {
   players: PlayerData[];
 }
 
+interface PlayerResponse {
+  exists: boolean;
+  username?: string;
+  error?: string;
+}
+
+interface PlayersResponse {
+  players: Array<{ username: string }>;
+}
+
 /**
  * Resolves the path to the Minecraft plugin data directory
  */
@@ -32,28 +42,50 @@ export function resolvePluginPath(): string {
  * Gets the path to the users.json file
  */
 export function getUsersFilePath(): string {
-  const pluginPath = resolvePluginPath();
-  const usersFilePath = path.join(pluginPath, "users.json");
-
-  // If the file exists, return the path
-  if (fs.existsSync(usersFilePath)) {
-    return usersFilePath;
-  }
-
-  // If the file doesn't exist, check alternative locations
-  const altLocations = [
-    path.join(process.cwd(), "data", "users.json"),
-    path.join(process.cwd(), "public", "data", "users.json"),
-  ];
-
-  for (const altPath of altLocations) {
-    if (fs.existsSync(altPath)) {
-      return altPath;
+  // First try environment variable path
+  if (process.env.MINECRAFT_PLUGIN_PATH) {
+    const envPath = path.join(process.env.MINECRAFT_PLUGIN_PATH, "users.json");
+    if (fs.existsSync(envPath)) {
+      return envPath;
     }
   }
 
-  // If no file is found, use the default location
-  return usersFilePath;
+  // Try common production paths
+  const productionPaths = [
+    "/var/www/minecraft/plugins/WebsitePlugin/users.json",
+    "/var/minecraft/plugins/WebsitePlugin/users.json",
+    "/minecraft/plugins/WebsitePlugin/users.json",
+  ];
+
+  for (const prodPath of productionPaths) {
+    if (fs.existsSync(prodPath)) {
+      return prodPath;
+    }
+  }
+
+  // Try development paths
+  const devPaths = [
+    path.join(process.cwd(), "data", "users.json"),
+    path.join(process.cwd(), "public", "data", "users.json"),
+    path.join(process.cwd(), "plugins", "WebsitePlugin", "users.json"),
+  ];
+
+  for (const devPath of devPaths) {
+    if (fs.existsSync(devPath)) {
+      return devPath;
+    }
+  }
+
+  // If no file is found, return a default path in the data directory
+  const defaultPath = path.join(process.cwd(), "data", "users.json");
+
+  // Ensure the data directory exists
+  const dataDir = path.dirname(defaultPath);
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+  }
+
+  return defaultPath;
 }
 
 /**
@@ -90,80 +122,44 @@ export async function getKnownPlayers(): Promise<string[]> {
  * @returns True if the player exists, false otherwise
  */
 export async function checkPlayerExists(username: string): Promise<boolean> {
-  if (!username) return false;
+  if (!username) {
+    return false;
+  }
+
+  const normalizedUsername = username.toLowerCase();
+  const proxyApiUrl = process.env.MINECRAFT_PROXY_API_URL;
+
+  if (!proxyApiUrl) {
+    console.log("No proxy API URL configured");
+    return false;
+  }
 
   try {
-    // First try the proxy server API
-    if (process.env.MINECRAFT_PROXY_API_URL) {
-      try {
-        const apiUrl = `${process.env.MINECRAFT_PROXY_API_URL}/player/${username.toLowerCase()}`;
-        console.log(`Checking player existence at proxy: ${apiUrl}`);
-        const response = await fetch(apiUrl, {
-          headers: {
-            "Content-Type": "application/json",
-            "User-Agent": "Minecraft Shop API/1.0",
-            Authorization: `Bearer ${process.env.MINECRAFT_PROXY_API_KEY || ""}`,
-          },
-        });
+    // First check if player exists via proxy API
+    const proxyUrl = `${proxyApiUrl}/api/player/${normalizedUsername}`;
+    console.log(`Checking player existence at proxy: ${proxyUrl}`);
 
-        if (response.ok) {
-          const data = await response.json();
-          if (!data.error && data.exists) {
-            return true;
-          }
-        }
-      } catch (error) {
-        console.error("Error connecting to proxy API:", error);
-        // Fall through to next check if proxy is unavailable
-      }
-    }
+    const proxyResponse = await fetch(proxyUrl, {
+      headers: {
+        Authorization: `Bearer ${process.env.MINECRAFT_SERVER_API_KEY}`,
+        "Cache-Control": "no-cache",
+      },
+    });
 
-    // Then try the server API
-    if (process.env.MINECRAFT_SERVER_API_URL) {
-      try {
-        const apiUrl = `${process.env.MINECRAFT_SERVER_API_URL}/player/${username.toLowerCase()}`;
-        console.log(`Checking player existence at server: ${apiUrl}`);
-        const response = await fetch(apiUrl, {
-          headers: {
-            "Content-Type": "application/json",
-            "User-Agent": "Minecraft Shop API/1.0",
-            Authorization: `Bearer ${process.env.MINECRAFT_SERVER_API_KEY || ""}`,
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          if (!data.error) {
-            return true;
-          }
-        }
-      } catch (error) {
-        console.error("Error connecting to server API:", error);
-        // Fall back to local check if API is unavailable
-      }
-    } else {
-      console.log("No MINECRAFT_SERVER_API_URL configured, using fallback");
-    }
-
-    // Fall back to checking local player data if APIs are not available
-    const knownPlayers = await getKnownPlayers();
-
-    // For development, consider the player exists if no players are found locally
-    if (knownPlayers.length === 0 && process.env.NODE_ENV === "development") {
+    if (!proxyResponse.ok) {
       console.log(
-        "Development mode: Assuming player exists for testing purposes"
+        `Proxy API error response (${proxyResponse.status}): ${await proxyResponse.text()}`
       );
-      return true;
+      return false;
     }
 
-    return knownPlayers.includes(username.toLowerCase());
+    const proxyData = await proxyResponse.json();
+    console.log("Proxy API response:", proxyData);
+
+    // If the proxy API gives us a definitive answer, return it
+    return proxyData.exists;
   } catch (error) {
     console.error("Error checking player existence:", error);
-    // For development only, return true to avoid blocking user flows
-    if (process.env.NODE_ENV === "development") {
-      console.log("Development fallback: Assuming player exists");
-      return true;
-    }
     return false;
   }
 }
@@ -177,9 +173,36 @@ export async function getPlayerRanks(username: string): Promise<string[]> {
   if (!username) return [];
 
   try {
-    // We would need to read from the ranks.yml file
-    // This is a placeholder - you would need to implement proper YAML parsing
-    // or another solution based on your plugin's data storage
+    if (!process.env.MINECRAFT_PROXY_API_URL) {
+      console.error("No MINECRAFT_PROXY_API_URL configured");
+      return [];
+    }
+
+    const apiUrl = `${process.env.MINECRAFT_PROXY_API_URL}/api/player/${username.toLowerCase()}/ranks`;
+    console.log(`Getting player ranks from proxy: ${apiUrl}`);
+
+    const response = await fetch(apiUrl, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": "Minecraft Shop API/1.0",
+        Authorization: `Bearer ${process.env.MINECRAFT_SERVER_API_KEY || ""}`,
+      },
+      next: { revalidate: 0 }, // Disable cache
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      console.log("Proxy API ranks response:", data);
+      return data.ranks || [];
+    } else {
+      const errorText = await response.text();
+      console.error(
+        `Proxy API error response (${response.status}):`,
+        errorText
+      );
+    }
+
     return [];
   } catch (error) {
     console.error("Error getting player ranks:", error);

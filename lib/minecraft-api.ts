@@ -15,7 +15,18 @@ interface PlayerExistsResponse {
  * Get the endpoint for player API requests
  */
 function getPlayerApiEndpoint(): string {
-  return process.env.MINECRAFT_API_URL || "http://localhost:8080/api";
+  // First try the proxy API URL
+  if (process.env.MINECRAFT_PROXY_API_URL) {
+    return process.env.MINECRAFT_PROXY_API_URL;
+  }
+  // Then try the server API URL
+  if (process.env.MINECRAFT_SERVER_API_URL) {
+    return process.env.MINECRAFT_SERVER_API_URL;
+  }
+  // If neither is available, throw an error
+  throw new Error(
+    "No Minecraft API URL configured. Please set MINECRAFT_PROXY_API_URL or MINECRAFT_SERVER_API_URL in your environment variables."
+  );
 }
 
 /**

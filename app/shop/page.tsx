@@ -420,6 +420,13 @@ function ShopContent() {
         return;
       }
 
+      // Clear previous search results first
+      setSearchedUsername("");
+      setPlayerExists(false);
+      setSearchedUserRanks([]);
+      setServerHostname("");
+      setAvailableRanks([]);
+
       setIsSearching(true);
       setSearchError("");
       const usernameToSearch = username || searchUsername;
@@ -432,8 +439,8 @@ function ShopContent() {
 
         if (response.ok) {
           setPlayerExists(data.exists);
+          setSearchedUsername(usernameToSearch);
           if (data.exists) {
-            setSearchedUsername(usernameToSearch);
             setSearchedUserRanks(data.ranks || []);
             setServerHostname(data.serverHostname || "");
           } else {
@@ -851,23 +858,30 @@ function ShopContent() {
           )}
 
           {searchedUsername && (
-            <div className="mt-4 bg-gray-800 p-3 rounded">
-              <p className="text-green-400">
-                Searching for:{" "}
-                <span className="font-semibold">{searchedUsername}</span>
-              </p>
-              {serverHostname && (
-                <p className="text-blue-300 text-sm mt-1">
-                  Server: <span className="font-mono">{serverHostname}</span>
-                </p>
-              )}
-              <p className="text-sm text-[var(--text-secondary)] mt-1">
-                {playerExists
-                  ? `Found player with ${
-                      searchedUserRanks.length ? searchedUserRanks.length : "no"
-                    } rank(s)`
-                  : "Player not found on this server"}
-              </p>
+            <div className="mt-4 bg-[var(--card-bg)] p-4 rounded-lg border border-[var(--card-border)]">
+              <div className="flex items-center gap-3">
+                <Image
+                  src={`https://mc-heads.net/avatar/${searchedUsername}/48.png`}
+                  alt={`${searchedUsername}'s avatar`}
+                  width={48}
+                  height={48}
+                  className="rounded"
+                />
+                <div>
+                  <h3 className="text-lg font-semibold">{searchedUsername}</h3>
+                  {playerExists ? (
+                    <p className="text-sm text-[var(--text-secondary)]">
+                      {searchedUserRanks.length > 0
+                        ? `Current Ranks: ${searchedUserRanks.join(", ")}`
+                        : "No ranks owned"}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-red-500">
+                      Player has never joined the server
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </div>
