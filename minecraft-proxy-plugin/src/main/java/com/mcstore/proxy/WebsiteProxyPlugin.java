@@ -9,6 +9,8 @@ import com.velocitypowered.api.proxy.ProxyServer;
 import com.velocitypowered.api.proxy.server.RegisteredServer;
 import com.velocitypowered.api.proxy.server.ServerPing;
 import org.slf4j.Logger;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import java.nio.file.Path;
 import java.util.concurrent.ExecutionException;
@@ -28,12 +30,14 @@ public class WebsiteProxyPlugin {
     private RankManager rankManager;
     private ApiServer apiServer;
     private PlayerListener playerListener;
+    private final Gson gson;
 
     @Inject
     public WebsiteProxyPlugin(ProxyServer server, Logger logger, @DataDirectory Path dataDirectory) {
         this.server = server;
         this.logger = logger;
         this.dataDirectory = dataDirectory;
+        this.gson = new GsonBuilder().setPrettyPrinting().create();
     }
 
     @Subscribe
@@ -128,5 +132,9 @@ public class WebsiteProxyPlugin {
 
     public PlayerListener getPlayerListener() {
         return playerListener;
+    }
+
+    public Gson getGson() {
+        return gson;
     }
 } 

@@ -166,6 +166,7 @@ async function saveUserRankData(
         `${process.env.MINECRAFT_SERVER_API_URL}/api/apply-rank`,
         {
           username: normalizedUsername,
+          rankId: rankId,
           rank: rankId,
         },
         {
@@ -730,6 +731,7 @@ async function applyRankToServer(
       },
       body: JSON.stringify({
         username,
+        rankId: rankId,
         rank: rankId,
       }),
     });

@@ -16,6 +16,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import java.lang.reflect.Type;
 
 public class RankManager {
     private final WebsiteProxyPlugin plugin;
@@ -36,13 +40,23 @@ public class RankManager {
      */
     private void loadRankData() {
         if (!Files.exists(rankDataFile)) {
+            logger.info("Rank data file does not exist yet. Starting with empty ranks.");
             return;
         }
 
         try (BufferedReader reader = Files.newBufferedReader(rankDataFile)) {
-            // TODO: Implement JSON parsing of rank data
-            // This is a placeholder for the actual implementation
-        } catch (IOException e) {
+            String jsonData = reader.lines().collect(Collectors.joining());
+            Type rankMapType = new TypeToken<Map<String, Set<String>>>(){}.getType();
+            Map<String, Set<String>> loadedRanks = plugin.getGson().fromJson(jsonData, rankMapType);
+            
+            if (loadedRanks != null) {
+                playerRanks.clear();
+                playerRanks.putAll(loadedRanks);
+                logger.info("Successfully loaded rank data for {} players", playerRanks.size());
+            } else {
+                logger.warn("Loaded rank data was null, starting with empty ranks");
+            }
+        } catch (Exception e) {
             logger.error("Failed to load rank data", e);
         }
     }
@@ -51,9 +65,16 @@ public class RankManager {
      * Save rank data to file
      */
     private void saveRankData() {
-        try (BufferedWriter writer = Files.newBufferedWriter(rankDataFile)) {
-            // TODO: Implement JSON writing of rank data
-            // This is a placeholder for the actual implementation
+        try {
+            // Ensure parent directory exists
+            Files.createDirectories(rankDataFile.getParent());
+            
+            // Write the data
+            try (BufferedWriter writer = Files.newBufferedWriter(rankDataFile)) {
+                String jsonData = plugin.getGson().toJson(playerRanks);
+                writer.write(jsonData);
+                logger.debug("Successfully saved rank data for {} players", playerRanks.size());
+            }
         } catch (IOException e) {
             logger.error("Failed to save rank data", e);
         }

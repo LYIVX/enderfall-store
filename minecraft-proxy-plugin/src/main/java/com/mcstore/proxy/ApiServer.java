@@ -160,7 +160,12 @@ public class ApiServer {
                 // Parse the JSON request
                 Map<String, String> request = gson.fromJson(requestBody, Map.class);
                 String username = request.get("username");
-                String rankId = request.get("rank");
+                
+                // Fix: Check for both "rankId" and "rank" fields to be more flexible
+                String rankId = request.get("rankId");
+                if (rankId == null) {
+                    rankId = request.get("rank"); // Try the alternate field name
+                }
 
                 logger.debug("Applying rank. Username: {}, Rank: {}", username, rankId);
 
