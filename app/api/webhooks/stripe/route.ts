@@ -627,20 +627,55 @@ interface ServerConfig {
   apiPort: number;
 }
 
+/**
+ * Determines the current environment and provides environment-specific configuration
+ */
+function getEnvironmentConfig() {
+  const env = process.env.NODE_ENV || "development";
+  const isTest = env === "test";
+  const isDev = env === "development";
+  const isProd = env === "production";
+
+  return {
+    env,
+    isTest,
+    isDev,
+    isProd,
+    useLocalServers:
+      isTest || (isDev && process.env.USE_LOCAL_SERVERS === "true"),
+    logFullData: isTest || isDev,
+  };
+}
+
+const envConfig = getEnvironmentConfig();
+
 const servers = {
   lobby: {
     name: "Lobby",
-    ip: process.env.MINECRAFT_LOBBY_IP || "localhost",
+    ip: envConfig.useLocalServers
+      ? "localhost"
+      : process.env.MINECRAFT_LOBBY_IP || "localhost",
     apiPort: parseInt(process.env.MINECRAFT_LOBBY_API_PORT || "8090"),
   },
   towny: {
     name: "Towny",
-    ip: process.env.MINECRAFT_TOWNY_IP || "localhost",
+    ip: envConfig.useLocalServers
+      ? "localhost"
+      : process.env.MINECRAFT_TOWNY_IP || "localhost",
     apiPort: parseInt(process.env.MINECRAFT_TOWNY_API_PORT || "8137"),
   },
 };
 
-// Log server configuration on startup for debugging
+// Log environment configuration
+console.log("Environment configuration:", {
+  environment: envConfig.env,
+  isTest: envConfig.isTest,
+  isDev: envConfig.isDev,
+  isProd: envConfig.isProd,
+  useLocalServers: envConfig.useLocalServers,
+});
+
+// Log server configuration for debugging
 console.log("Server configuration loaded:", {
   lobby: {
     ip: servers.lobby.ip,
@@ -708,10 +743,11 @@ async function applyRankToServer(
       apiUrl
     );
 
+    // Get API key from environment, with fallback for test environment
     const apiKey = process.env.MINECRAFT_SERVER_API_KEY;
     if (!apiKey) {
       console.error(
-        `[${correlationId}][Server: ${server.name}] API key not configured`
+        `[${correlationId}][Server: ${server.name}] API key not configured in environment`
       );
       return false;
     }
@@ -740,22 +776,50 @@ async function applyRankToServer(
       `[${correlationId}][Server: ${server.name}] Response status:`,
       response.status
     );
-    const responseText = await response.text();
-    console.log(
-      `[${correlationId}][Server: ${server.name}] Response body:`,
-      responseText
-    );
 
-    if (!response.ok) {
+    // Improved response handling with better error logging
+    let responseData;
+    const responseText = await response.text();
+
+    try {
+      // Try to parse response as JSON
+      responseData = JSON.parse(responseText);
+      console.log(
+        `[${correlationId}][Server: ${server.name}] Response data:`,
+        responseData
+      );
+    } catch (parseError) {
+      // If not valid JSON, log the raw text
       console.error(
-        `[${correlationId}][Server: ${server.name}] Failed to apply rank:`,
+        `[${correlationId}][Server: ${server.name}] Invalid JSON response:`,
         responseText
       );
       return false;
     }
 
+    if (!response.ok) {
+      console.error(
+        `[${correlationId}][Server: ${server.name}] Server returned error status:`,
+        {
+          status: response.status,
+          statusText: response.statusText,
+          data: responseData,
+        }
+      );
+      return false;
+    }
+
+    // Validate the response structure
+    if (!responseData.success) {
+      console.error(
+        `[${correlationId}][Server: ${server.name}] Server indicated failure:`,
+        responseData
+      );
+      return false;
+    }
+
     console.log(
-      `[${correlationId}][Server: ${server.name}] Successfully applied rank`
+      `[${correlationId}][Server: ${server.name}] Rank successfully applied`
     );
     return true;
   } catch (error) {
@@ -1140,7 +1204,7 @@ export async function POST(req: Request) {
               }
             );
 
-            // Save user rank data and apply it on the server
+            // Save user rank data
             const saveResult = await saveUserRankData(
               minecraftUsername,
               rankId
@@ -1156,9 +1220,19 @@ export async function POST(req: Request) {
                   error: saveResult.message,
                 }
               );
+              // Continue processing even if saving fails - we'll try to apply the rank anyway
             }
 
             // Apply the rank across servers
+            console.log(
+              `[${correlationId}][Stripe Webhook] Attempting to apply rank across servers`,
+              {
+                username: minecraftUsername,
+                rankId,
+                environment: process.env.NODE_ENV || "development",
+              }
+            );
+
             const serverApplyResult = await applyRankAcrossServers(
               minecraftUsername,
               rankId
@@ -1175,6 +1249,7 @@ export async function POST(req: Request) {
                 minecraftUsername,
                 saveSuccess: saveResult.success,
                 serverApplySuccess: serverApplyResult,
+                environment: process.env.NODE_ENV || "development",
               }
             );
 

@@ -11,7 +11,7 @@ const server = http.createServer((req, res) => {
   });
 
   // Handle different endpoints
-  if (req.url === "/activate-rank" && req.method === "POST") {
+  if (req.url === "/api/apply-rank" && req.method === "POST") {
     // Read the request body
     let body = "";
     req.on("data", (chunk) => {
@@ -26,9 +26,9 @@ const server = http.createServer((req, res) => {
         console.log("Parsed data:", data);
 
         // Check if the request has the required fields
-        if (!data.userId || !data.rankId) {
+        if (!data.username || !(data.rankId || data.rank)) {
           res.writeHead(400, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ error: "Missing userId or rankId" }));
+          res.end(JSON.stringify({ error: "Missing username or rank" }));
           return;
         }
 
@@ -40,13 +40,19 @@ const server = http.createServer((req, res) => {
           return;
         }
 
-        // Simulate successful rank activation
-        console.log(`Activating rank ${data.rankId} for user ${data.userId}`);
+        // Simulate successful rank application
+        const rankId = data.rankId || data.rank;
+        console.log(`Applying rank ${rankId} for user ${data.username}`);
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(
           JSON.stringify({
             success: true,
-            message: "Rank activated successfully",
+            message: "Rank applied successfully",
+            details: {
+              username: data.username,
+              rankId: rankId,
+              server: "mock-server",
+            },
           })
         );
       } catch (error) {
@@ -62,10 +68,22 @@ const server = http.createServer((req, res) => {
   }
 });
 
-// Start the server
-const PORT = 8080;
-server.listen(PORT, () => {
-  console.log(`Mock Minecraft server running at http://localhost:${PORT}`);
+// Start two servers to simulate lobby and towny
+const LOBBY_PORT = 8090;
+const TOWNY_PORT = 8137;
+
+// Clone the server for each port
+const lobbyServer = http.createServer(server.listeners("request")[0]);
+const townyServer = http.createServer(server.listeners("request")[0]);
+
+lobbyServer.listen(LOBBY_PORT, () => {
+  console.log(`Mock Lobby server running at http://localhost:${LOBBY_PORT}`);
   console.log(`Endpoints:`);
-  console.log(`  POST /activate-rank - Activate a rank for a user`);
+  console.log(`  POST /api/apply-rank - Apply a rank for a user`);
+});
+
+townyServer.listen(TOWNY_PORT, () => {
+  console.log(`Mock Towny server running at http://localhost:${TOWNY_PORT}`);
+  console.log(`Endpoints:`);
+  console.log(`  POST /api/apply-rank - Apply a rank for a user`);
 });

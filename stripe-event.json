@@ -1,11 +1,11 @@
 {
-  "id": "evt_test_123",
+  "id": "evt_test_lyivx_shadow_enchanter",
   "object": "event",
   "api_version": "2020-08-27",
-  "created": 1740758952,
+  "created": 1741129986,
   "data": {
     "object": {
-      "id": "cs_test_123",
+      "id": "cs_test_a1bmlotGfkb6UUxwCxrkAsT5ZJ01mhgqoYp591MFAE3EFQDe3WUX4qRZdX",
       "object": "checkout.session",
       "after_expiration": null,
       "allow_promotion_codes": null,
@@ -16,35 +16,35 @@
         "status": null
       },
       "billing_address_collection": null,
-      "cancel_url": "http://localhost:3000/shop",
+      "cancel_url": "https://www.enderfall.co.uk/shop",
       "client_reference_id": null,
       "consent": null,
       "consent_collection": null,
-      "created": 1740758952,
-      "currency": "usd",
+      "created": 1741129986,
+      "currency": "gbp",
       "custom_text": {
         "shipping_address": null,
         "submit": null
       },
-      "customer": "cus_test_123",
-      "customer_creation": "always",
+      "customer": "cus_test_lyivx",
+      "customer_creation": "if_required",
       "customer_details": {
         "address": {
           "city": null,
-          "country": "US",
+          "country": "GB",
           "line1": null,
           "line2": null,
-          "postal_code": null,
+          "postal_code": "TA93EP",
           "state": null
         },
-        "email": "test@example.com",
-        "name": "Test User",
+        "email": "tommyleee1@googlemail.com",
+        "name": "tommylee extance",
         "phone": null,
         "tax_exempt": "none",
         "tax_ids": []
       },
-      "customer_email": "test@example.com",
-      "expires_at": 1740845352,
+      "customer_email": "tommyleee1@googlemail.com",
+      "expires_at": 1741216386,
       "invoice": null,
       "invoice_creation": {
         "enabled": false,
@@ -60,15 +60,22 @@
       "livemode": false,
       "locale": null,
       "metadata": {
+        "is_gift": "false",
+        "minecraft_username": "lyivx",
+        "rank_id": "shadow_enchanter",
+        "rank_name": "Shadow Enchanter",
         "type": "rank_purchase",
-        "user_id": "847618421448507415",
-        "rank_id": "vip"
+        "user_id": "847618421448507415"
       },
       "mode": "payment",
-      "payment_intent": "pi_test_123",
+      "payment_intent": "pi_3Qz4eDGOFqnNirWj0dMS0PR1",
       "payment_link": null,
-      "payment_method_collection": "always",
-      "payment_method_options": {},
+      "payment_method_collection": "if_required",
+      "payment_method_options": {
+        "card": {
+          "request_three_d_secure": "automatic"
+        }
+      },
       "payment_method_types": ["card"],
       "payment_status": "paid",
       "phone_number_collection": {
@@ -83,7 +90,7 @@
       "status": "complete",
       "submit_type": null,
       "subscription": null,
-      "success_url": "http://localhost:3000/success?session_id={CHECKOUT_SESSION_ID}",
+      "success_url": "https://www.enderfall.co.uk/success?session_id={CHECKOUT_SESSION_ID}",
       "total_details": {
         "amount_discount": 0,
         "amount_shipping": 0,
@@ -95,8 +102,8 @@
   "livemode": false,
   "pending_webhooks": 1,
   "request": {
-    "id": "req_test_123",
-    "idempotency_key": "test_123"
+    "id": "req_test_lyivx_shadow_enchanter",
+    "idempotency_key": "test_lyivx_shadow_enchanter"
   },
   "type": "checkout.session.completed"
 }
