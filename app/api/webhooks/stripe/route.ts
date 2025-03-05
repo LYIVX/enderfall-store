@@ -826,9 +826,9 @@ export async function POST(req: Request) {
   try {
     const body = await req.text();
     const sig = req.headers.get("stripe-signature");
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
     if (!sig || !webhookSecret) {
+      console.error(`[${correlationId}] Missing signature or webhook secret`);
       return NextResponse.json(
         { error: "Missing signature or webhook secret" },
         { status: 400 }
@@ -840,67 +840,130 @@ export async function POST(req: Request) {
     try {
       event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
     } catch (err) {
+      console.error(`[${correlationId}] Invalid signature:`, err);
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
     }
 
-    // Respond immediately to Stripe
-    const response = NextResponse.json({ received: true });
+    // Log the event details
+    console.log(`[${correlationId}] Processing event:`, {
+      type: event.type,
+      id: event.id,
+    });
 
-    // Process the event in the background
+    // For checkout.session.completed events, process in the background
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
 
-      // Start background processing without awaiting
-      Promise.resolve()
-        .then(async () => {
-          try {
-            const rankId = session.metadata?.rank_id;
-            const minecraftUsername =
-              session.metadata?.minecraft_username?.toLowerCase();
+      // Respond to Stripe immediately
+      const response = NextResponse.json({
+        received: true,
+        success: true,
+        message: "Webhook received and processing started",
+      });
 
-            if (!rankId || !minecraftUsername) {
-              console.error(`[${correlationId}] Missing required metadata`);
-              return;
-            }
+      // Process in background
+      (async () => {
+        try {
+          const metadata = session.metadata || {};
+          const rankId = metadata.rank_id;
+          const minecraftUsername = metadata.minecraft_username?.toLowerCase();
+          const userId = metadata.user_id;
 
-            // Save to Supabase
-            await Promise.allSettled([
-              saveUserRankData(minecraftUsername, rankId),
-              savePendingRankBackup({
-                username: minecraftUsername,
-                rank_id: rankId,
-                created_at: new Date().toISOString(),
-              }),
-            ]);
+          console.log(`[${correlationId}] Processing purchase:`, {
+            sessionId: session.id,
+            username: minecraftUsername,
+            rankId,
+            userId,
+          });
 
-            // Apply rank and cleanup in parallel
-            await Promise.allSettled([
-              fetch(`${getMinecraftApiUrl()}/api/apply-rank`, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${process.env.MINECRAFT_SERVER_API_KEY}`,
-                },
-                body: JSON.stringify({
-                  username: minecraftUsername,
-                  rankId: rankId,
-                }),
-              }),
-              removePendingPurchase(session.id, rankId, minecraftUsername),
-            ]);
-          } catch (error) {
-            console.error(
-              `[${correlationId}] Background processing error:`,
-              error
-            );
+          if (!rankId || !minecraftUsername) {
+            console.error(`[${correlationId}] Missing required metadata`);
+            return;
           }
-        })
-        .catch((error) => {
+
+          // Save rank data with retries
+          let retryCount = 0;
+          const maxRetries = 3;
+          let success = false;
+
+          while (!success && retryCount < maxRetries) {
+            try {
+              // Save to Supabase
+              const [saveResult, backupResult] = await Promise.allSettled([
+                saveUserRankData(minecraftUsername, rankId),
+                savePendingRankBackup({
+                  username: minecraftUsername,
+                  rank_id: rankId,
+                  created_at: new Date().toISOString(),
+                }),
+              ]);
+
+              // Apply rank and cleanup
+              const [applyResult, cleanupResult] = await Promise.allSettled([
+                fetch(`${getMinecraftApiUrl()}/api/apply-rank`, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${process.env.MINECRAFT_SERVER_API_KEY}`,
+                  },
+                  body: JSON.stringify({
+                    username: minecraftUsername,
+                    rankId: rankId,
+                  }),
+                }).then((res) => res.json()),
+                removePendingPurchase(session.id, rankId, minecraftUsername),
+              ]);
+
+              // Check results
+              const allSuccessful = [
+                saveResult,
+                backupResult,
+                applyResult,
+                cleanupResult,
+              ].every((result) => result.status === "fulfilled");
+
+              if (allSuccessful) {
+                success = true;
+                console.log(
+                  `[${correlationId}] Purchase processed successfully`
+                );
+              } else {
+                throw new Error("Some operations failed");
+              }
+            } catch (error) {
+              retryCount++;
+              console.error(
+                `[${correlationId}] Retry ${retryCount}/${maxRetries} failed:`,
+                error
+              );
+
+              if (retryCount < maxRetries) {
+                // Exponential backoff
+                await new Promise((resolve) =>
+                  setTimeout(resolve, Math.pow(2, retryCount) * 1000)
+                );
+              }
+            }
+          }
+
+          if (!success) {
+            console.error(`[${correlationId}] All retries failed`);
+          }
+        } catch (error) {
           console.error(`[${correlationId}] Fatal background error:`, error);
-        });
+        }
+      })().catch((error) => {
+        console.error(`[${correlationId}] Unhandled background error:`, error);
+      });
+
+      return response;
     }
 
-    return response;
+    // For other event types
+    return NextResponse.json({
+      received: true,
+      message: `Webhook received for event type: ${event.type}`,
+    });
   } catch (error) {
     console.error(`[${correlationId}] Webhook error:`, error);
     return NextResponse.json(
