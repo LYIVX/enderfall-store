@@ -465,9 +465,9 @@ export async function GET(request: Request) {
               ip: servers.lobby.ip,
               apiPort: servers.lobby.apiPort,
             },
-            towny: {
-              ip: servers.towny.ip,
-              apiPort: servers.towny.apiPort,
+            survival: {
+              ip: servers.survival.ip,
+              apiPort: servers.survival.apiPort,
             },
           },
         });
@@ -658,12 +658,12 @@ const servers = {
       : process.env.MINECRAFT_LOBBY_IP || "localhost",
     apiPort: parseInt(process.env.MINECRAFT_LOBBY_API_PORT || "8090"),
   },
-  towny: {
-    name: "Towny",
+  survival: {
+    name: "Survival",
     ip: envConfig.useLocalServers
       ? "localhost"
-      : process.env.MINECRAFT_TOWNY_IP || "localhost",
-    apiPort: parseInt(process.env.MINECRAFT_TOWNY_API_PORT || "8137"),
+      : process.env.MINECRAFT_SURVIVAL_IP || "localhost",
+    apiPort: parseInt(process.env.MINECRAFT_SURVIVAL_API_PORT || "8137"),
   },
 };
 
@@ -684,11 +684,11 @@ console.log("Server configuration loaded:", {
     hasIp: !!process.env.MINECRAFT_LOBBY_IP,
     hasPort: !!process.env.MINECRAFT_LOBBY_API_PORT,
   },
-  towny: {
-    ip: servers.towny.ip,
-    apiPort: servers.towny.apiPort,
-    hasIp: !!process.env.MINECRAFT_TOWNY_IP,
-    hasPort: !!process.env.MINECRAFT_TOWNY_API_PORT,
+  survival: {
+    ip: servers.survival.ip,
+    apiPort: servers.survival.apiPort,
+    hasIp: !!process.env.MINECRAFT_SURVIVAL_IP,
+    hasPort: !!process.env.MINECRAFT_SURVIVAL_API_PORT,
   },
 });
 
@@ -971,9 +971,9 @@ async function applyRankAcrossServers(
     try {
       if (isTowny) {
         console.log(
-          `[${correlationId}][Rank Application] Applying Towny rank to Towny server only (attempt ${attempts})`
+          `[${correlationId}][Rank Application] Applying Towny rank to Survival server only (attempt ${attempts})`
         );
-        success = await applyRankToServer(servers.towny, username, rankId);
+        success = await applyRankToServer(servers.survival, username, rankId);
       } else {
         console.log(
           `[${correlationId}][Rank Application] Applying regular rank to all servers (attempt ${attempts})`
@@ -983,18 +983,18 @@ async function applyRankAcrossServers(
           username,
           rankId
         );
-        const townySuccess = await applyRankToServer(
-          servers.towny,
+        const survivalSuccess = await applyRankToServer(
+          servers.survival,
           username,
           rankId
         );
-        success = lobbySuccess && townySuccess;
+        success = lobbySuccess && survivalSuccess;
 
         console.log(
           `[${correlationId}][Rank Application] Application results (attempt ${attempts}):`,
           {
             lobby: lobbySuccess,
-            towny: townySuccess,
+            survival: survivalSuccess,
             overall: success,
           }
         );
