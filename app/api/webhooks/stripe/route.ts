@@ -782,7 +782,7 @@ async function applyRankToServer(
   try {
     // Added timeout to prevent requests from hanging indefinitely
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // Increased timeout to 15 seconds
 
     // Apply the rank via the API
     const response = await fetch(apiUrl, {
@@ -888,42 +888,67 @@ async function applyRankAcrossServers(
       } else {
         // Added timeout to prevent requests from hanging indefinitely
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // Increased timeout to 15 seconds
 
-        // Direct application to the main API endpoint
-        const response = await fetch(
-          `${process.env.MINECRAFT_SERVER_API_URL}/api/apply-rank`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${apiKey}`,
-              "X-Correlation-ID": correlationId,
-            },
-            body: JSON.stringify({
-              username,
-              rankId,
-              rank: rankId,
-              applyGlobally: true, // Signal that this should be applied to all servers
-            }),
-            signal: controller.signal,
-          }
-        );
-
-        clearTimeout(timeoutId);
-
-        if (response.ok) {
-          console.log(
-            `[${correlationId}][Rank Application] Successfully applied rank directly to main API endpoint`
+        try {
+          // Direct application to the main API endpoint
+          const response = await fetch(
+            `${process.env.MINECRAFT_SERVER_API_URL}/api/apply-rank`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${apiKey}`,
+                "X-Correlation-ID": correlationId,
+              },
+              body: JSON.stringify({
+                username,
+                rankId,
+                rank: rankId,
+                applyGlobally: true, // Signal that this should be applied to all servers
+              }),
+              signal: controller.signal,
+            }
           );
-          return true;
-        } else {
-          console.error(
-            `[${correlationId}][Rank Application] Failed to apply rank directly to main API endpoint:`,
+
+          clearTimeout(timeoutId);
+
+          // Log full response details
+          const responseText = await response.text();
+          console.log(
+            `[${correlationId}][Rank Application] Response details:`,
             {
               status: response.status,
               statusText: response.statusText,
-              body: await response.text(),
+              body: responseText,
+              ok: response.ok,
+            }
+          );
+
+          if (response.ok) {
+            console.log(
+              `[${correlationId}][Rank Application] Successfully applied rank directly to main API endpoint`
+            );
+            return true;
+          } else {
+            console.error(
+              `[${correlationId}][Rank Application] Failed to apply rank directly to main API endpoint:`,
+              {
+                status: response.status,
+                statusText: response.statusText,
+                body: responseText,
+              }
+            );
+          }
+        } catch (error: any) {
+          clearTimeout(timeoutId);
+          console.error(
+            `[${correlationId}][Rank Application] Error applying rank directly to main API endpoint:`,
+            {
+              message: error.message,
+              stack: error.stack,
+              type: error.name,
+              isTimeout: error.name === "AbortError",
             }
           );
         }
@@ -1157,11 +1182,39 @@ export async function processStripeEvent(
         };
       }
 
-      // Load the existing pending purchases
+      // First save the user's rank data - do this regardless of server availability
+      // This ensures the rank is saved even if servers are temporarily down
+      const saveResult = await saveUserRankData(username, rankId);
+      console.log(`[${correlationId}][Stripe Webhook] User rank data saved`, {
+        success: saveResult.success,
+        message: saveResult.message,
+      });
+
+      // Load the existing pending purchases and remove this one
       await removePendingPurchase(session.id, rankId, username);
 
       // Apply the rank to the user's Minecraft account
-      const rankApplied = await applyRankAcrossServers(username, rankId);
+      let rankApplied = false;
+      let retryCount = 0;
+      const MAX_APPLICATION_RETRIES = 3;
+
+      while (!rankApplied && retryCount < MAX_APPLICATION_RETRIES) {
+        console.log(
+          `[${correlationId}][Stripe Webhook] Attempt ${retryCount + 1} to apply rank to user`
+        );
+
+        rankApplied = await applyRankAcrossServers(username, rankId);
+
+        if (!rankApplied && retryCount < MAX_APPLICATION_RETRIES - 1) {
+          const waitTime = Math.pow(2, retryCount) * 1000;
+          console.log(
+            `[${correlationId}][Stripe Webhook] Server communication failed, waiting ${waitTime}ms before retry`
+          );
+          await new Promise((resolve) => setTimeout(resolve, waitTime));
+        }
+
+        retryCount++;
+      }
 
       if (rankApplied) {
         console.log(
@@ -1172,29 +1225,25 @@ export async function processStripeEvent(
           }
         );
 
-        // Save the user's rank data
-        const result = await saveUserRankData(username, rankId);
-
-        console.log(`[${correlationId}][Stripe Webhook] User rank data saved`, {
-          success: result.success,
-          message: result.message,
-        });
-
         return {
           success: true,
           message: "Rank purchase processed successfully",
         };
       } else {
         console.error(
-          `[${correlationId}][Stripe Webhook] Failed to apply rank`,
+          `[${correlationId}][Stripe Webhook] Failed to apply rank to servers`,
           {
             username,
             rankId,
           }
         );
+
+        // Even if server communication failed, we still saved the rank data
+        // so consider it a partial success that will be reconciled later
         return {
-          success: false,
-          message: "Failed to apply rank to any server",
+          success: true, // Consider this a success since we saved the rank data
+          message:
+            "Rank saved, but server communication failed. Rank will be applied when user next joins.",
         };
       }
     } catch (error: any) {
