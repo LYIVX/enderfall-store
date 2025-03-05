@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
-import path from "path";
-import fs from "fs";
 import { v4 as uuidv4 } from "uuid";
+import { supabase } from "@/lib/supabase";
 
 interface PendingRank {
   username: string;
-  rankId: string;
-  timestamp: string;
+  rank_id: string;
+  created_at: string;
 }
 
 export async function POST(req: Request) {
@@ -46,102 +45,146 @@ export async function POST(req: Request) {
       `[${correlationId}][Pending Ranks] Checking pending ranks for ${username}`
     );
 
-    // Get pending ranks from the file
-    const dataDir = path.join(process.cwd(), "data");
-    const pendingRanksPath = path.join(dataDir, "pending-ranks.json");
+    // Get pending ranks from Supabase
     const pendingRanks: PendingRank[] = [];
 
-    // Check if the file exists
-    if (fs.existsSync(pendingRanksPath)) {
-      try {
-        const pendingRanksContent = fs.readFileSync(pendingRanksPath, "utf8");
-        const pendingRanksData = JSON.parse(pendingRanksContent);
-        const allPendingRanks = pendingRanksData.pendingRanks || [];
+    // 1. First check pending_ranks_backup table
+    const { data: pendingRanksData, error: pendingRanksError } = await supabase
+      .from("pending_ranks_backup")
+      .select("*")
+      .eq("username", username);
 
-        // Filter for this username
-        for (const rank of allPendingRanks) {
-          if (rank.username.toLowerCase() === username) {
-            pendingRanks.push(rank);
-          }
-        }
+    if (pendingRanksError) {
+      console.error(
+        `[${correlationId}][Pending Ranks] Error querying pending_ranks_backup:`,
+        pendingRanksError
+      );
+    } else if (pendingRanksData && pendingRanksData.length > 0) {
+      console.log(
+        `[${correlationId}][Pending Ranks] Found ${pendingRanksData.length} pending ranks in pending_ranks_backup for ${username}`
+      );
 
-        // If found pending ranks, remove them from the file
-        if (pendingRanks.length > 0) {
-          console.log(
-            `[${correlationId}][Pending Ranks] Found ${pendingRanks.length} pending ranks for ${username}`
-          );
+      // Add these ranks to the response
+      pendingRanksData.forEach((rank) => {
+        pendingRanks.push({
+          username: rank.username,
+          rank_id: rank.rank_id,
+          created_at: rank.created_at,
+        });
+      });
 
-          // Filter out the ranks for this username
-          const updatedPendingRanks = allPendingRanks.filter(
-            (rank: PendingRank) => rank.username.toLowerCase() !== username
-          );
+      // Delete the ranks we've found from pending_ranks_backup
+      const { error: deleteError } = await supabase
+        .from("pending_ranks_backup")
+        .delete()
+        .eq("username", username);
 
-          // Write back the updated list
-          fs.writeFileSync(
-            pendingRanksPath,
-            JSON.stringify({ pendingRanks: updatedPendingRanks }, null, 2),
-            "utf8"
-          );
-        } else {
-          console.log(
-            `[${correlationId}][Pending Ranks] No pending ranks found for ${username}`
-          );
-        }
-      } catch (error) {
+      if (deleteError) {
         console.error(
-          `[${correlationId}][Pending Ranks] Error reading pending ranks file:`,
-          error
+          `[${correlationId}][Pending Ranks] Error deleting from pending_ranks_backup:`,
+          deleteError
+        );
+      } else {
+        console.log(
+          `[${correlationId}][Pending Ranks] Successfully cleaned up pending ranks from pending_ranks_backup for ${username}`
         );
       }
-    } else {
-      console.log(
-        `[${correlationId}][Pending Ranks] Pending ranks file does not exist`
-      );
     }
 
-    // Check user data store too
-    const userDataPath = path.join(dataDir, "user-data.json");
-    if (fs.existsSync(userDataPath)) {
-      try {
-        const userDataContent = fs.readFileSync(userDataPath, "utf8");
-        const userData = JSON.parse(userDataContent);
+    // 2. Check pending_purchases table
+    const { data: pendingPurchases, error: purchasesError } = await supabase
+      .from("pending_purchases")
+      .select("*")
+      .eq("minecraft_username", username);
 
-        // Check if the user has ranks saved but not yet applied
-        if (userData.users && userData.users[username]) {
-          const userRanks = userData.users[username].ranks || [];
-          const appliedRanks = userData.users[username].appliedRanks || [];
+    if (purchasesError) {
+      console.error(
+        `[${correlationId}][Pending Ranks] Error querying pending_purchases:`,
+        purchasesError
+      );
+    } else if (pendingPurchases && pendingPurchases.length > 0) {
+      console.log(
+        `[${correlationId}][Pending Ranks] Found ${pendingPurchases.length} pending purchases for ${username}`
+      );
 
-          // Find ranks that are saved but not marked as applied
-          for (const rankId of userRanks) {
-            if (!appliedRanks.includes(rankId)) {
-              pendingRanks.push({
-                username,
-                rankId,
-                timestamp: new Date().toISOString(),
-              });
+      // Add these purchases to the response
+      pendingPurchases.forEach((purchase) => {
+        pendingRanks.push({
+          username: purchase.minecraft_username,
+          rank_id: purchase.rank_id,
+          created_at: purchase.created_at || new Date().toISOString(),
+        });
+      });
 
-              // Mark as applied
-              if (!userData.users[username].appliedRanks) {
-                userData.users[username].appliedRanks = [];
-              }
-              userData.users[username].appliedRanks.push(rankId);
-            }
-          }
+      // Delete the pending purchases we've processed
+      const { error: deleteError } = await supabase
+        .from("pending_purchases")
+        .delete()
+        .eq("minecraft_username", username);
 
-          // If found pending ranks from user data, save the updates
-          if (pendingRanks.length > 0) {
-            fs.writeFileSync(
-              userDataPath,
-              JSON.stringify(userData, null, 2),
-              "utf8"
-            );
-          }
-        }
-      } catch (error) {
+      if (deleteError) {
         console.error(
-          `[${correlationId}][Pending Ranks] Error reading user data file:`,
-          error
+          `[${correlationId}][Pending Ranks] Error deleting from pending_purchases:`,
+          deleteError
         );
+      } else {
+        console.log(
+          `[${correlationId}][Pending Ranks] Successfully cleaned up pending purchases for ${username}`
+        );
+      }
+    }
+
+    // 3. Check user_ranks table for ranks that haven't been applied yet
+    const { data: userRanks, error: userRanksError } = await supabase
+      .from("user_ranks")
+      .select("*")
+      .eq("minecraft_username", username);
+
+    const { data: appliedRanks, error: appliedRanksError } = await supabase
+      .from("applied_ranks")
+      .select("rank_id")
+      .eq("minecraft_username", username);
+
+    if (!userRanksError && !appliedRanksError && userRanks) {
+      const appliedRankIds = appliedRanks
+        ? appliedRanks.map((r) => r.rank_id)
+        : [];
+
+      // Find ranks that haven't been applied yet
+      const unappliedRanks = userRanks.filter(
+        (rank) => !appliedRankIds.includes(rank.rank_id)
+      );
+
+      if (unappliedRanks.length > 0) {
+        console.log(
+          `[${correlationId}][Pending Ranks] Found ${unappliedRanks.length} unapplied ranks in user_ranks for ${username}`
+        );
+
+        // Add unapplied ranks to the response
+        unappliedRanks.forEach((rank) => {
+          pendingRanks.push({
+            username: rank.minecraft_username,
+            rank_id: rank.rank_id,
+            created_at: rank.created_at,
+          });
+
+          // Mark this rank as applied
+          supabase
+            .from("applied_ranks")
+            .insert({
+              minecraft_username: username,
+              rank_id: rank.rank_id,
+              applied_at: new Date().toISOString(),
+            })
+            .then(({ error }) => {
+              if (error) {
+                console.error(
+                  `[${correlationId}][Pending Ranks] Error marking rank ${rank.rank_id} as applied:`,
+                  error
+                );
+              }
+            });
+        });
       }
     }
 

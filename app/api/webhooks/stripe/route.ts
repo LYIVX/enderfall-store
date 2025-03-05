@@ -4,41 +4,25 @@ import { stripe } from "@/lib/stripe";
 import axios from "axios";
 import Stripe from "stripe";
 import { ranksConfig } from "@/lib/ranks";
-import fs from "fs";
-import path from "path";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { v4 as uuidv4 } from "uuid";
 import { getRankById } from "@/lib/ranks";
 import crypto from "crypto";
-import { v4 as uuidv4 } from "uuid";
+import { supabase } from "@/lib/supabase";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import {
+  saveUserRankData as saveRankToSupabase,
+  removePendingPurchase as removeSupabasePendingPurchase,
+  normalizeUsername,
+} from "@/lib/supabase";
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!.trim();
 
 // Define types for better type safety
-interface UserRanks {
-  ranks: string[];
-}
-
-interface UserData {
-  users: Record<string, UserRanks>;
-}
-
-interface PendingPurchase {
-  userId: string;
-  rankId: string;
-  minecraftUsername: string;
-  timestamp: number;
-  sessionId: string;
-  isGift: boolean;
-}
-
-interface PendingPurchasesData {
-  pendingPurchases: PendingPurchase[];
-}
-
-// Helper function to normalize Minecraft usernames for consistent storage and lookup
-function normalizeUsername(username: string): string {
-  return username.trim().toLowerCase();
+interface PendingRank {
+  username: string;
+  rank_id: string;
+  created_at: string;
 }
 
 // Function to save user rank data
@@ -50,101 +34,16 @@ async function saveUserRankData(
   message: string;
   userData?: any;
 }> {
-  // IMPORTANT: This function handles rank upgrades by:
-  // 1. Removing upgrade paths (e.g., vip_to_mvp) from user ranks
-  // 2. Removing the source rank (e.g., vip)
-  // 3. Adding only the destination rank (e.g., mvp)
-  // This ensures users have only their highest rank per category.
   try {
-    const dataDir = path.join(process.cwd(), "data");
-    const dataFilePath = path.join(dataDir, "user-data.json");
+    // Call Supabase library function to save the rank
+    const savedRank = await saveRankToSupabase(minecraftUsername, rankId);
 
-    // Ensure data directory exists
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
+    if (!savedRank) {
+      return {
+        success: false,
+        message: "Failed to save rank data in Supabase",
+      };
     }
-
-    // Initialize with empty data by default
-    let userData: UserData = { users: {} };
-
-    // Read existing data (if file exists)
-    if (fs.existsSync(dataFilePath)) {
-      try {
-        const data = fs.readFileSync(dataFilePath, "utf8");
-        userData = JSON.parse(data) as UserData;
-      } catch (error) {
-        // Continue with empty structure if there's an error
-      }
-    }
-
-    // Normalize username to lowercase for consistency
-    const normalizedUsername = normalizeUsername(minecraftUsername);
-
-    // Initialize user entry if needed
-    if (!userData.users[normalizedUsername]) {
-      userData.users[normalizedUsername] = { ranks: [] };
-    }
-
-    // ----- RANK PROCESSING LOGIC -----
-
-    // Get the current user ranks
-    let userRanks = [...userData.users[normalizedUsername].ranks];
-
-    // First, process any existing upgrade paths in the user's ranks
-    // This is a cleanup step to ensure no upgrade paths remain
-    const upgradePathsToRemove: string[] = [];
-    const sourceRanksToRemove: string[] = [];
-    const destinationRanksToAdd: string[] = [];
-
-    // First pass: identify upgrade paths to cleanup
-    userRanks.forEach((existingRankId) => {
-      if (existingRankId.includes("_to_")) {
-        upgradePathsToRemove.push(existingRankId);
-
-        // Also extract source and destination to handle them
-        const [sourceRank, destRank] = existingRankId.split("_to_");
-        sourceRanksToRemove.push(sourceRank);
-        destinationRanksToAdd.push(destRank);
-      }
-    });
-
-    // Apply cleanup: remove upgrade paths
-    userRanks = userRanks.filter(
-      (rank) => !upgradePathsToRemove.includes(rank)
-    );
-
-    // Remove source ranks (that are being upgraded from)
-    userRanks = userRanks.filter((rank) => !sourceRanksToRemove.includes(rank));
-
-    // Add destination ranks (that are being upgraded to)
-    destinationRanksToAdd.forEach((destRank) => {
-      if (!userRanks.includes(destRank)) {
-        userRanks.push(destRank);
-      }
-    });
-
-    // Now process the new rank being added
-    if (rankId.includes("_to_")) {
-      // This is an upgrade process
-      // Extract source and destination ranks
-      const [sourceRankId, destinationRankId] = rankId.split("_to_");
-
-      // 1. Remove the source rank
-      userRanks = userRanks.filter((rank) => rank !== sourceRankId);
-
-      // 2. Add the destination rank if not already present
-      if (!userRanks.includes(destinationRankId)) {
-        userRanks.push(destinationRankId);
-      }
-    } else {
-      // This is a normal rank, just add it if not already present
-      if (!userRanks.includes(rankId)) {
-        userRanks.push(rankId);
-      }
-    }
-
-    // Update the user's ranks
-    userData.users[normalizedUsername].ranks = userRanks;
 
     // Call the Minecraft plugin's API to apply the rank
     try {
@@ -153,12 +52,11 @@ async function saveUserRankData(
         keyExists: !!apiKey,
         keyLength: apiKey?.length,
         firstFewChars: apiKey?.substring(0, 5),
-        fullKey: apiKey, // Only log this during development!
       });
 
       console.log("Calling Minecraft server API:", {
         url: `${process.env.MINECRAFT_SERVER_API_URL}/api/apply-rank`,
-        username: normalizedUsername,
+        username: minecraftUsername.toLowerCase(),
         rank: rankId,
         authHeader: `Bearer ${apiKey}`,
       });
@@ -166,7 +64,7 @@ async function saveUserRankData(
       const response = await axios.post(
         `${process.env.MINECRAFT_SERVER_API_URL}/api/apply-rank`,
         {
-          username: normalizedUsername,
+          username: minecraftUsername.toLowerCase(),
           rankId: rankId,
           rank: rankId,
         },
@@ -202,20 +100,19 @@ async function saveUserRankData(
       };
     }
 
-    // Write the updated data back to the file
-    try {
-      fs.writeFileSync(dataFilePath, JSON.stringify(userData, null, 2), "utf8");
-    } catch (writeError) {
-      return {
-        success: false,
-        message: "Failed to save user data to file",
-      };
-    }
+    // Get the user's ranks from Supabase to return in the response
+    const { data: userRanks } = await supabase
+      .from("user_ranks")
+      .select("rank_id")
+      .eq("minecraft_username", minecraftUsername.toLowerCase());
 
     return {
       success: true,
       message: "Rank successfully saved and applied",
-      userData: { username: normalizedUsername, ranks: userRanks },
+      userData: {
+        username: minecraftUsername.toLowerCase(),
+        ranks: userRanks?.map((rank) => rank.rank_id) || [],
+      },
     };
   } catch (error) {
     console.error("Error in saveUserRankData:", error);
@@ -233,162 +130,19 @@ async function removePendingPurchase(
   username?: string
 ) {
   try {
-    const dataDir = path.join(process.cwd(), "data");
-    const pendingPurchasesPath = path.join(dataDir, "pending-purchases.json");
-
-    // If no pending purchases file exists, there's nothing to remove
-    if (!fs.existsSync(pendingPurchasesPath)) {
-      return {
-        success: false,
-        message: "No pending purchases to remove",
-      };
-    }
-
-    // Read existing pending purchases
-    const pendingPurchasesData = fs.readFileSync(pendingPurchasesPath, "utf8");
-    const purchasesData: PendingPurchasesData =
-      JSON.parse(pendingPurchasesData);
-
-    // Define the pending purchase type as used in the file
-    type PendingPurchase = {
-      sessionId: string;
-      rankId: string;
-      minecraftUsername: string;
-      userId: string;
-      timestamp: string;
-      isGift: boolean;
-    };
-
-    // Define failed cleanup type for storing failures
-    type FailedCleanup = {
-      timestamp: string;
-      sessionId: string;
-      pendingPurchases: PendingPurchase[];
-    };
-
-    // Store original length for comparison
-    const originalLength = purchasesData.pendingPurchases.length;
-
-    // Clean the session ID by removing any prefixes (if necessary)
-    const normalizeSessionId = (id: string): string => {
-      return id.replace(/^(cs_test_|cs_live_)/, "");
-    };
-
-    // First try an exact match
-    let exactMatch = false;
-    purchasesData.pendingPurchases = purchasesData.pendingPurchases.filter(
-      (purchase) => {
-        const isMatch = purchase.sessionId === sessionId;
-        if (isMatch) exactMatch = true;
-        return !isMatch;
-      }
-    );
-
-    // If no exact match, try a normalized version
-    if (originalLength === purchasesData.pendingPurchases.length && sessionId) {
-      const normalizedSessionId = normalizeSessionId(sessionId);
-
-      purchasesData.pendingPurchases = purchasesData.pendingPurchases.filter(
-        (purchase) => {
-          // Try match on normalized session ID
-          const normalizedPurchaseId = normalizeSessionId(purchase.sessionId);
-          return normalizedPurchaseId !== normalizedSessionId;
-        }
-      );
-    }
-
-    // If still no match, try a partial match (Stripe sometimes truncates session IDs)
-    if (originalLength === purchasesData.pendingPurchases.length && sessionId) {
-      // Try a partial match on the first portion of the ID
-      const partialSessionId = sessionId.substring(0, 20); // First 20 chars
-
-      purchasesData.pendingPurchases = purchasesData.pendingPurchases.filter(
-        (purchase) => {
-          return !purchase.sessionId.startsWith(partialSessionId);
-        }
-      );
-    }
-
-    // If still no match and we have a rank ID + username, try matching those
-    if (
-      originalLength === purchasesData.pendingPurchases.length &&
-      rankId &&
+    // Call the Supabase function to remove the pending purchase
+    const result = await removeSupabasePendingPurchase(
+      sessionId,
+      rankId,
       username
-    ) {
-      const normalizedUsername = normalizeUsername(username);
-
-      purchasesData.pendingPurchases = purchasesData.pendingPurchases.filter(
-        (purchase) => {
-          return !(
-            purchase.rankId === rankId &&
-            normalizeUsername(purchase.minecraftUsername) === normalizedUsername
-          );
-        }
-      );
-    }
-
-    // If we still haven't found a match, record the failed cleanup for manual processing
-    if (originalLength === purchasesData.pendingPurchases.length) {
-      // Create metadata for diagnosis
-      const metadata = {
-        sessionId,
-        rankId,
-        username,
-        timestamp: new Date().toISOString(),
-      };
-
-      // Store failed cleanups for manual review
-      const failedCleanupsPath = path.join(dataDir, "failed-cleanups.json");
-
-      let failedCleanups: FailedCleanup[] = [];
-
-      // Read existing failed cleanups if available
-      if (fs.existsSync(failedCleanupsPath)) {
-        try {
-          const failedData = fs.readFileSync(failedCleanupsPath, "utf8");
-          failedCleanups = JSON.parse(failedData);
-        } catch (e) {
-          // If error reading, start with empty array
-          failedCleanups = [];
-        }
-      }
-
-      // Add this failure and write back
-      failedCleanups.push({
-        timestamp: new Date().toISOString(),
-        sessionId: sessionId || "unknown",
-        pendingPurchases: purchasesData.pendingPurchases as any,
-      });
-
-      // Write updated failed cleanups
-      fs.writeFileSync(
-        failedCleanupsPath,
-        JSON.stringify(failedCleanups, null, 2),
-        "utf8"
-      );
-
-      return {
-        success: false,
-        message: "Could not find matching purchase to remove",
-        metadata,
-      };
-    }
-
-    // Write the updated data back to file
-    fs.writeFileSync(
-      pendingPurchasesPath,
-      JSON.stringify(purchasesData, null, 2),
-      "utf8"
     );
 
-    return {
-      success: true,
-      message: "Pending purchase removed successfully",
-    };
+    return result;
   } catch (error) {
+    console.error("Error removing pending purchase:", error);
     return {
       success: false,
-      message: "Failed to remove pending purchase",
+      message: "Failed to remove pending purchase due to an unexpected error",
     };
   }
 }
@@ -414,48 +168,58 @@ export async function GET(request: Request) {
     // Special mode to check pending ranks
     if (checkPendingRanks) {
       try {
-        const dataDir = path.join(process.cwd(), "data");
-        const pendingRanksPath = path.join(dataDir, "pending-ranks.json");
-        const pendingPurchasesPath = path.join(
-          dataDir,
-          "pending-purchases.json"
-        );
-        const userDataPath = path.join(dataDir, "user-data.json");
-
         const result: any = {
           pendingRanks: [],
           pendingPurchases: [],
           userData: {},
         };
 
-        // Check pending ranks
-        if (fs.existsSync(pendingRanksPath)) {
-          const pendingRanksContent = fs.readFileSync(pendingRanksPath, "utf8");
-          const pendingRanksData = JSON.parse(pendingRanksContent);
-          result.pendingRanks = pendingRanksData.pendingRanks || [];
+        // Check pending ranks in Supabase
+        const { data: pendingRanksData, error: pendingRanksError } =
+          await supabase.from("pending_ranks_backup").select("*");
+
+        if (!pendingRanksError) {
+          result.pendingRanks = pendingRanksData || [];
+        } else {
+          console.error("Error fetching pending ranks:", pendingRanksError);
         }
 
-        // Check pending purchases
-        if (fs.existsSync(pendingPurchasesPath)) {
-          const pendingPurchasesContent = fs.readFileSync(
-            pendingPurchasesPath,
-            "utf8"
-          );
-          const pendingPurchasesData = JSON.parse(pendingPurchasesContent);
-          result.pendingPurchases = pendingPurchasesData.pendingPurchases || [];
+        // Check pending purchases in Supabase
+        const { data: pendingPurchases, error: purchasesError } = await supabase
+          .from("pending_purchases")
+          .select("*");
+
+        if (!purchasesError) {
+          result.pendingPurchases = pendingPurchases || [];
+        } else {
+          console.error("Error fetching pending purchases:", purchasesError);
         }
 
         // Check user data for a specific user if provided
-        if (username && fs.existsSync(userDataPath)) {
-          const userDataContent = fs.readFileSync(userDataPath, "utf8");
-          const userData = JSON.parse(userDataContent);
+        if (username) {
+          const { data: userRanks, error: userRanksError } = await supabase
+            .from("user_ranks")
+            .select("*")
+            .eq("minecraft_username", username.toLowerCase());
 
-          if (userData.users && userData.users[username.toLowerCase()]) {
-            result.userData = userData.users[username.toLowerCase()];
+          if (!userRanksError && userRanks) {
+            result.userData = { ranks: userRanks.map((rank) => rank.rank_id) };
           } else {
             result.userData = { message: "User not found in user data" };
           }
         }
+
+        // Get server config
+        const servers = {
+          lobby: {
+            ip: process.env.LOBBY_SERVER_IP || "unknown",
+            apiPort: process.env.LOBBY_SERVER_API_PORT || "unknown",
+          },
+          survival: {
+            ip: process.env.SURVIVAL_SERVER_IP || "unknown",
+            apiPort: process.env.SURVIVAL_SERVER_API_PORT || "unknown",
+          },
+        };
 
         return NextResponse.json({
           message: "Diagnostic information retrieved",
@@ -535,55 +299,65 @@ export async function GET(request: Request) {
     // Normalize the username to lowercase
     const normalizedUsername = normalizeUsername(username);
 
-    // Path to the user data file
-    const dataDir = path.join(process.cwd(), "data");
-    const userDataPath = path.join(dataDir, "user-data.json");
+    // Get user ranks from Supabase
+    const { data: userRanks, error: userRanksError } = await supabase
+      .from("user_ranks")
+      .select("*")
+      .eq("minecraft_username", normalizedUsername);
 
-    // Check if the user data file exists
-    if (!fs.existsSync(userDataPath)) {
+    if (userRanksError) {
       return NextResponse.json(
-        { message: "No user data file exists" },
-        { status: 404 }
-      );
-    }
-
-    // Read the user data
-    let userData: UserData;
-    try {
-      const data = fs.readFileSync(userDataPath, "utf8");
-      userData = JSON.parse(data);
-    } catch (error) {
-      return NextResponse.json(
-        { message: "Failed to read user data file" },
+        {
+          message: "Failed to fetch user ranks from database",
+          error: userRanksError.message,
+        },
         { status: 500 }
       );
     }
 
     // Check if the user exists
-    if (!userData.users[normalizedUsername]) {
-      return NextResponse.json({ message: "User not found" }, { status: 404 });
+    if (!userRanks || userRanks.length === 0) {
+      return NextResponse.json(
+        { message: "User not found or has no ranks" },
+        { status: 404 }
+      );
     }
 
     // Get the user's current ranks
-    const currentRanks = userData.users[normalizedUsername].ranks || [];
+    const currentRanks = userRanks.map((rank) => rank.rank_id);
 
     // If reset is requested, clear the ranks
     if (shouldReset) {
-      userData.users[normalizedUsername].ranks = [];
+      // Delete the user's ranks from Supabase
+      const { error: deleteError } = await supabase
+        .from("user_ranks")
+        .delete()
+        .eq("minecraft_username", normalizedUsername);
 
-      // Write the updated data back to the file
-      try {
-        fs.writeFileSync(
-          userDataPath,
-          JSON.stringify(userData, null, 2),
-          "utf8"
-        );
-      } catch (error) {
+      if (deleteError) {
         return NextResponse.json(
-          { message: "Failed to update user data" },
+          { message: "Failed to reset user ranks", error: deleteError.message },
           { status: 500 }
         );
       }
+
+      // Also clear any pending ranks
+      await supabase
+        .from("pending_ranks_backup")
+        .delete()
+        .eq("username", normalizedUsername);
+
+      // Clear pending purchases
+      await supabase
+        .from("pending_purchases")
+        .delete()
+        .eq("minecraft_username", normalizedUsername);
+
+      // Clear applied ranks
+      await supabase
+        .from("applied_ranks")
+        .delete()
+        .eq("minecraft_username", normalizedUsername);
 
       return NextResponse.json({
         message: "User ranks reset successfully",
@@ -973,60 +747,34 @@ async function applyRankAcrossServers(
     isTowny ? "Towny" : "Regular"
   );
 
-  // Add the rank to local storage first (for backup in case server communication fails)
+  // Add the rank to Supabase storage first (for backup in case server communication fails)
   try {
-    const dataDir = path.join(process.cwd(), "data");
-    const pendingRanksPath = path.join(dataDir, "pending-ranks.json");
-
-    // Ensure data directory exists
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-    }
-
-    // Create or read the pending ranks file
-    let pendingRanksData: {
-      pendingRanks: Array<{
-        username: string;
-        rankId: string;
-        timestamp: string;
-      }>;
-    } = { pendingRanks: [] };
-
-    if (fs.existsSync(pendingRanksPath)) {
-      try {
-        const pendingRanksContent = fs.readFileSync(pendingRanksPath, "utf8");
-        pendingRanksData = JSON.parse(pendingRanksContent);
-      } catch (error) {
-        // Continue with empty array if parsing fails
-        console.error(
-          `[${correlationId}][Rank Application] Error parsing pending ranks:`,
-          error
-        );
-      }
-    }
+    // Import the Supabase client inside the function to avoid circular dependencies
+    const { supabase } = await import("@/lib/supabase");
 
     // Add this rank to pending ranks as a backup
-    pendingRanksData.pendingRanks.push({
+    const { error } = await supabase.from("pending_ranks_backup").insert({
       username: username.toLowerCase(),
-      rankId,
-      timestamp: new Date().toISOString(),
+      rank_id: rankId,
+      created_at: new Date().toISOString(),
     });
 
-    // Write back to file
-    fs.writeFileSync(
-      pendingRanksPath,
-      JSON.stringify(pendingRanksData, null, 2),
-      "utf8"
-    );
-    console.log(
-      `[${correlationId}][Rank Application] Added rank to pending ranks backup file`
-    );
+    if (error) {
+      console.error(
+        `[${correlationId}][Rank Application] Error saving to Supabase pending ranks:`,
+        error
+      );
+    } else {
+      console.log(
+        `[${correlationId}][Rank Application] Added rank to Supabase pending ranks backup`
+      );
+    }
   } catch (error) {
     console.error(
-      `[${correlationId}][Rank Application] Error saving to pending ranks:`,
+      `[${correlationId}][Rank Application] Error saving to Supabase pending ranks:`,
       error
     );
-    // Continue processing even if local backup fails
+    // Continue processing even if backup fails
   }
 
   // Try with retry logic
@@ -1119,6 +867,35 @@ export async function processStripeEvent(
     hasData: !!event.data,
     hasObject: !!(event.data && event.data.object),
   });
+
+  // Add detailed debug logging
+  try {
+    const eventJson = JSON.stringify(event);
+    console.log(
+      `[${correlationId}][Stripe Webhook] FULL EVENT DATA: ${eventJson.substring(0, 1000)}...`
+    );
+
+    if (event.data && event.data.object) {
+      console.log(
+        `[${correlationId}][Stripe Webhook] Session ID: ${event.data.object.id}`
+      );
+      console.log(
+        `[${correlationId}][Stripe Webhook] Payment Status: ${event.data.object.payment_status}`
+      );
+
+      if (event.data.object.metadata) {
+        console.log(
+          `[${correlationId}][Stripe Webhook] Metadata:`,
+          event.data.object.metadata
+        );
+      }
+    }
+  } catch (err) {
+    console.error(
+      `[${correlationId}][Stripe Webhook] Error logging event:`,
+      err
+    );
+  }
 
   // Process the specific event type
   if (event.type === "checkout.session.completed") {
@@ -1467,5 +1244,25 @@ export async function POST(req: Request) {
       },
       { status: 400 }
     );
+  }
+}
+
+// Add a backup of the pending rank to Supabase
+async function savePendingRankBackup(pendingRank: PendingRank) {
+  try {
+    const { error } = await supabase.from("pending_ranks_backup").insert({
+      username: pendingRank.username,
+      rank_id: pendingRank.rank_id,
+      created_at: pendingRank.created_at,
+    });
+
+    if (error) {
+      console.error("Error saving pending rank backup:", error);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error("Exception saving pending rank backup:", error);
+    return false;
   }
 }
