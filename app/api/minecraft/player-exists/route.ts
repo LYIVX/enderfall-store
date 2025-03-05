@@ -1,19 +1,8 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
-import fs from "fs";
-import path from "path";
 import axios from "axios";
-import { checkPlayerExists as checkLocalPlayerExists } from "@/lib/minecraft-server";
-
-// Interface for the user data stored in the local file
-interface UserData {
-  users: {
-    [username: string]: {
-      ranks: string[];
-    };
-  };
-}
+import { supabase } from "@/lib/supabase";
 
 // Helper function to normalize Minecraft usernames for consistent storage and lookup
 function normalizeUsername(username: string): string {
@@ -23,7 +12,7 @@ function normalizeUsername(username: string): string {
 /**
  * API Route: GET /api/minecraft/player-exists
  * This endpoint checks if a Minecraft player exists on the server
- * and returns their ranks, either from the server API or locally cached data
+ * and returns their ranks, either from the server API or Supabase data
  */
 export async function GET(request: Request) {
   try {
@@ -62,7 +51,7 @@ export async function GET(request: Request) {
       },
     });
 
-    /* Original implementation:
+    /* Original implementation with Supabase:
     let exists = false;
     let userData = null;
 
@@ -83,24 +72,23 @@ export async function GET(request: Request) {
         userData = apiResponse.data;
       }
     } catch (error) {
-      // Fall back to local approach if API call fails
+      // Fall back to Supabase approach if API call fails
       // Continue to the next method, don't exit
     }
 
-    // If API approach failed, try the local file approach
+    // If API approach failed, try the Supabase approach
     if (!exists) {
-      // Check local user data file
-      const dataDir = path.join(process.cwd(), "data");
-      const userDataPath = path.join(dataDir, "user-data.json");
+      // Check user data in Supabase
+      const { data: userRanks, error } = await supabase
+        .from("user_ranks")
+        .select("rank_id")
+        .eq("minecraft_username", normalizedUsername);
 
-      if (fs.existsSync(userDataPath)) {
-        const localData = JSON.parse(fs.readFileSync(userDataPath, "utf8"));
-
-        // Check if username exists in local data
-        if (localData.users && localData.users[normalizedUsername]) {
-          exists = true;
-          userData = localData.users[normalizedUsername];
-        }
+      if (!error && userRanks && userRanks.length > 0) {
+        exists = true;
+        userData = {
+          ranks: userRanks.map(rank => rank.rank_id)
+        };
       }
     }
 
@@ -120,79 +108,80 @@ export async function GET(request: Request) {
 }
 
 /**
- * Helper function to get user data from the local JSON file
+ * Helper function to get user data from Supabase
  */
-async function getLocalUserData(username: string) {
+async function getUserDataFromSupabase(username: string) {
   try {
-    const dataFilePath = path.join(process.cwd(), "data", "user-data.json");
-
-    // If the file doesn't exist, return null
-    if (!fs.existsSync(dataFilePath)) {
-      return null;
-    }
-
-    // Read and parse the file
-    const fileData = fs.readFileSync(dataFilePath, "utf8");
-    const userData: UserData = JSON.parse(fileData);
-
     // Normalize username for consistency
     const normalizedUsername = normalizeUsername(username);
 
-    // Return the user data if it exists
-    if (userData.users[normalizedUsername]) {
-      return userData.users[normalizedUsername];
+    // Get ranks from Supabase
+    const { data: userRanks, error } = await supabase
+      .from("user_ranks")
+      .select("rank_id")
+      .eq("minecraft_username", normalizedUsername);
+
+    if (error) {
+      console.error("Error getting user ranks from Supabase:", error);
+      return null;
+    }
+
+    if (userRanks && userRanks.length > 0) {
+      return {
+        ranks: userRanks.map((rank) => rank.rank_id),
+      };
     }
 
     return null;
   } catch (error) {
-    console.error("Error getting local user data:", error);
+    console.error("Error getting user data from Supabase:", error);
     return null;
   }
 }
 
 /**
- * Helper function to update local user data with ranks from the server
+ * Helper function to update user data with ranks in Supabase
  */
-async function updateLocalUserData(username: string, ranks: string[]) {
+async function updateUserDataInSupabase(username: string, ranks: string[]) {
   try {
-    const dataDir = path.join(process.cwd(), "data");
-    const dataFilePath = path.join(dataDir, "user-data.json");
-
-    // Ensure the data directory exists
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-    }
-
-    // Initialize with empty data if the file doesn't exist
-    let userData: UserData = { users: {} };
-
-    // Read existing data if available
-    if (fs.existsSync(dataFilePath)) {
-      try {
-        const fileData = fs.readFileSync(dataFilePath, "utf8");
-        userData = JSON.parse(fileData);
-      } catch {
-        // Continue with empty structure if there's an error
-      }
-    }
-
     // Normalize username for consistency
     const normalizedUsername = normalizeUsername(username);
 
     // Process ranks to handle upgrades efficiently
     const cleanedRanks = processRanks(ranks);
 
-    // Update the user data with cleaned ranks
-    userData.users[normalizedUsername] = {
-      ranks: cleanedRanks,
-    };
+    // First, delete existing ranks for this user
+    const { error: deleteError } = await supabase
+      .from("user_ranks")
+      .delete()
+      .eq("minecraft_username", normalizedUsername);
 
-    // Write the updated data back to the file
-    fs.writeFileSync(dataFilePath, JSON.stringify(userData, null, 2));
+    if (deleteError) {
+      console.error("Error deleting existing user ranks:", deleteError);
+      return false;
+    }
+
+    // Now insert the new ranks
+    if (cleanedRanks.length > 0) {
+      const ranksToInsert = cleanedRanks.map((rankId) => ({
+        minecraft_username: normalizedUsername,
+        rank_id: rankId,
+        created_at: new Date().toISOString(),
+      }));
+
+      const { error: insertError } = await supabase
+        .from("user_ranks")
+        .insert(ranksToInsert);
+
+      if (insertError) {
+        console.error("Error inserting user ranks:", insertError);
+        return false;
+      }
+    }
 
     return true;
   } catch (error) {
-    console.error("Error updating local user data:", error);
+    console.error("Error updating user data in Supabase:", error);
     return false;
   }
 }

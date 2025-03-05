@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
-import fs from "fs";
-import path from "path";
 import crypto from "crypto";
+import { supabase } from "@/lib/supabase";
 
 interface VerificationData {
   userId: string;
@@ -12,10 +11,6 @@ interface VerificationData {
   createdAt: string;
   verified: boolean;
   verifiedAt?: string;
-}
-
-interface VerificationsData {
-  verifications: VerificationData[];
 }
 
 export async function POST(req: Request) {
@@ -42,35 +37,7 @@ export async function POST(req: Request) {
     // Generate a random verification code
     const verificationCode = crypto.randomBytes(4).toString("hex");
 
-    // Store verification data
-    const dataDir = path.join(process.cwd(), "data");
-    const verificationsPath = path.join(
-      dataDir,
-      "minecraft-verifications.json"
-    );
-    const profilesPath = path.join(dataDir, "minecraft-profiles.json");
-
-    // Ensure data directory exists
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-    }
-
-    // Load or initialize verifications data
-    let verificationsData: VerificationsData = { verifications: [] };
-    if (fs.existsSync(verificationsPath)) {
-      const data = fs.readFileSync(verificationsPath, "utf8");
-      try {
-        verificationsData = JSON.parse(data);
-      } catch (error) {
-        console.error("Error parsing verifications data:", error);
-      }
-    }
-
-    // Check if a verification already exists and update it
-    const existingIndex = verificationsData.verifications.findIndex(
-      (v) => v.userId === session.user.id
-    );
-
+    // Store verification data in Supabase
     const verificationData: VerificationData = {
       userId: session.user.id,
       username,
@@ -79,35 +46,42 @@ export async function POST(req: Request) {
       verified: false,
     };
 
-    if (existingIndex >= 0) {
-      verificationsData.verifications[existingIndex] = verificationData;
+    // Check if a verification already exists and update it
+    const { data: existingVerification, error: lookupError } = await supabase
+      .from("minecraft_verifications")
+      .select("*")
+      .eq("userId", session.user.id)
+      .single();
+
+    if (lookupError && lookupError.code !== "PGRST116") {
+      // PGRST116 is "No rows returned" error
+      console.error("Error checking for existing verification:", lookupError);
+    }
+
+    let saveResult;
+
+    if (existingVerification) {
+      // Update existing verification
+      saveResult = await supabase
+        .from("minecraft_verifications")
+        .update(verificationData)
+        .eq("userId", session.user.id);
     } else {
-      verificationsData.verifications.push(verificationData);
+      // Insert new verification
+      saveResult = await supabase
+        .from("minecraft_verifications")
+        .insert(verificationData);
     }
 
-    // Save verifications data
-    fs.writeFileSync(
-      verificationsPath,
-      JSON.stringify(verificationsData, null, 2),
-      "utf8"
-    );
-
-    // Now update the profiles JSON to show username but not verified yet
-    let profilesData: { profiles: any[] } = { profiles: [] };
-    if (fs.existsSync(profilesPath)) {
-      const data = fs.readFileSync(profilesPath, "utf8");
-      try {
-        profilesData = JSON.parse(data);
-      } catch (error) {
-        console.error("Error parsing profiles data:", error);
-      }
+    if (saveResult.error) {
+      console.error("Error saving verification data:", saveResult.error);
+      return NextResponse.json(
+        { error: "Failed to save verification data" },
+        { status: 500 }
+      );
     }
 
-    // Check if a profile already exists
-    const existingProfileIndex = profilesData.profiles.findIndex(
-      (p) => p.userId === session.user.id
-    );
-
+    // Update the minecraft_profiles table to show username but not verified yet
     const profileData = {
       userId: session.user.id,
       username,
@@ -115,18 +89,34 @@ export async function POST(req: Request) {
       updatedAt: new Date().toISOString(),
     };
 
-    if (existingProfileIndex >= 0) {
-      profilesData.profiles[existingProfileIndex] = profileData;
-    } else {
-      profilesData.profiles.push(profileData);
+    const { data: existingProfile, error: profileLookupError } = await supabase
+      .from("minecraft_profiles")
+      .select("*")
+      .eq("userId", session.user.id)
+      .single();
+
+    if (profileLookupError && profileLookupError.code !== "PGRST116") {
+      console.error("Error checking for existing profile:", profileLookupError);
     }
 
-    // Save profiles data
-    fs.writeFileSync(
-      profilesPath,
-      JSON.stringify(profilesData, null, 2),
-      "utf8"
-    );
+    let profileResult;
+
+    if (existingProfile) {
+      // Update existing profile
+      profileResult = await supabase
+        .from("minecraft_profiles")
+        .update(profileData)
+        .eq("userId", session.user.id);
+    } else {
+      // Insert new profile
+      profileResult = await supabase
+        .from("minecraft_profiles")
+        .insert(profileData);
+    }
+
+    if (profileResult.error) {
+      console.error("Error saving profile data:", profileResult.error);
+    }
 
     console.log(
       `Minecraft verification initiated for ${username} with code ${verificationCode}`

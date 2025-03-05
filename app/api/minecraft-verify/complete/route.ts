@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
-import fs from "fs";
-import path from "path";
+import { supabase } from "@/lib/supabase";
 
 interface VerificationData {
   userId: string;
@@ -11,10 +10,6 @@ interface VerificationData {
   createdAt: string;
   verified: boolean;
   verifiedAt?: string;
-}
-
-interface VerificationsData {
-  verifications: VerificationData[];
 }
 
 export async function POST(req: Request) {
@@ -38,46 +33,31 @@ export async function POST(req: Request) {
       );
     }
 
-    // Load verification data
-    const dataDir = path.join(process.cwd(), "data");
-    const verificationsPath = path.join(
-      dataDir,
-      "minecraft-verifications.json"
-    );
-    const profilesPath = path.join(dataDir, "minecraft-profiles.json");
+    // Load verification data from Supabase
+    const { data: verification, error: verificationError } = await supabase
+      .from("minecraft_verifications")
+      .select("*")
+      .eq("userId", session.user.id)
+      .eq("username", username)
+      .single();
 
-    // Ensure data directory exists
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-    }
+    if (verificationError) {
+      if (verificationError.code === "PGRST116") {
+        // No rows found
+        return NextResponse.json(
+          { error: "No verification found for this username" },
+          { status: 400 }
+        );
+      }
 
-    // Load verifications data
-    if (!fs.existsSync(verificationsPath)) {
-      return NextResponse.json(
-        { error: "No verification in progress" },
-        { status: 400 }
-      );
-    }
-
-    const verificationsJson = fs.readFileSync(verificationsPath, "utf8");
-    let verificationsData: VerificationsData;
-
-    try {
-      verificationsData = JSON.parse(verificationsJson);
-    } catch (error) {
-      console.error("Error parsing verifications data:", error);
+      console.error("Error fetching verification data:", verificationError);
       return NextResponse.json(
         { error: "Internal server error" },
         { status: 500 }
       );
     }
 
-    // Find the user's verification
-    const verificationIndex = verificationsData.verifications.findIndex(
-      (v) => v.userId === session.user.id && v.username === username
-    );
-
-    if (verificationIndex === -1) {
+    if (!verification) {
       return NextResponse.json(
         { error: "No verification found for this username" },
         { status: 400 }
@@ -87,67 +67,59 @@ export async function POST(req: Request) {
     // In a real scenario, we would check against the game server to confirm the verification
     // For now, we'll simulate a successful verification
 
-    // Update verification status
-    verificationsData.verifications[verificationIndex].verified = true;
-    verificationsData.verifications[verificationIndex].verifiedAt =
-      new Date().toISOString();
-
-    // Save verifications data
-    fs.writeFileSync(
-      verificationsPath,
-      JSON.stringify(verificationsData, null, 2),
-      "utf8"
-    );
-
-    // Update profile data
-    if (!fs.existsSync(profilesPath)) {
-      return NextResponse.json(
-        { error: "Profile data not found" },
-        { status: 500 }
-      );
-    }
-
-    const profilesJson = fs.readFileSync(profilesPath, "utf8");
-    let profilesData: { profiles: any[] };
-
-    try {
-      profilesData = JSON.parse(profilesJson);
-    } catch (error) {
-      console.error("Error parsing profiles data:", error);
-      return NextResponse.json(
-        { error: "Internal server error" },
-        { status: 500 }
-      );
-    }
-
-    // Find the user's profile
-    const profileIndex = profilesData.profiles.findIndex(
-      (p) => p.userId === session.user.id
-    );
-
-    if (profileIndex === -1) {
-      // Create profile if doesn't exist
-      profilesData.profiles.push({
-        userId: session.user.id,
-        username,
+    // Update verification status in Supabase
+    const now = new Date().toISOString();
+    const { error: updateError } = await supabase
+      .from("minecraft_verifications")
+      .update({
         verified: true,
-        verifiedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
-    } else {
-      // Update existing profile
-      profilesData.profiles[profileIndex].username = username;
-      profilesData.profiles[profileIndex].verified = true;
-      profilesData.profiles[profileIndex].verifiedAt = new Date().toISOString();
-      profilesData.profiles[profileIndex].updatedAt = new Date().toISOString();
+        verifiedAt: now,
+      })
+      .eq("userId", session.user.id)
+      .eq("username", username);
+
+    if (updateError) {
+      console.error("Error updating verification status:", updateError);
+      return NextResponse.json(
+        { error: "Failed to update verification status" },
+        { status: 500 }
+      );
     }
 
-    // Save profiles data
-    fs.writeFileSync(
-      profilesPath,
-      JSON.stringify(profilesData, null, 2),
-      "utf8"
-    );
+    // Update profile data in Supabase
+    const { data: existingProfile, error: profileLookupError } = await supabase
+      .from("minecraft_profiles")
+      .select("*")
+      .eq("userId", session.user.id)
+      .single();
+
+    const profileData = {
+      userId: session.user.id,
+      username,
+      verified: true,
+      verifiedAt: now,
+      updatedAt: now,
+    };
+
+    let profileResult;
+
+    if (!profileLookupError && existingProfile) {
+      // Update existing profile
+      profileResult = await supabase
+        .from("minecraft_profiles")
+        .update(profileData)
+        .eq("userId", session.user.id);
+    } else {
+      // Create new profile
+      profileResult = await supabase
+        .from("minecraft_profiles")
+        .insert(profileData);
+    }
+
+    if (profileResult?.error) {
+      console.error("Error updating profile data:", profileResult.error);
+      // Continue despite error
+    }
 
     console.log(
       `Minecraft verification completed for user ${session.user.id}, username ${username}`
@@ -157,7 +129,7 @@ export async function POST(req: Request) {
       message: "Verification successful",
       username,
       verified: true,
-      verifiedAt: new Date().toISOString(),
+      verifiedAt: now,
     });
   } catch (error) {
     console.error("Error completing Minecraft verification:", error);
