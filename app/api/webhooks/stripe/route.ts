@@ -15,6 +15,7 @@ import {
   removePendingPurchase as removeSupabasePendingPurchase,
   normalizeUsername,
 } from "@/lib/supabase";
+import { getMinecraftApiUrl } from "@/lib/minecraft-api";
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!.trim();
 
@@ -819,203 +820,102 @@ export async function processStripeEvent(
 }
 
 export async function POST(req: Request) {
-  // Generate a correlation ID for tracking this request
-  const correlationId = uuidv4().substring(0, 8);
-
-  console.log(`[${correlationId}][Stripe Webhook] Received webhook event`);
-
   try {
-    // Log raw request details
-    const rawHeaders = Object.fromEntries(req.headers.entries());
-    console.log(`[${correlationId}][Stripe Webhook] Raw request headers:`, {
-      headers: rawHeaders,
-      method: req.method,
-      url: req.url,
-    });
-
     const body = await req.text();
-    const headersList = headers();
-    const signature = headersList.get("stripe-signature");
+    const sig = req.headers.get("stripe-signature");
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    const correlationId = uuidv4().substring(0, 8);
 
-    // Ensure webhook secret is properly formatted
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET?.trim();
-
-    // Log webhook secret details (safely)
-    console.log(`[${correlationId}][Stripe Webhook] Webhook secret details:`, {
-      length: webhookSecret?.length,
-      start: webhookSecret?.substring(0, 10) + "...",
-      containsNewlines: webhookSecret?.includes("\n"),
-      containsSpaces: webhookSecret?.includes(" "),
-      containsCarriageReturn: webhookSecret?.includes("\r"),
-      charCodes: webhookSecret
-        ? Array.from(webhookSecret)
-            .slice(0, 5)
-            .map((c) => c.charCodeAt(0))
-        : [],
-    });
-
-    console.log(`[${correlationId}][Stripe Webhook] Request details:`, {
-      bodyLength: body.length,
-      bodyPreview: body.substring(0, 100) + "...",
-      signature,
-      hasWebhookSecret: !!webhookSecret,
-      webhookSecretLength: webhookSecret?.length,
-      signatureLength: signature?.length,
-      contentType: headersList.get("content-type"),
-      contentLength: headersList.get("content-length"),
-    });
-
-    if (!signature || !webhookSecret) {
-      console.error(
-        `[${correlationId}][Stripe Webhook] Missing signature or webhook secret`,
-        {
-          hasSignature: !!signature,
-          hasWebhookSecret: !!webhookSecret,
-        }
-      );
+    if (!sig || !webhookSecret) {
+      console.error(`[${correlationId}] Missing signature or webhook secret`);
       return NextResponse.json(
         { error: "Missing signature or webhook secret" },
         { status: 400 }
       );
     }
 
-    console.log(
-      `[${correlationId}][Stripe Webhook] Verifying webhook signature`
-    );
-
+    // Verify the webhook signature
+    let event;
     try {
-      // Parse the signature header
-      const signatureParts = signature.split(",");
-      const timestampPart = signatureParts.find((part) =>
-        part.startsWith("t=")
-      );
-      const signaturePart = signatureParts.find((part) =>
-        part.startsWith("v1=")
-      );
-
-      if (!timestampPart || !signaturePart) {
-        throw new Error("Invalid signature format");
-      }
-
-      const timestamp = timestampPart.substring(2);
-      const receivedSignature = signaturePart.substring(3);
-
-      // Reconstruct the signed payload exactly as in the test script
-      const signedPayload = `${timestamp}.${body}`;
-
-      // Log the exact values we're using for verification
-      console.log(`[${correlationId}][Stripe Webhook] Verification details:`, {
-        timestamp,
-        receivedSignature,
-        signedPayloadLength: signedPayload.length,
-        signedPayloadPreview: signedPayload.substring(0, 100) + "...",
-        webhookSecretLength: webhookSecret.length,
-        webhookSecretStart: webhookSecret.substring(0, 10) + "...",
-        bodyLength: body.length,
-        bodyPreview: body.substring(0, 100) + "...",
-      });
-
-      // Generate our own signature using the same method as the test script
-      const expectedSignature = crypto
-        .createHmac("sha256", webhookSecret)
-        .update(signedPayload)
-        .digest("hex");
-
-      // Log the comparison
-      console.log(`[${correlationId}][Stripe Webhook] Signature comparison:`, {
-        receivedSignature,
-        expectedSignature,
-        match: receivedSignature === expectedSignature,
-        signedPayloadLength: signedPayload.length,
-      });
-
-      if (receivedSignature !== expectedSignature) {
-        throw new Error("Signature mismatch");
-      }
-
-      // Try to parse and validate the event structure
-      let event;
-      try {
-        event = JSON.parse(body);
-
-        // Validate event structure
-        if (!event.type) {
-          throw new Error("Invalid event: missing event type");
-        }
-
-        if (!event.data || !event.data.object) {
-          throw new Error("Invalid event: missing event data");
-        }
-
-        console.log(
-          `[${correlationId}][Stripe Webhook] Event parsed successfully:`,
-          {
-            id: event.id,
-            type: event.type,
-            hasData: !!event.data,
-            hasObject: !!(event.data && event.data.object),
-            dataKeys: Object.keys(event.data),
-            objectKeys: event.data.object ? Object.keys(event.data.object) : [],
-          }
-        );
-
-        // Process the event using the extracted function
-        const result = await processStripeEvent(event, correlationId);
-
-        return NextResponse.json(
-          {
-            received: true,
-            message: result.message,
-            success: result.success,
-            eventType: event.type,
-            eventId: event.id,
-          },
-          { status: 200 }
-        );
-      } catch (parseErr: any) {
-        console.error(
-          `[${correlationId}][Stripe Webhook] Event parsing failed:`,
-          {
-            error: parseErr.message,
-            bodyPreview: body.substring(0, 200) + "...",
-          }
-        );
-        throw parseErr;
-      }
-    } catch (err: any) {
+      event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
+    } catch (err) {
       console.error(
-        `[${correlationId}][Stripe Webhook] Signature verification failed:`,
-        {
-          error: err.message,
-          type: err.type,
-          stack: err.stack,
-          bodyLength: body.length,
-          bodyPreview: body.substring(0, 100) + "...",
-          signature,
-          webhookSecretLength: webhookSecret.length,
-          webhookSecretStart: webhookSecret.substring(0, 10) + "...",
-        }
+        `[${correlationId}] Webhook signature verification failed:`,
+        err
       );
-      return NextResponse.json(
-        { error: `Webhook signature verification failed: ${err.message}` },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
     }
-  } catch (error: any) {
-    console.error(`[${correlationId}][Stripe Webhook] Error:`, {
-      message: error.message,
-      stack: error.stack,
-      type: error.type || error.constructor.name,
-      code: error.code,
-      cause: error.cause,
-    });
+
+    // Handle the event immediately for checkout.session.completed
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object;
+
+      // Extract necessary data
+      const rankId = session.metadata?.rank_id;
+      const minecraftUsername =
+        session.metadata?.minecraft_username?.toLowerCase();
+      const userId = session.metadata?.user_id;
+      const isGift = session.metadata?.is_gift === "true";
+
+      if (!rankId || !minecraftUsername) {
+        console.error(
+          `[${correlationId}] Missing required metadata in session`
+        );
+        return NextResponse.json(
+          { error: "Missing required metadata" },
+          { status: 400 }
+        );
+      }
+
+      // Save rank data to Supabase immediately
+      try {
+        await saveUserRankData(minecraftUsername, rankId);
+        console.log(
+          `[${correlationId}] Saved rank data for ${minecraftUsername}`
+        );
+      } catch (error) {
+        console.error(`[${correlationId}] Error saving rank data:`, error);
+        // Continue processing even if saving fails
+      }
+
+      // Start rank application process in the background
+      Promise.all([
+        // Apply rank via Minecraft server API
+        fetch(`${getMinecraftApiUrl()}/api/apply-rank`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${process.env.MINECRAFT_SERVER_API_KEY}`,
+          },
+          body: JSON.stringify({
+            username: minecraftUsername,
+            rankId: rankId,
+          }),
+        }),
+        // Clean up pending purchase
+        removePendingPurchase(session.id, rankId, minecraftUsername),
+        // Backup rank data
+        savePendingRankBackup({
+          username: minecraftUsername,
+          rank_id: rankId,
+          created_at: new Date().toISOString(),
+        }),
+      ]).catch((error) => {
+        console.error(`[${correlationId}] Background task error:`, error);
+        // Background tasks errors don't affect the webhook response
+      });
+
+      // Respond immediately to Stripe
+      return NextResponse.json({ received: true, success: true });
+    }
+
+    // For other event types, respond immediately
+    return NextResponse.json({ received: true });
+  } catch (error) {
+    console.error("Webhook error:", error);
     return NextResponse.json(
-      {
-        error: "Webhook handler failed",
-        message: error.message,
-        correlationId,
-      },
-      { status: 400 }
+      { error: "Webhook handler failed" },
+      { status: 500 }
     );
   }
 }
