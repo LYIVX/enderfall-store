@@ -694,21 +694,55 @@ console.log("Server configuration loaded:", {
 
 // Helper function to determine if a rank is a towny rank
 function isTownyRank(rankId: string): boolean {
-  return (
-    rankId.toLowerCase().startsWith("towny_") ||
-    [
-      "citizen",
-      "merchant",
-      "councilor",
-      "mayor",
-      "governor",
-      "noble",
-      "duke",
-      "king",
-      "emperor",
-      "divine",
-    ].includes(rankId.toLowerCase())
-  );
+  // First check if this is a known survival rank
+  if (rankId.toLowerCase() === "shadow_enchanter") {
+    console.log(
+      `Rank '${rankId}' identified as a survival rank, not a towny rank`
+    );
+    return false;
+  }
+
+  // First check if it's a towny prefix rank
+  if (rankId.toLowerCase().startsWith("towny_")) {
+    return true;
+  }
+
+  // List of known towny ranks
+  const townyRanks = [
+    "citizen",
+    "merchant",
+    "councilor",
+    "mayor",
+    "governor",
+    "noble",
+    "duke",
+    "king",
+    "emperor",
+    "divine",
+  ];
+
+  // Check if it's in the towny ranks list
+  if (townyRanks.includes(rankId.toLowerCase())) {
+    return true;
+  }
+
+  // List of known survival ranks
+  const survivalRanks = [
+    "shadow_enchanter",
+    "crystal_master",
+    "elemental_guardian",
+    "void_walker",
+    "celestial_sovereign",
+  ];
+
+  // If it's a survival rank, it's not a towny rank
+  if (survivalRanks.includes(rankId.toLowerCase())) {
+    return false;
+  }
+
+  // Default to false if not explicitly identified
+  console.log(`Rank '${rankId}' not recognized, defaulting to non-towny`);
+  return false;
 }
 
 // Helper function to apply rank to a specific server
@@ -975,20 +1009,28 @@ async function applyRankAcrossServers(
         );
         success = await applyRankToServer(servers.survival, username, rankId);
       } else {
+        // For non-towny ranks (like shadow_enchanter), apply to all servers
         console.log(
-          `[${correlationId}][Rank Application] Applying regular rank to all servers (attempt ${attempts})`
+          `[${correlationId}][Rank Application] Applying rank '${rankId}' to all servers (attempt ${attempts})`
         );
-        const lobbySuccess = await applyRankToServer(
-          servers.lobby,
-          username,
-          rankId
-        );
-        const survivalSuccess = await applyRankToServer(
+
+        // Always apply to both servers for non-towny ranks
+        const lobbyPromise = applyRankToServer(servers.lobby, username, rankId);
+        const survivalPromise = applyRankToServer(
           servers.survival,
           username,
           rankId
         );
-        success = lobbySuccess && survivalSuccess;
+
+        // Wait for both requests to complete
+        const [lobbySuccess, survivalSuccess] = await Promise.all([
+          lobbyPromise,
+          survivalPromise,
+        ]);
+
+        // Even if one server succeeds, we consider it a success and continue
+        // This prevents one server being down from blocking rank application
+        success = lobbySuccess || survivalSuccess;
 
         console.log(
           `[${correlationId}][Rank Application] Application results (attempt ${attempts}):`,
