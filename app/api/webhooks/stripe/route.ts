@@ -820,14 +820,15 @@ export async function processStripeEvent(
 }
 
 export async function POST(req: Request) {
+  const correlationId = uuidv4().substring(0, 8);
+  console.log(`[${correlationId}] Webhook received`);
+
   try {
     const body = await req.text();
     const sig = req.headers.get("stripe-signature");
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-    const correlationId = uuidv4().substring(0, 8);
 
     if (!sig || !webhookSecret) {
-      console.error(`[${correlationId}] Missing signature or webhook secret`);
       return NextResponse.json(
         { error: "Missing signature or webhook secret" },
         { status: 400 }
@@ -839,80 +840,69 @@ export async function POST(req: Request) {
     try {
       event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
     } catch (err) {
-      console.error(
-        `[${correlationId}] Webhook signature verification failed:`,
-        err
-      );
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
     }
 
-    // Handle the event immediately for checkout.session.completed
+    // Respond immediately to Stripe
+    const response = NextResponse.json({ received: true });
+
+    // Process the event in the background
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
 
-      // Extract necessary data
-      const rankId = session.metadata?.rank_id;
-      const minecraftUsername =
-        session.metadata?.minecraft_username?.toLowerCase();
-      const userId = session.metadata?.user_id;
-      const isGift = session.metadata?.is_gift === "true";
+      // Start background processing without awaiting
+      Promise.resolve()
+        .then(async () => {
+          try {
+            const rankId = session.metadata?.rank_id;
+            const minecraftUsername =
+              session.metadata?.minecraft_username?.toLowerCase();
 
-      if (!rankId || !minecraftUsername) {
-        console.error(
-          `[${correlationId}] Missing required metadata in session`
-        );
-        return NextResponse.json(
-          { error: "Missing required metadata" },
-          { status: 400 }
-        );
-      }
+            if (!rankId || !minecraftUsername) {
+              console.error(`[${correlationId}] Missing required metadata`);
+              return;
+            }
 
-      // Save rank data to Supabase immediately
-      try {
-        await saveUserRankData(minecraftUsername, rankId);
-        console.log(
-          `[${correlationId}] Saved rank data for ${minecraftUsername}`
-        );
-      } catch (error) {
-        console.error(`[${correlationId}] Error saving rank data:`, error);
-        // Continue processing even if saving fails
-      }
+            // Save to Supabase
+            await Promise.allSettled([
+              saveUserRankData(minecraftUsername, rankId),
+              savePendingRankBackup({
+                username: minecraftUsername,
+                rank_id: rankId,
+                created_at: new Date().toISOString(),
+              }),
+            ]);
 
-      // Start rank application process in the background
-      Promise.all([
-        // Apply rank via Minecraft server API
-        fetch(`${getMinecraftApiUrl()}/api/apply-rank`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${process.env.MINECRAFT_SERVER_API_KEY}`,
-          },
-          body: JSON.stringify({
-            username: minecraftUsername,
-            rankId: rankId,
-          }),
-        }),
-        // Clean up pending purchase
-        removePendingPurchase(session.id, rankId, minecraftUsername),
-        // Backup rank data
-        savePendingRankBackup({
-          username: minecraftUsername,
-          rank_id: rankId,
-          created_at: new Date().toISOString(),
-        }),
-      ]).catch((error) => {
-        console.error(`[${correlationId}] Background task error:`, error);
-        // Background tasks errors don't affect the webhook response
-      });
-
-      // Respond immediately to Stripe
-      return NextResponse.json({ received: true, success: true });
+            // Apply rank and cleanup in parallel
+            await Promise.allSettled([
+              fetch(`${getMinecraftApiUrl()}/api/apply-rank`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${process.env.MINECRAFT_SERVER_API_KEY}`,
+                },
+                body: JSON.stringify({
+                  username: minecraftUsername,
+                  rankId: rankId,
+                }),
+              }),
+              removePendingPurchase(session.id, rankId, minecraftUsername),
+            ]);
+          } catch (error) {
+            console.error(
+              `[${correlationId}] Background processing error:`,
+              error
+            );
+          }
+        })
+        .catch((error) => {
+          console.error(`[${correlationId}] Fatal background error:`, error);
+        });
     }
 
-    // For other event types, respond immediately
-    return NextResponse.json({ received: true });
+    return response;
   } catch (error) {
-    console.error("Webhook error:", error);
+    console.error(`[${correlationId}] Webhook error:`, error);
     return NextResponse.json(
       { error: "Webhook handler failed" },
       { status: 500 }
