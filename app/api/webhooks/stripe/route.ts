@@ -751,110 +751,106 @@ async function applyRankToServer(
   username: string,
   rankId: string
 ): Promise<boolean> {
-  try {
-    const correlationId = Math.random().toString(36).substring(7);
+  const correlationId = Math.random().toString(36).substring(7);
+  const apiUrl = `http://${server.ip}:${server.apiPort}/api/apply-rank`;
 
-    // Always use the main Minecraft server API URL
-    const apiUrl = `${process.env.MINECRAFT_SERVER_API_URL}/api/apply-rank`;
-
-    console.log(
-      `[${correlationId}][Server: ${server.name}] Attempting to apply rank using main API URL:`,
-      {
-        username,
-        rankId,
-        apiUrl,
-        serverName: server.name,
-      }
-    );
-
-    // Get API key from environment
-    const apiKey = process.env.MINECRAFT_SERVER_API_KEY;
-    if (!apiKey) {
-      console.error(
-        `[${correlationId}][Server: ${server.name}] API key not configured in environment`
-      );
-      return false;
+  console.log(
+    `[${correlationId}][Rank Application] Applying rank to server ${server.name}:`,
+    {
+      username,
+      rankId,
+      serverName: server.name,
+      apiUrl: apiUrl,
     }
+  );
 
-    console.log(`[${correlationId}][Server: ${server.name}] Using API key:`, {
-      exists: !!apiKey,
-      length: apiKey?.length,
-      preview: apiKey?.substring(0, 5) + "...",
-    });
+  // Get API key from environment
+  const apiKey = process.env.MINECRAFT_SERVER_API_KEY;
+  if (!apiKey) {
+    console.error(
+      `[${correlationId}][Rank Application] MINECRAFT_SERVER_API_KEY is not configured`
+    );
+    return false;
+  }
 
+  console.log(`[${correlationId}][Rank Application] Using API key:`, {
+    keyExists: !!apiKey,
+    keyLength: apiKey.length,
+    keyPreview: `${apiKey.substring(0, 5)}...`,
+  });
+
+  try {
+    // Added timeout to prevent requests from hanging indefinitely
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+    // Apply the rank via the API
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
         "X-Correlation-ID": correlationId,
-        "X-Server-Name": server.name.toLowerCase(), // Add server name to header so API knows which server this is for
       },
       body: JSON.stringify({
         username,
-        rankId: rankId,
-        rank: rankId,
-        server: server.name.toLowerCase(), // Include server name in the request body
+        rankId,
+        rank: rankId, // Include for backward compatibility
+        server: server.name.toLowerCase(),
       }),
+      signal: controller.signal,
     });
 
+    clearTimeout(timeoutId);
+
+    // Log the status code
     console.log(
-      `[${correlationId}][Server: ${server.name}] Response status:`,
+      `[${correlationId}][Rank Application] Response status:`,
       response.status
     );
 
-    // Improved response handling with better error logging
+    // Attempt to parse as JSON, but handle non-JSON responses as well
     let responseData;
     const responseText = await response.text();
 
     try {
-      // Try to parse response as JSON
-      responseData = JSON.parse(responseText);
+      if (responseText) {
+        responseData = JSON.parse(responseText);
+        console.log(
+          `[${correlationId}][Rank Application] Response data:`,
+          responseData
+        );
+      } else {
+        console.log(`[${correlationId}][Rank Application] Empty response body`);
+      }
+    } catch (error) {
       console.log(
-        `[${correlationId}][Server: ${server.name}] Response data:`,
-        responseData
-      );
-    } catch (parseError) {
-      // If not valid JSON, log the raw text
-      console.error(
-        `[${correlationId}][Server: ${server.name}] Invalid JSON response:`,
+        `[${correlationId}][Rank Application] Non-JSON response:`,
         responseText
       );
-      return false;
     }
 
-    if (!response.ok) {
-      console.error(
-        `[${correlationId}][Server: ${server.name}] Server returned error status:`,
-        {
-          status: response.status,
-          statusText: response.statusText,
-          data: responseData,
-        }
-      );
-      return false;
-    }
-
-    // Validate the response structure
-    if (!responseData.success) {
-      console.error(
-        `[${correlationId}][Server: ${server.name}] Server indicated failure:`,
-        responseData
-      );
-      return false;
-    }
-
-    console.log(
-      `[${correlationId}][Server: ${server.name}] Rank successfully applied`
+    // Consider anything in the 200-299 range as successful
+    return response.status >= 200 && response.status < 300;
+  } catch (error: any) {
+    // Provide detailed error information to help diagnose connection issues
+    console.error(
+      `[${correlationId}][Rank Application] Error applying rank to server:`,
+      {
+        message: error.message,
+        stack: error.stack,
+        type: error.name,
+        isTimeout: error.name === "AbortError",
+        server: server.name,
+        ip: server.ip,
+        port: server.apiPort,
+      }
     );
-    return true;
-  } catch (error) {
-    console.error(`[Server: ${server.name}] Error applying rank:`, error);
     return false;
   }
 }
 
-// Function to apply rank across appropriate servers
+// Function to apply rank across servers
 async function applyRankAcrossServers(
   username: string,
   rankId: string
@@ -890,6 +886,10 @@ async function applyRankAcrossServers(
           `[${correlationId}][Rank Application] MINECRAFT_SERVER_API_KEY is not configured`
         );
       } else {
+        // Added timeout to prevent requests from hanging indefinitely
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
         // Direct application to the main API endpoint
         const response = await fetch(
           `${process.env.MINECRAFT_SERVER_API_URL}/api/apply-rank`,
@@ -906,8 +906,11 @@ async function applyRankAcrossServers(
               rank: rankId,
               applyGlobally: true, // Signal that this should be applied to all servers
             }),
+            signal: controller.signal,
           }
         );
+
+        clearTimeout(timeoutId);
 
         if (response.ok) {
           console.log(
@@ -920,15 +923,21 @@ async function applyRankAcrossServers(
             {
               status: response.status,
               statusText: response.statusText,
+              body: await response.text(),
             }
           );
         }
       }
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error(
       `[${correlationId}][Rank Application] Error applying rank directly to main API endpoint:`,
-      error
+      {
+        message: error.message,
+        stack: error.stack,
+        type: error.name,
+        isTimeout: error.name === "AbortError",
+      }
     );
   }
 
