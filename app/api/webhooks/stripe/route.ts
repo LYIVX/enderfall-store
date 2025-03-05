@@ -398,125 +398,100 @@ export const dynamic = "force-dynamic";
 
 interface ServerConfig {
   name: string;
-  ip: string | undefined;
+  ip: string;
   apiPort: number;
+  apiUrl: string;
 }
 
-/**
- * Determines the current environment and provides environment-specific configuration
- */
-function getEnvironmentConfig() {
+// Get server configuration
+function getServerConfig() {
   const env = process.env.NODE_ENV || "development";
   const isTest = env === "test";
   const isDev = env === "development";
-  const isProd = env === "production";
+  const useLocalServers =
+    isTest || (isDev && process.env.USE_LOCAL_SERVERS === "true");
+
+  // Base configuration using proxy IP and ports
+  const proxyIp = useLocalServers
+    ? "localhost"
+    : process.env.MINECRAFT_PROXY_IP || "localhost";
+  const proxyPort = parseInt(process.env.MINECRAFT_PROXY_PORT || "25674");
+  const proxyApiPort = parseInt(process.env.MINECRAFT_PROXY_API_PORT || "8113");
+
+  const getApiUrl = (ip: string, apiPort: number) =>
+    useLocalServers ? `http://localhost:${apiPort}` : `http://${ip}:${apiPort}`;
 
   return {
-    env,
-    isTest,
-    isDev,
-    isProd,
-    useLocalServers:
-      isTest || (isDev && process.env.USE_LOCAL_SERVERS === "true"),
-    logFullData: isTest || isDev,
+    proxy: {
+      ip: proxyIp,
+      port: proxyPort,
+      apiPort: proxyApiPort,
+      apiUrl: getApiUrl(proxyIp, proxyApiPort),
+    },
+    lobby: {
+      ip: useLocalServers
+        ? "localhost"
+        : process.env.MINECRAFT_LOBBY_IP || proxyIp,
+      port: parseInt(process.env.MINECRAFT_LOBBY_PORT || "25610"),
+      apiPort: parseInt(process.env.MINECRAFT_LOBBY_API_PORT || "8090"),
+      apiUrl: getApiUrl(
+        useLocalServers
+          ? "localhost"
+          : process.env.MINECRAFT_LOBBY_IP || proxyIp,
+        parseInt(process.env.MINECRAFT_LOBBY_API_PORT || "8090")
+      ),
+    },
+    survival: {
+      ip: useLocalServers
+        ? "localhost"
+        : process.env.MINECRAFT_SURVIVAL_IP || proxyIp,
+      port: parseInt(process.env.MINECRAFT_SURVIVAL_PORT || "25579"),
+      apiPort: parseInt(process.env.MINECRAFT_SURVIVAL_API_PORT || "8137"),
+      apiUrl: getApiUrl(
+        useLocalServers
+          ? "localhost"
+          : process.env.MINECRAFT_SURVIVAL_IP || proxyIp,
+        parseInt(process.env.MINECRAFT_SURVIVAL_API_PORT || "8137")
+      ),
+    },
   };
 }
 
-const envConfig = getEnvironmentConfig();
-
-const servers = {
-  lobby: {
-    name: "Lobby",
-    ip: envConfig.useLocalServers
-      ? "localhost"
-      : process.env.MINECRAFT_LOBBY_IP || "localhost",
-    apiPort: parseInt(process.env.MINECRAFT_LOBBY_API_PORT || "8090"),
-  },
-  survival: {
-    name: "Survival",
-    ip: envConfig.useLocalServers
-      ? "localhost"
-      : process.env.MINECRAFT_SURVIVAL_IP || "localhost",
-    apiPort: parseInt(process.env.MINECRAFT_SURVIVAL_API_PORT || "8137"),
-  },
-};
-
 // Log environment configuration
-console.log("Environment configuration:", {
-  environment: envConfig.env,
-  isTest: envConfig.isTest,
-  isDev: envConfig.isDev,
-  isProd: envConfig.isProd,
-  useLocalServers: envConfig.useLocalServers,
-});
+function logServerConfiguration() {
+  const config = getServerConfig();
+  console.log("Server configuration loaded:", {
+    proxy: {
+      ip: config.proxy.ip,
+      port: config.proxy.port,
+      apiPort: config.proxy.apiPort,
+      hasIp: !!process.env.MINECRAFT_PROXY_IP,
+      hasPort: !!process.env.MINECRAFT_PROXY_PORT,
+      hasApiPort: !!process.env.MINECRAFT_PROXY_API_PORT,
+    },
+    lobby: {
+      ip: config.lobby.ip,
+      port: config.lobby.port,
+      apiPort: config.lobby.apiPort,
+      hasIp: !!process.env.MINECRAFT_LOBBY_IP,
+      hasPort: !!process.env.MINECRAFT_LOBBY_PORT,
+      hasApiPort: !!process.env.MINECRAFT_LOBBY_API_PORT,
+    },
+    survival: {
+      ip: config.survival.ip,
+      port: config.survival.port,
+      apiPort: config.survival.apiPort,
+      hasIp: !!process.env.MINECRAFT_SURVIVAL_IP,
+      hasPort: !!process.env.MINECRAFT_SURVIVAL_PORT,
+      hasApiPort: !!process.env.MINECRAFT_SURVIVAL_API_PORT,
+    },
+  });
+}
 
-// Log server configuration for debugging
-console.log("Server configuration loaded:", {
-  lobby: {
-    ip: servers.lobby.ip,
-    apiPort: servers.lobby.apiPort,
-    hasIp: !!process.env.MINECRAFT_LOBBY_IP,
-    hasPort: !!process.env.MINECRAFT_LOBBY_API_PORT,
-  },
-  survival: {
-    ip: servers.survival.ip,
-    apiPort: servers.survival.apiPort,
-    hasIp: !!process.env.MINECRAFT_SURVIVAL_IP,
-    hasPort: !!process.env.MINECRAFT_SURVIVAL_API_PORT,
-  },
-});
-
-// Helper function to determine if a rank is a towny rank
-function isTownyRank(rankId: string): boolean {
-  // First check if this is a known survival rank
-  if (rankId.toLowerCase() === "shadow_enchanter") {
-    console.log(
-      `Rank '${rankId}' identified as a survival rank, not a towny rank`
-    );
-    return false;
-  }
-
-  // First check if it's a towny prefix rank
-  if (rankId.toLowerCase().startsWith("towny_")) {
-    return true;
-  }
-
-  // List of known towny ranks
-  const townyRanks = [
-    "citizen",
-    "merchant",
-    "councilor",
-    "mayor",
-    "governor",
-    "noble",
-    "duke",
-    "king",
-    "emperor",
-    "divine",
-  ];
-
-  // Check if it's in the towny ranks list
-  if (townyRanks.includes(rankId.toLowerCase())) {
-    return true;
-  }
-
-  // List of known survival ranks
-  const survivalRanks = [
-    "shadow_enchanter",
-    "crystal_master",
-    "elemental_guardian",
-    "void_walker",
-    "celestial_sovereign",
-  ];
-
-  // If it's a survival rank, it's not a towny rank
-  if (survivalRanks.includes(rankId.toLowerCase())) {
-    return false;
-  }
-
-  // Default to false if not explicitly identified
-  console.log(`Rank '${rankId}' not recognized, defaulting to non-towny`);
-  return false;
+// Helper function to get the proxy API URL
+function getProxyApiUrl(): string {
+  const config = getServerConfig();
+  return config.proxy.apiUrl;
 }
 
 // Helper function to apply rank to a specific server
@@ -525,101 +500,36 @@ async function applyRankToServer(
   username: string,
   rankId: string
 ): Promise<boolean> {
-  const correlationId = Math.random().toString(36).substring(7);
-  const apiUrl = `http://${server.ip}:${server.apiPort}/api/apply-rank`;
-
-  console.log(
-    `[${correlationId}][Rank Application] Applying rank to server ${server.name}:`,
-    {
-      username,
-      rankId,
-      serverName: server.name,
-      apiUrl: apiUrl,
-    }
-  );
-
-  // Get API key from environment
+  const config = getServerConfig();
   const apiKey = process.env.MINECRAFT_SERVER_API_KEY;
+
   if (!apiKey) {
-    console.error(
-      `[${correlationId}][Rank Application] MINECRAFT_SERVER_API_KEY is not configured`
-    );
+    console.error("No API key configured");
     return false;
   }
 
-  console.log(`[${correlationId}][Rank Application] Using API key:`, {
-    keyExists: !!apiKey,
-    keyLength: apiKey.length,
-    keyPreview: `${apiKey.substring(0, 5)}...`,
-  });
-
   try {
-    // Added timeout to prevent requests from hanging indefinitely
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // Increased timeout to 15 seconds
-
-    // Apply the rank via the API
-    const response = await fetch(apiUrl, {
+    // Try to apply rank via server's API
+    const response = await fetch(`${server.apiUrl}/api/apply-rank`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
-        "X-Correlation-ID": correlationId,
       },
       body: JSON.stringify({
         username,
         rankId,
-        rank: rankId, // Include for backward compatibility
-        server: server.name.toLowerCase(),
       }),
-      signal: controller.signal,
     });
 
-    clearTimeout(timeoutId);
-
-    // Log the status code
-    console.log(
-      `[${correlationId}][Rank Application] Response status:`,
-      response.status
-    );
-
-    // Attempt to parse as JSON, but handle non-JSON responses as well
-    let responseData;
-    const responseText = await response.text();
-
-    try {
-      if (responseText) {
-        responseData = JSON.parse(responseText);
-        console.log(
-          `[${correlationId}][Rank Application] Response data:`,
-          responseData
-        );
-      } else {
-        console.log(`[${correlationId}][Rank Application] Empty response body`);
-      }
-    } catch (error) {
-      console.log(
-        `[${correlationId}][Rank Application] Non-JSON response:`,
-        responseText
-      );
+    if (!response.ok) {
+      throw new Error(`Server responded with status: ${response.status}`);
     }
 
-    // Consider anything in the 200-299 range as successful
-    return response.status >= 200 && response.status < 300;
-  } catch (error: any) {
-    // Provide detailed error information to help diagnose connection issues
-    console.error(
-      `[${correlationId}][Rank Application] Error applying rank to server:`,
-      {
-        message: error.message,
-        stack: error.stack,
-        type: error.name,
-        isTimeout: error.name === "AbortError",
-        server: server.name,
-        ip: server.ip,
-        port: server.apiPort,
-      }
-    );
+    const data = await response.json();
+    return data.success === true;
+  } catch (error) {
+    console.error(`Error applying rank to server ${server.name}:`, error);
     return false;
   }
 }
@@ -629,231 +539,94 @@ async function applyRankAcrossServers(
   username: string,
   rankId: string
 ): Promise<boolean> {
-  const correlationId = Math.random().toString(36).substring(7);
-  console.log(
-    `[${correlationId}][Rank Application] Starting rank application across servers:`,
-    {
-      username,
-      rankId,
-    }
-  );
+  const config = getServerConfig();
+  const apiKey = process.env.MINECRAFT_SERVER_API_KEY;
 
-  // Add additional direct application to the main plugin API (this is our most reliable method)
-  try {
-    if (!process.env.MINECRAFT_SERVER_API_URL) {
-      console.error(
-        `[${correlationId}][Rank Application] MINECRAFT_SERVER_API_URL is not configured`
-      );
-    } else {
-      console.log(
-        `[${correlationId}][Rank Application] Directly applying rank to main API endpoint`,
-        {
-          url: `${process.env.MINECRAFT_SERVER_API_URL}/api/apply-rank`,
-          username,
-          rankId,
-        }
-      );
-
-      const apiKey = process.env.MINECRAFT_SERVER_API_KEY;
-      if (!apiKey) {
-        console.error(
-          `[${correlationId}][Rank Application] MINECRAFT_SERVER_API_KEY is not configured`
-        );
-      } else {
-        // Added timeout to prevent requests from hanging indefinitely
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000); // Increased timeout to 15 seconds
-
-        try {
-          // Direct application to the main API endpoint
-          const response = await fetch(
-            `${process.env.MINECRAFT_SERVER_API_URL}/api/apply-rank`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${apiKey}`,
-                "X-Correlation-ID": correlationId,
-              },
-              body: JSON.stringify({
-                username,
-                rankId,
-                rank: rankId,
-                applyGlobally: true, // Signal that this should be applied to all servers
-              }),
-              signal: controller.signal,
-            }
-          );
-
-          clearTimeout(timeoutId);
-
-          // Log full response details
-          const responseText = await response.text();
-          console.log(
-            `[${correlationId}][Rank Application] Response details:`,
-            {
-              status: response.status,
-              statusText: response.statusText,
-              body: responseText,
-              ok: response.ok,
-            }
-          );
-
-          if (response.ok) {
-            console.log(
-              `[${correlationId}][Rank Application] Successfully applied rank directly to main API endpoint`
-            );
-            return true;
-          } else {
-            console.error(
-              `[${correlationId}][Rank Application] Failed to apply rank directly to main API endpoint:`,
-              {
-                status: response.status,
-                statusText: response.statusText,
-                body: responseText,
-              }
-            );
-          }
-        } catch (error: any) {
-          clearTimeout(timeoutId);
-          console.error(
-            `[${correlationId}][Rank Application] Error applying rank directly to main API endpoint:`,
-            {
-              message: error.message,
-              stack: error.stack,
-              type: error.name,
-              isTimeout: error.name === "AbortError",
-            }
-          );
-        }
-      }
-    }
-  } catch (error: any) {
-    console.error(
-      `[${correlationId}][Rank Application] Error applying rank directly to main API endpoint:`,
-      {
-        message: error.message,
-        stack: error.stack,
-        type: error.name,
-        isTimeout: error.name === "AbortError",
-      }
-    );
+  if (!apiKey) {
+    console.error("No API key configured");
+    return false;
   }
 
-  // Fall back to server-specific applications if direct application fails
-  const isTowny = isTownyRank(rankId);
-  console.log(
-    `[${correlationId}][Rank Application] Rank type:`,
-    isTowny ? "Towny" : "Regular"
-  );
-
-  // Add the rank to Supabase storage first (for backup in case server communication fails)
+  // First try to apply via proxy server
   try {
-    // Import the Supabase client inside the function to avoid circular dependencies
-    const { supabase } = await import("@/lib/supabase");
-
-    // Add this rank to pending ranks as a backup
-    const { error } = await supabase.from("pending_ranks_backup").insert({
-      username: username.toLowerCase(),
-      rank_id: rankId,
-      created_at: new Date().toISOString(),
+    const response = await fetch(`${config.proxy.apiUrl}/api/apply-rank`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        username,
+        rankId,
+      }),
     });
 
-    if (error) {
-      console.error(
-        `[${correlationId}][Rank Application] Error saving to Supabase pending ranks:`,
-        error
-      );
-    } else {
-      console.log(
-        `[${correlationId}][Rank Application] Added rank to Supabase pending ranks backup`
-      );
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success) {
+        return true;
+      }
     }
   } catch (error) {
-    console.error(
-      `[${correlationId}][Rank Application] Error saving to Supabase pending ranks:`,
-      error
-    );
-    // Continue processing even if backup fails
+    console.error("Error applying rank via proxy:", error);
   }
 
-  // Try with retry logic
-  const MAX_RETRIES = 3;
-  let success = false;
-  let attempts = 0;
+  // If proxy fails or rank is towny-specific, try individual servers
+  const isTownyRank =
+    rankId.toLowerCase().includes("towny") ||
+    [
+      "citizen",
+      "merchant",
+      "councilor",
+      "mayor",
+      "governor",
+      "noble",
+      "duke",
+      "king",
+      "emperor",
+      "divine",
+    ].includes(rankId.toLowerCase());
 
-  while (!success && attempts < MAX_RETRIES) {
-    attempts++;
-    try {
-      if (isTowny) {
-        console.log(
-          `[${correlationId}][Rank Application] Applying Towny rank to Survival server only (attempt ${attempts})`
-        );
-        success = await applyRankToServer(servers.survival, username, rankId);
-      } else {
-        // For non-towny ranks (like shadow_enchanter), apply to all servers
-        console.log(
-          `[${correlationId}][Rank Application] Applying rank '${rankId}' to all servers (attempt ${attempts})`
-        );
-
-        // Always apply to both servers for non-towny ranks
-        const lobbyPromise = applyRankToServer(servers.lobby, username, rankId);
-        const survivalPromise = applyRankToServer(
-          servers.survival,
-          username,
-          rankId
-        );
-
-        // Wait for both requests to complete
-        const [lobbySuccess, survivalSuccess] = await Promise.all([
-          lobbyPromise,
-          survivalPromise,
-        ]);
-
-        // Even if one server succeeds, we consider it a success and continue
-        // This prevents one server being down from blocking rank application
-        success = lobbySuccess || survivalSuccess;
-
-        console.log(
-          `[${correlationId}][Rank Application] Application results (attempt ${attempts}):`,
-          {
-            lobby: lobbySuccess,
-            survival: survivalSuccess,
-            overall: success,
-          }
-        );
-      }
-
-      if (!success && attempts < MAX_RETRIES) {
-        // Wait before retrying (exponential backoff)
-        const waitTime = Math.pow(2, attempts) * 1000;
-        console.log(
-          `[${correlationId}][Rank Application] Retry in ${waitTime}ms...`
-        );
-        await new Promise((resolve) => setTimeout(resolve, waitTime));
-      }
-    } catch (error) {
-      console.error(
-        `[${correlationId}][Rank Application] Error in attempt ${attempts}:`,
-        error
-      );
-      if (attempts < MAX_RETRIES) {
-        const waitTime = Math.pow(2, attempts) * 1000;
-        console.log(
-          `[${correlationId}][Rank Application] Retry in ${waitTime}ms...`
-        );
-        await new Promise((resolve) => setTimeout(resolve, waitTime));
-      }
-    }
-  }
-
-  if (!success) {
-    console.error(
-      `[${correlationId}][Rank Application] Failed after ${MAX_RETRIES} attempts`
+  // For towny ranks, only apply to survival server
+  if (isTownyRank) {
+    return await applyRankToServer(
+      {
+        name: "Survival",
+        apiUrl: config.survival.apiUrl,
+        ip: config.survival.ip,
+        apiPort: config.survival.apiPort,
+      },
+      username,
+      rankId
     );
   }
 
-  return success;
+  // For non-towny ranks, try both servers
+  const results = await Promise.all([
+    applyRankToServer(
+      {
+        name: "Lobby",
+        apiUrl: config.lobby.apiUrl,
+        ip: config.lobby.ip,
+        apiPort: config.lobby.apiPort,
+      },
+      username,
+      rankId
+    ),
+    applyRankToServer(
+      {
+        name: "Survival",
+        apiUrl: config.survival.apiUrl,
+        ip: config.survival.ip,
+        apiPort: config.survival.apiPort,
+      },
+      username,
+      rankId
+    ),
+  ]);
+
+  // Return true if any server succeeded
+  return results.some((result) => result === true);
 }
 
 // Extract the event processing logic into an exportable function
@@ -1265,4 +1038,45 @@ async function savePendingRankBackup(pendingRank: PendingRank) {
     console.error("Exception saving pending rank backup:", error);
     return false;
   }
+}
+
+// Helper function to determine if a rank is a towny rank
+function isTownyRank(rankId: string): boolean {
+  // First check if this is a known survival rank
+  const survivalRanks = [
+    "shadow_enchanter",
+    "crystal_master",
+    "elemental_guardian",
+    "void_walker",
+    "celestial_sovereign",
+  ];
+
+  if (survivalRanks.includes(rankId.toLowerCase())) {
+    console.log(
+      `Rank '${rankId}' identified as a survival rank, not a towny rank`
+    );
+    return false;
+  }
+
+  // Check if it's a towny prefix rank
+  if (rankId.toLowerCase().startsWith("towny_")) {
+    return true;
+  }
+
+  // List of known towny ranks
+  const townyRanks = [
+    "citizen",
+    "merchant",
+    "councilor",
+    "mayor",
+    "governor",
+    "noble",
+    "duke",
+    "king",
+    "emperor",
+    "divine",
+  ];
+
+  // Check if it's in the towny ranks list
+  return townyRanks.includes(rankId.toLowerCase());
 }

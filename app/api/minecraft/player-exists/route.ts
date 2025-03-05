@@ -4,6 +4,23 @@ import { authOptions } from "@/lib/auth";
 import axios from "axios";
 import { supabase } from "@/lib/supabase";
 
+// Get server configuration
+function getServerConfig() {
+  const env = process.env.NODE_ENV || "development";
+  const useLocalServers =
+    env === "development" && process.env.USE_LOCAL_SERVERS === "true";
+  const proxyIp = useLocalServers
+    ? "localhost"
+    : process.env.MINECRAFT_PROXY_IP || "localhost";
+  const proxyApiPort = parseInt(process.env.MINECRAFT_PROXY_API_PORT || "8113");
+
+  return {
+    apiUrl: useLocalServers
+      ? `http://localhost:${proxyApiPort}`
+      : `http://${proxyIp}:${proxyApiPort}`,
+  };
+}
+
 // Helper function to normalize Minecraft usernames for consistent storage and lookup
 function normalizeUsername(username: string): string {
   return username.trim().toLowerCase();
@@ -42,27 +59,29 @@ export async function GET(request: Request) {
     const normalizedUsername = username.trim().toLowerCase();
 
     // For development purposes, always return that the player exists
-    // This avoids issues with connecting to a Minecraft server that might not be running
-    return NextResponse.json({
-      exists: true,
-      username: normalizedUsername,
-      userData: {
-        ranks: [], // Empty ranks by default
-      },
-    });
+    if (process.env.NODE_ENV === "development") {
+      return NextResponse.json({
+        exists: true,
+        username: normalizedUsername,
+        userData: {
+          ranks: [], // Empty ranks by default
+        },
+      });
+    }
 
-    /* Original implementation with Supabase:
     let exists = false;
     let userData = null;
 
     // First, try the Minecraft Server API
     try {
-      const apiUrl = `${process.env.MINECRAFT_API_URL}/player/${normalizedUsername}`;
+      const config = getServerConfig();
+      const apiUrl = `${config.apiUrl}/api/player/${normalizedUsername}`;
 
       const apiResponse = await axios.get(apiUrl, {
         headers: {
           "Content-Type": "application/json",
           "User-Agent": "Minecraft Shop API/1.0",
+          Authorization: `Bearer ${process.env.MINECRAFT_SERVER_API_KEY}`,
         },
       });
 
@@ -73,7 +92,7 @@ export async function GET(request: Request) {
       }
     } catch (error) {
       // Fall back to Supabase approach if API call fails
-      // Continue to the next method, don't exit
+      console.error("Error checking player via API:", error);
     }
 
     // If API approach failed, try the Supabase approach
@@ -87,7 +106,7 @@ export async function GET(request: Request) {
       if (!error && userRanks && userRanks.length > 0) {
         exists = true;
         userData = {
-          ranks: userRanks.map(rank => rank.rank_id)
+          ranks: userRanks.map((rank) => rank.rank_id),
         };
       }
     }
@@ -98,8 +117,8 @@ export async function GET(request: Request) {
       username: normalizedUsername,
       userData,
     });
-    */
   } catch (error) {
+    console.error("Error checking if player exists:", error);
     return NextResponse.json(
       { error: "Failed to check if player exists" },
       { status: 500 }

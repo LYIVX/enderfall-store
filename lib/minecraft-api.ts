@@ -3,6 +3,7 @@
  */
 
 import axios from "axios";
+import { getServerConfig } from "./serverConfig";
 
 // Types
 interface PlayerExistsResponse {
@@ -109,4 +110,30 @@ export function getRankCategory(rankId: string): string {
 
   // Default to the rank ID itself if no category matches
   return rankId;
+}
+
+/**
+ * Gets the Minecraft API URL from environment variables
+ * @returns The API URL to use for Minecraft server communication
+ */
+export function getMinecraftApiUrl(): string {
+  const config = getServerConfig();
+  return config.proxy.apiUrl;
+}
+
+/**
+ * Gets the Minecraft server hostname for display
+ * @returns The server hostname to display to users
+ */
+export function getMinecraftServerHostname(): string {
+  const config = getServerConfig();
+  return `${config.proxy.ip}:${config.proxy.port}`;
+}
+
+/**
+ * Gets the Minecraft API key from environment variables
+ * @returns The API key to use for Minecraft server communication
+ */
+export function getMinecraftApiKey(): string {
+  return process.env.MINECRAFT_SERVER_API_KEY || "";
 }

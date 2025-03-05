@@ -8,13 +8,24 @@ const http = require("http");
 const eventPayload = fs.readFileSync("stripe-event.json", "utf8");
 const parsedEvent = JSON.parse(eventPayload);
 
+// Allow command line arguments to override username and rank_id
+const args = process.argv.slice(2);
+const username = args[0] || parsedEvent.data.object.metadata.minecraft_username;
+const rankId = args[1] || parsedEvent.data.object.metadata.rank_id;
+
+console.log(`Using username: ${username}, rank_id: ${rankId}`);
+
 // Create a simplified checkout event
 const simpleEvent = {
   type: "checkout.session.completed",
   data: {
     object: {
       id: parsedEvent.data.object.id,
-      metadata: parsedEvent.data.object.metadata,
+      metadata: {
+        ...parsedEvent.data.object.metadata,
+        minecraft_username: username,
+        rank_id: rankId,
+      },
       status: "complete",
       payment_status: "paid",
       customer_details: parsedEvent.data.object.customer_details,

@@ -1,16 +1,7 @@
 import { NextResponse } from "next/server";
-import { stripe } from "@/lib/stripe";
-import axios from "axios";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/options";
-import { Stripe } from "stripe";
-import {
-  getPendingPurchases,
-  saveUserRankData,
-  removePendingPurchase,
-  normalizeUsername,
-  type PendingPurchase,
-} from "@/lib/supabase";
+import { getMinecraftApiUrl } from "@/lib/minecraft-api";
+import { removePendingPurchase, saveUserRankData } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 
 // Function to get session details from pending purchases
 async function getSessionDetails(
@@ -159,11 +150,9 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
-    // Get the session details from the request body
-    const body = await request.json();
-    const { sessionId } = body;
+    const { sessionId } = await req.json();
 
     if (!sessionId) {
       return NextResponse.json(
@@ -172,11 +161,15 @@ export async function POST(request: Request) {
       );
     }
 
-    // Verify the session with Stripe
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+    // Get the pending purchase from our database
+    const { data: pendingPurchases } = await supabase
+      .from("pending_purchases")
+      .select("*")
+      .eq("session_id", sessionId)
+      .limit(1);
 
-    // Retrieve pending purchase details
-    const pendingPurchase = await getSessionDetails(sessionId);
+    const pendingPurchase = pendingPurchases?.[0];
+
     if (!pendingPurchase) {
       return NextResponse.json(
         { error: "No pending purchase found" },
@@ -184,44 +177,60 @@ export async function POST(request: Request) {
       );
     }
 
-    // Retrieve the Stripe session
-    const stripeSession = await stripe.checkout.sessions.retrieve(sessionId);
+    // Extract data from the pending purchase
+    const { minecraft_username: minecraftUsername, rank_id: rankId } =
+      pendingPurchase;
 
-    // Verify payment status
-    if (stripeSession.payment_status !== "paid") {
+    // Validate we have the minimum required data
+    if (!rankId || !minecraftUsername) {
       return NextResponse.json(
-        { error: "Payment not completed" },
+        { error: "Missing required purchase information" },
         { status: 400 }
       );
     }
 
-    // Activate the rank on the Minecraft server
-    const activationResult = await activateRank(
-      pendingPurchase.user_id,
-      pendingPurchase.rank_id,
-      pendingPurchase.is_gift,
-      pendingPurchase.recipient
-    );
+    // Save the user's rank data
+    try {
+      await saveUserRankData(minecraftUsername, rankId);
 
-    if (!activationResult.success) {
+      // Clean up the pending purchase in the background
+      setTimeout(async () => {
+        try {
+          await removePendingPurchase(sessionId, rankId, minecraftUsername);
+        } catch (error) {
+          console.error("Error cleaning up pending purchase:", error);
+        }
+      }, 0);
+    } catch (error) {
+      console.error("Error saving user rank data:", error);
+    }
+
+    // Apply the rank via the Minecraft server API
+    const response = await fetch(`${getMinecraftApiUrl()}/api/apply-rank`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.MINECRAFT_SERVER_API_KEY}`,
+      },
+      body: JSON.stringify({
+        username: minecraftUsername,
+        rankId: rankId,
+      }),
+    });
+
+    if (!response.ok) {
       return NextResponse.json(
-        { error: activationResult.error || "Failed to activate rank" },
+        { error: "Failed to apply rank on Minecraft server" },
         { status: 500 }
       );
     }
-
-    // Mark the purchase as completed in our database
-    await removePendingPurchase(
-      sessionId,
-      pendingPurchase.rank_id,
-      pendingPurchase.minecraft_username
-    );
 
     return NextResponse.json({
       success: true,
       message: "Purchase verified and rank activated",
     });
   } catch (error) {
+    console.error("Error verifying purchase:", error);
     return NextResponse.json(
       { error: "Failed to verify purchase" },
       { status: 500 }

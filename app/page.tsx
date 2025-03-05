@@ -2,13 +2,17 @@
 import React from "react";
 import Link from "next/link";
 import ServerStatus from "./components/ServerStatus";
+import { getMinecraftServerHostname } from "@/lib/minecraft-api";
 
 export default function Home() {
   // Define gradient style for server features header
-  const featureHeaderStyle = {
-    background: "linear-gradient(to right, #10b981, #059669, #0d9488)",
-    boxShadow: "0 4px 20px rgba(16, 185, 129, 0.5)",
+  const gradientStyle = {
+    background: "linear-gradient(45deg, #FF6B6B, #4ECDC4)",
+    WebkitBackgroundClip: "text",
+    WebkitTextFillColor: "transparent",
   };
+
+  const serverIp = getMinecraftServerHostname();
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-[var(--background-gradient-from)] to-[var(--background-gradient-to)] text-[var(--text-color)]">
@@ -25,7 +29,7 @@ export default function Home() {
         <div className="grid md:grid-cols-2 gap-8 mb-16">
           <div className="bg-[var(--card-bg)] rounded-lg shadow-lg overflow-hidden">
             <div
-              style={featureHeaderStyle}
+              style={gradientStyle}
               className="p-5 text-center rounded-t-lg relative overflow-hidden"
             >
               {/* Add a shine effect overlay */}
@@ -66,11 +70,7 @@ export default function Home() {
             </div>
           </div>
 
-          <ServerStatus
-            serverIp={
-              process.env.NEXT_PUBLIC_SERVER_IP || "play.enderfall.co.uk"
-            }
-          />
+          <ServerStatus serverIp={serverIp} />
         </div>
 
         <div className="text-center">

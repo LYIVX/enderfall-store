@@ -2,48 +2,83 @@
  * Utility function to check if the Minecraft server is online
  */
 
-// Default server IP if none provided
-const DEFAULT_SERVER_IP = "localhost:25565";
+// Get server configuration
+function getServerConfig() {
+  const env = process.env.NODE_ENV || "development";
+  const useLocalServers =
+    env === "development" && process.env.USE_LOCAL_SERVERS === "true";
+
+  // Base configuration using proxy IP and ports
+  const proxyIp = useLocalServers
+    ? "localhost"
+    : process.env.MINECRAFT_PROXY_IP || "localhost";
+  const proxyPort = parseInt(process.env.MINECRAFT_PROXY_PORT || "25674");
+  const proxyApiPort = parseInt(process.env.MINECRAFT_PROXY_API_PORT || "8113");
+
+  return {
+    proxy: {
+      ip: proxyIp,
+      port: proxyPort,
+      apiPort: proxyApiPort,
+      apiUrl: useLocalServers
+        ? `http://localhost:${proxyApiPort}`
+        : `http://${proxyIp}:${proxyApiPort}`,
+    },
+    lobby: {
+      ip: useLocalServers
+        ? "localhost"
+        : process.env.MINECRAFT_LOBBY_IP || proxyIp,
+      port: parseInt(process.env.MINECRAFT_LOBBY_PORT || "25610"),
+    },
+    survival: {
+      ip: useLocalServers
+        ? "localhost"
+        : process.env.MINECRAFT_SURVIVAL_IP || proxyIp,
+      port: parseInt(process.env.MINECRAFT_SURVIVAL_PORT || "25579"),
+    },
+  };
+}
 
 /**
  * Checks if the Minecraft server is currently online
- *
- * @param serverIp - The server IP address to check
  * @returns Promise that resolves to a boolean indicating if the server is online
  */
-export async function isServerOnline(
-  serverIp: string = DEFAULT_SERVER_IP
-): Promise<boolean> {
+export async function isServerOnline(): Promise<boolean> {
+  const config = getServerConfig();
+
   // For localhost servers, assume they are online for testing purposes
-  if (serverIp.includes("localhost") || serverIp.includes("127.0.0.1")) {
+  if (process.env.NODE_ENV === "development") {
     return true;
   }
 
-  // For non-localhost servers, use the mcsrvstat API as before
   try {
-    // Using https://api.mcsrvstat.us/ to get server status
-    const response = await fetch(`https://api.mcsrvstat.us/2/${serverIp}`);
-
-    if (!response.ok) {
-      return false;
+    // Check proxy server first
+    const proxyStatus = await getServerStatus(
+      `${config.proxy.ip}:${config.proxy.port}`
+    );
+    if (proxyStatus.online) {
+      return true;
     }
 
-    const data = await response.json();
-    return data && data.online === true;
+    // Check individual servers
+    const [lobbyStatus, survivalStatus] = await Promise.all([
+      getServerStatus(`${config.lobby.ip}:${config.lobby.port}`),
+      getServerStatus(`${config.survival.ip}:${config.survival.port}`),
+    ]);
+
+    return lobbyStatus.online || survivalStatus.online;
   } catch (error) {
+    console.error("Error checking server status:", error);
     return false;
   }
 }
 
 /**
  * Gets detailed information about the server status
- *
  * @param serverIp - The server IP address to check
  * @returns Promise that resolves to server status data
  */
-export async function getServerStatus(
-  serverIp: string = DEFAULT_SERVER_IP
-): Promise<{
+export async function getServerStatus(serverIp: string): Promise<{
   online: boolean;
   version?: string;
   players?: {
@@ -53,7 +88,7 @@ export async function getServerStatus(
   error?: string;
 }> {
   // For localhost servers, provide static test data
-  if (serverIp.includes("localhost") || serverIp.includes("127.0.0.1")) {
+  if (process.env.NODE_ENV === "development") {
     return {
       online: true,
       version: "Local Server",
@@ -108,16 +143,15 @@ export async function checkServerStatus(): Promise<boolean> {
       return true;
     }
 
-    // Get the Minecraft server status endpoint
-    const serverUrl =
-      process.env.NEXT_PUBLIC_MINECRAFT_SERVER_URL || "http://localhost:8080";
-    const statusEndpoint = `${serverUrl}/status`;
+    const config = getServerConfig();
+    const statusEndpoint = `${config.proxy.apiUrl}/api/status`;
 
     // Make a request to the server status endpoint
     const response = await fetch(statusEndpoint, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.MINECRAFT_SERVER_API_KEY}`,
       },
       cache: "no-store",
     });
@@ -129,6 +163,7 @@ export async function checkServerStatus(): Promise<boolean> {
     const data = await response.json();
     return data.online === true;
   } catch (error) {
+    console.error("Error checking server status:", error);
     return false;
   }
 }
