@@ -2,22 +2,40 @@ import { NextResponse } from "next/server";
 import { getMinecraftApiUrl } from "@/lib/minecraft-api";
 import { removePendingPurchase, saveUserRankData } from "@/lib/supabase";
 import { supabase } from "@/lib/supabase";
+import { stripe } from "@/lib/stripe";
+import axios from "axios";
+
+interface PendingPurchase {
+  id: string;
+  user_id: string;
+  rank_id: string;
+  minecraft_username: string;
+  timestamp: number;
+  session_id: string;
+  is_gift: boolean;
+  recipient?: string;
+  created_at?: string;
+}
 
 // Function to get session details from pending purchases
 async function getSessionDetails(
   sessionId: string
 ): Promise<PendingPurchase | null> {
   try {
-    const pendingPurchases = await getPendingPurchases();
+    // Get pending purchase directly from Supabase
+    const { data: pendingPurchases, error } = await supabase
+      .from("pending_purchases")
+      .select("*")
+      .eq("session_id", sessionId.trim())
+      .limit(1);
 
-    // Find matching session ID (with normalization)
-    const normalizedSessionId = sessionId.trim();
-    const purchase = pendingPurchases.find(
-      (p) => p.session_id.trim() === normalizedSessionId
-    );
+    if (error || !pendingPurchases || pendingPurchases.length === 0) {
+      return null;
+    }
 
-    return purchase || null;
+    return pendingPurchases[0] as PendingPurchase;
   } catch (error) {
+    console.error("Error getting session details:", error);
     return null;
   }
 }
