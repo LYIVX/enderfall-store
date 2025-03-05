@@ -10,6 +10,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { getRankById } from "@/lib/ranks";
 import crypto from "crypto";
+import { v4 as uuidv4 } from "uuid";
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!.trim();
 
@@ -1031,12 +1032,149 @@ async function applyRankAcrossServers(
   return success;
 }
 
+// Extract the event processing logic into an exportable function
+export async function processStripeEvent(
+  event: any,
+  correlationId: string
+): Promise<{ success: boolean; message: string }> {
+  console.log(`[${correlationId}][Stripe Webhook] Processing event:`, {
+    id: event.id,
+    type: event.type,
+    hasData: !!event.data,
+    hasObject: !!(event.data && event.data.object),
+  });
+
+  // Process the specific event type
+  if (event.type === "checkout.session.completed") {
+    console.log(
+      `[${correlationId}][Stripe Webhook] Processing checkout.session.completed event`
+    );
+
+    try {
+      const session = event.data.object;
+
+      // Verify that this is a paid session
+      if (session.payment_status !== "paid") {
+        console.log(
+          `[${correlationId}][Stripe Webhook] Skipping unpaid session`,
+          {
+            sessionId: session.id,
+            paymentStatus: session.payment_status,
+          }
+        );
+        return {
+          success: false,
+          message: "Payment not completed",
+        };
+      }
+
+      // Extract metadata
+      const metadata = session.metadata || {};
+      const type = metadata.type;
+      const username = metadata.minecraft_username;
+      const rankId = metadata.rank_id;
+      const isGift = metadata.is_gift === "true";
+      const userId = metadata.user_id;
+
+      console.log(
+        `[${correlationId}][Stripe Webhook] Processing payment for ${type}`,
+        {
+          sessionId: session.id,
+          username,
+          rankId,
+          isGift,
+          userId,
+        }
+      );
+
+      if (type !== "rank_purchase") {
+        return {
+          success: false,
+          message: `Unsupported purchase type: ${type}`,
+        };
+      }
+
+      // Process rank purchase
+      if (!username || !rankId) {
+        console.error(
+          `[${correlationId}][Stripe Webhook] Missing required metadata for rank purchase`,
+          { username, rankId }
+        );
+        return {
+          success: false,
+          message: "Missing required metadata",
+        };
+      }
+
+      // Load the existing pending purchases
+      await removePendingPurchase(session.id, rankId, username);
+
+      // Apply the rank to the user's Minecraft account
+      const rankApplied = await applyRankAcrossServers(username, rankId);
+
+      if (rankApplied) {
+        console.log(
+          `[${correlationId}][Stripe Webhook] Successfully applied rank`,
+          {
+            username,
+            rankId,
+          }
+        );
+
+        // Save the user's rank data
+        const result = await saveUserRankData(username, rankId);
+
+        console.log(`[${correlationId}][Stripe Webhook] User rank data saved`, {
+          success: result.success,
+          message: result.message,
+        });
+
+        return {
+          success: true,
+          message: "Rank purchase processed successfully",
+        };
+      } else {
+        console.error(
+          `[${correlationId}][Stripe Webhook] Failed to apply rank`,
+          {
+            username,
+            rankId,
+          }
+        );
+        return {
+          success: false,
+          message: "Failed to apply rank to any server",
+        };
+      }
+    } catch (error: any) {
+      console.error(
+        `[${correlationId}][Stripe Webhook] Error processing checkout session:`,
+        error
+      );
+      return {
+        success: false,
+        message: `Error processing checkout session: ${error.message}`,
+      };
+    }
+  } else {
+    // Unsupported event type
+    console.log(
+      `[${correlationId}][Stripe Webhook] Unsupported event type: ${event.type}`
+    );
+    return {
+      success: false,
+      message: `Unsupported event type: ${event.type}`,
+    };
+  }
+}
+
 export async function POST(req: Request) {
-  const correlationId = Math.random().toString(36).substring(7);
+  // Generate a correlation ID for tracking this request
+  const correlationId = uuidv4().substring(0, 8);
+
+  console.log(`[${correlationId}][Stripe Webhook] Received webhook event`);
 
   try {
-    console.log(`[${correlationId}][Stripe Webhook] Received webhook request`);
-
     // Log raw request details
     const rawHeaders = Object.fromEntries(req.headers.entries());
     console.log(`[${correlationId}][Stripe Webhook] Raw request headers:`, {
@@ -1171,181 +1309,19 @@ export async function POST(req: Request) {
           }
         );
 
-        // Process the specific event type
-        if (event.type === "checkout.session.completed") {
-          console.log(
-            `[${correlationId}][Stripe Webhook] Processing checkout.session.completed event`
-          );
+        // Process the event using the extracted function
+        const result = await processStripeEvent(event, correlationId);
 
-          try {
-            const session = event.data.object;
-
-            // Verify that this is a paid session
-            if (session.payment_status !== "paid") {
-              console.log(
-                `[${correlationId}][Stripe Webhook] Skipping unpaid session`,
-                {
-                  sessionId: session.id,
-                  paymentStatus: session.payment_status,
-                }
-              );
-              return NextResponse.json({
-                success: false,
-                message: "Payment not completed",
-                eventType: event.type,
-                eventId: event.id,
-              });
-            }
-
-            // Extract metadata
-            const metadata = session.metadata;
-            if (
-              !metadata ||
-              !metadata.type ||
-              metadata.type !== "rank_purchase"
-            ) {
-              console.log(
-                `[${correlationId}][Stripe Webhook] Not a rank purchase`,
-                {
-                  sessionId: session.id,
-                  metadata,
-                }
-              );
-              return NextResponse.json({
-                success: true,
-                message: "Not a rank purchase, no action taken",
-                eventType: event.type,
-                eventId: event.id,
-              });
-            }
-
-            // Get purchase details
-            const rankId = metadata.rank_id;
-            const minecraftUsername = metadata.minecraft_username;
-
-            console.log(
-              `[${correlationId}][Stripe Webhook] Metadata received:`,
-              {
-                allMetadataKeys: Object.keys(metadata),
-                allMetadataValues: Object.values(metadata),
-                rankId,
-                minecraftUsername,
-                fullMetadata: metadata,
-              }
-            );
-
-            if (!rankId || !minecraftUsername) {
-              console.error(
-                `[${correlationId}][Stripe Webhook] Missing required metadata`,
-                {
-                  sessionId: session.id,
-                  rankId,
-                  minecraftUsername,
-                }
-              );
-              return NextResponse.json({
-                success: false,
-                message: "Missing required metadata",
-                eventType: event.type,
-                eventId: event.id,
-              });
-            }
-
-            console.log(
-              `[${correlationId}][Stripe Webhook] Processing rank purchase`,
-              {
-                sessionId: session.id,
-                rankId,
-                minecraftUsername,
-              }
-            );
-
-            // Save user rank data
-            const saveResult = await saveUserRankData(
-              minecraftUsername,
-              rankId
-            );
-
-            if (!saveResult.success) {
-              console.error(
-                `[${correlationId}][Stripe Webhook] Failed to save rank data`,
-                {
-                  sessionId: session.id,
-                  rankId,
-                  minecraftUsername,
-                  error: saveResult.message,
-                }
-              );
-              // Continue processing even if saving fails - we'll try to apply the rank anyway
-            }
-
-            // Apply the rank across servers
-            console.log(
-              `[${correlationId}][Stripe Webhook] Attempting to apply rank across servers`,
-              {
-                username: minecraftUsername,
-                rankId,
-                environment: process.env.NODE_ENV || "development",
-              }
-            );
-
-            const serverApplyResult = await applyRankAcrossServers(
-              minecraftUsername,
-              rankId
-            );
-
-            // Remove the pending purchase record
-            await removePendingPurchase(session.id);
-
-            console.log(
-              `[${correlationId}][Stripe Webhook] Rank purchase processed`,
-              {
-                sessionId: session.id,
-                rankId,
-                minecraftUsername,
-                saveSuccess: saveResult.success,
-                serverApplySuccess: serverApplyResult,
-                environment: process.env.NODE_ENV || "development",
-              }
-            );
-
-            return NextResponse.json({
-              success: true,
-              message: "Rank purchase processed successfully",
-              eventType: event.type,
-              eventId: event.id,
-              rankId,
-              username: minecraftUsername,
-              applied: saveResult.success && serverApplyResult,
-            });
-          } catch (processErrorUnknown) {
-            const processError = processErrorUnknown as Error;
-            console.error(
-              `[${correlationId}][Stripe Webhook] Error processing checkout session`,
-              {
-                error: processError.message,
-                stack: processError.stack,
-              }
-            );
-            return NextResponse.json(
-              {
-                success: false,
-                message: `Error processing checkout: ${processError.message}`,
-                eventType: event.type,
-                eventId: event.id,
-              },
-              { status: 500 }
-            );
-          }
-        }
-
-        // If we get here, signature verification and event parsing succeeded
-        return NextResponse.json({
-          success: true,
-          message: "Webhook signature verified and event parsed successfully",
-          eventType: event.type,
-          eventId: event.id,
-        });
+        return NextResponse.json(
+          {
+            received: true,
+            message: result.message,
+            success: result.success,
+            eventType: event.type,
+            eventId: event.id,
+          },
+          { status: 200 }
+        );
       } catch (parseErr: any) {
         console.error(
           `[${correlationId}][Stripe Webhook] Event parsing failed:`,

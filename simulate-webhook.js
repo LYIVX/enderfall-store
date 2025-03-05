@@ -1,25 +1,31 @@
 const fs = require("fs");
 const crypto = require("crypto");
 const http = require("http");
+require("dotenv").config();
 
 // Read the event payload
 const eventPayload = fs.readFileSync("stripe-event.json", "utf8");
 
 // Webhook secret from .env file
-const webhookSecret =
-  "whsec_b49e84aef5b0e25a516a8e28fd344360a13046fb7bbe8c5473ce2a1fbbdd6949";
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+console.log("Using webhook secret:", webhookSecret);
+console.log("Webhook secret length:", webhookSecret.length);
 
 // Create a signature
 const timestamp = Math.floor(Date.now() / 1000);
 const payload = `${timestamp}.${eventPayload}`;
+console.log("Payload preview:", payload.substring(0, 100) + "...");
+console.log("Payload length:", payload.length);
+
 const signature = crypto
   .createHmac("sha256", webhookSecret)
   .update(payload)
   .digest("hex");
-const signatureHeader = `t=${timestamp},v1=${signature}`;
+console.log("Generated signature:", signature);
 
+const signatureHeader = `t=${timestamp},v1=${signature}`;
 console.log("Simulating webhook event...");
-console.log("Signature:", signatureHeader);
+console.log("Full signature header:", signatureHeader);
 
 // Send the webhook event to the Next.js API route
 const options = {

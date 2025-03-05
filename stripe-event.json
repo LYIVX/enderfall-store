@@ -1,11 +1,11 @@
 {
   "id": "evt_test_lyivx_shadow_enchanter",
   "object": "event",
-  "api_version": "2020-08-27",
-  "created": 1741129986,
+  "api_version": "2025-02-24.acacia",
+  "created": 1741134425,
   "data": {
     "object": {
-      "id": "cs_test_a1bmlotGfkb6UUxwCxrkAsT5ZJ01mhgqoYp591MFAE3EFQDe3WUX4qRZdX",
+      "id": "cs_test_a135iuWa4OMogBy7I7bQIQDZvM4rFDGcLRd5XROsEvLrh3xHeBE549LI2z",
       "object": "checkout.session",
       "after_expiration": null,
       "allow_promotion_codes": null,
