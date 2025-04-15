@@ -1438,43 +1438,46 @@ export default function ConversationPage() {
         )}
       </NineSliceContainer>
       
-      <NineSliceContainer 
-        className={`${styles.messageForm} ${styles.elevatedCard} ${backgroundClass}`} 
-        onSubmit={handleSendMessage}
+      <motion.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.2 }}
       >
-        <Input
-          type="text"
-          placeholder={`Message ${recipientName}...`}
-          value={newMessage}
-          onChange={handleTyping}
-          className={styles.messageInput}
-          autoComplete="off"
-          label=""
-        />
-        <Button 
-          type="submit" 
-          variant="primary"
-          className={`${styles.sendButton} ${isTyping ? styles.sendActive : ''}`}
-          disabled={sending || !newMessage.trim()}
+        <NineSliceContainer 
+          className={`${styles.messageForm} ${styles.elevatedCard} ${backgroundClass}`}
+          onSubmit={handleSendMessage}
         >
-          <FaPaperPlane />
-        </Button>
+          <Input
+            type="text"
+            placeholder={`Message ${recipientName}...`}
+            value={newMessage}
+            onChange={handleTyping}
+            className={styles.messageInput}
+            autoComplete="off"
+            label=""
+          />
+          <Button 
+            type="submit" 
+            variant="primary"
+            className={`${styles.sendButton} ${isTyping ? styles.sendActive : ''}`}
+            disabled={sending || !newMessage.trim()}
+          >
+            <FaPaperPlane />
+          </Button>
 
-        {/* Debug buttons - uncomment for testing */}
-        {/* 
-        <div className={styles.debugButtons}>
-          <Button type="button" onClick={() => setTypingForTesting(true)} className={styles.debugButton}>
-            Test Typing On
-          </Button>
-          <Button type="button" onClick={() => setTypingForTesting(false)} className={styles.debugButton}>
-            Test Typing Off
-          </Button>
-        </div>
-        */}
-      </NineSliceContainer>
+          {/* Debug buttons - uncomment for testing */}
+          {/* 
+          <div className={styles.debugButtons}>
+            <Button type="button" onClick={() => setTypingForTesting(true)} className={styles.debugButton}>
+              Test Typing On
+            </Button>
+            <Button type="button" onClick={() => setTypingForTesting(false)} className={styles.debugButton}>
+              Test Typing Off
+            </Button>
+          </div>
+          */}
+        </NineSliceContainer>
+      </motion.div>
     </motion.div>
   );
 }
