@@ -45,6 +45,23 @@ interface BlogPost {
   is_pinned: boolean;
 }
 
+// Define an interface for the data returned from the API
+interface SocialPostApiResponse {
+  id: string;
+  content: string;
+  created_at: string;
+  updated_at?: string;
+  user_id: string;
+  likes: any[];
+  comments: any[];
+  profiles: {
+    username: string;
+    avatar_url: string | null;
+    id?: string;
+  } | null;
+  image_url?: string | null;
+}
+
 interface SocialPost {
   id: string;
   content: string;
@@ -52,13 +69,14 @@ interface SocialPost {
   updated_at?: string;
   user_id: string;
   likes: any[];
-  comments?: any[];
-  profiles?: {
+  comments: any[];
+  profiles: {
     username: string;
     avatar_url: string | null;
     id?: string;
   } | null;
   image_url?: string | null;
+  author?: any;
 }
 
 interface Transaction {
@@ -333,26 +351,23 @@ export default function UserDetailPage() {
       
       // Fetch social posts
       try {
-        const postsData = await getUserSocialPosts(userId);
+        // Cast the entire API response to avoid TypeScript errors
+        const postsData = (await getUserSocialPosts(userId)) as unknown as SocialPostApiResponse[];
         
-        // Safely map social posts with explicit type handling
-        const formattedPosts = postsData.map(post => {
-          // Create a properly typed object that matches our interface
-          const typedPost: SocialPost = {
-            id: post.id || '',
-            content: post.content || '',
-            created_at: post.created_at || new Date().toISOString(),
-            updated_at: post.updated_at,
-            user_id: post.user_id || '',
-            likes: Array.isArray(post.likes) ? post.likes : [],
-            comments: Array.isArray(post.comments) ? post.comments : [],
-            profiles: post.profiles,
-            image_url: post.image_url
-          };
-          return typedPost;
-        });
+        // Map to our expected data structure
+        const formattedPosts = postsData.map(post => ({
+          id: post.id || '',
+          content: post.content || '',
+          created_at: post.created_at || new Date().toISOString(),
+          updated_at: post.updated_at,
+          user_id: post.user_id || '',
+          likes: Array.isArray(post.likes) ? post.likes : [],
+          comments: Array.isArray(post.comments) ? post.comments : [],
+          profiles: post.profiles,
+          image_url: post.image_url
+        }));
         
-        setSocialPosts(formattedPosts);
+        setSocialPosts(formattedPosts as SocialPost[]);
       } catch (error) {
         console.error('Error fetching social posts:', error);
       }
