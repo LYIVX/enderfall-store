@@ -14,7 +14,7 @@
   background-color: var(--theme-nav-footer);
   padding: var(--spacing-md) 0;
   position: fixed;
-  top: -16px;
+  top: 0;
   width: 100%;
   z-index: 100;
   height: var(--nav-height);
