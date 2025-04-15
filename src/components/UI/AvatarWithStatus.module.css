@@ -1,14 +1,15 @@
 .avatarContainer {
   position: relative;
   display: inline-block;
-  overflow: visible;
+  overflow: visible !important;
 }
 
 .avatar {
   width: 100%;
   height: 100%;
-  border-radius: 50%;
-  object-fit: contain;
+  border-radius: var(--spacing-sm) !important;
+  object-fit: scale-down !important;
+  padding: var(--spacing-xs) !important;
 }
 
 .defaultAvatar {
@@ -147,6 +148,22 @@
   height: 22px;
   border-radius: 50%;
 }
+
+.xxxxxxlarge {
+  width: 88px;
+  height: 88px;
+}
+
+.xxxxxxxlarge .statusIndicator {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+}
+
+
+
+
+
 
 
 

@@ -9,6 +9,7 @@ import Input from '@/components/UI/Input';
 import styles from './LoginModal.module.css';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { NineSliceContainer } from '../UI';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -238,8 +239,8 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, redirectPath =
   };
   
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title={isEmailMode ? 'Create Account' : 'Login to Enderfall'}>
-      <div className={styles.modalContent}>
+    <Modal isOpen={isOpen} onClose={handleClose} title={isEmailMode ? 'Sign In' : 'Login to Enderfall'}>
+      <NineSliceContainer className={styles.modalContent}>
         {(error || formError) && (
           <div className={styles.errorMessage}>
             {error || formError}
@@ -257,7 +258,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, redirectPath =
               variant="primary"
               className={styles.discordButton}
               disabled={loading || authInProgress !== null}
-              fullWidth
+              size="medium"
             >
               <FaDiscord className={styles.buttonIcon} />
               <span>
@@ -270,7 +271,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, redirectPath =
               variant="primary"
               className={styles.googleButton}
               disabled={loading || authInProgress !== null}
-              fullWidth
+              size="medium"
             >
               <FaGoogle className={styles.buttonIcon} />
               <span>
@@ -286,7 +287,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, redirectPath =
               onClick={() => setIsEmailMode(true)}
               variant="primary"
               className={styles.emailButton}
-              fullWidth
+              size="medium"
             >
               <FaEnvelope className={styles.buttonIcon} />
               <span>Sign In with Email</span>
@@ -301,13 +302,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, redirectPath =
                 value={email}
                 layout="horizontal"
                 onChange={(e) => setEmail(e.target.value)}
-              />
-              <Input
-                type="text"
-                label="Username"
-                value={username}
-                layout="horizontal"
-                onChange={(e) => setUsername(e.target.value)}
+                className={styles.emailInput}
               />
               <Input
                 type="password"
@@ -315,28 +310,33 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, redirectPath =
                 value={password}
                 layout="horizontal"
                 onChange={(e) => setPassword(e.target.value)}
+                className={styles.emailInput}
               />
               <Button
-                onClick={handleEmailSignup}
+                onClick={handleEmailLogin}
                 variant="primary"
                 className={styles.emailButton}
-                fullWidth
-              >
-                <FaEnvelope className={styles.buttonIcon} />
-                <span>Create Account</span>
-              </Button>
-              <Button
-                onClick={handleEmailLogin}
-                variant="secondary"
                 disabled={!email || !password}
-                fullWidth
+                size="medium"
               >
-                <span>Sign In</span>
+                <span>{authInProgress === 'email' ? 'Signing In...' : 'Sign In'}</span>
+              </Button>
+              <div className={styles.divider}>
+                <span>or</span>
+              </div>
+              <Button
+                onClick={handleNavigateToOnboarding}
+                variant="secondary"
+                size="medium"
+                className={styles.createAccountButton}
+              >
+                <span>Create Account</span>
               </Button>
               <Button
                 onClick={() => setIsEmailMode(false)}
                 variant="ghost"
-                fullWidth
+                size="medium"
+                className={styles.backButton}
               >
                 Back to Login Options
               </Button>
@@ -347,7 +347,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, redirectPath =
         <div className={styles.termsText}>
           By continuing, you agree to Enderfall's <a href="/legal/terms">Terms of Service</a> and <a href="/legal/privacy">Privacy Policy</a>.
         </div>
-      </div>
+      </NineSliceContainer>
     </Modal>
   );
 };

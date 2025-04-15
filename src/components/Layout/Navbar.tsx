@@ -286,7 +286,7 @@ const Navbar: React.FC<NavbarProps> = ({ navLinks }) => {
                   onClick={handleLoginClick} 
                   className={`${styles.loginButton} pixel-font`}
                   variant="primary"
-                  size="small"
+                  size="medium"
                   >
                     Login
                   </Button>

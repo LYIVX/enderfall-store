@@ -2,6 +2,8 @@
 
 import React from 'react';
 import styles from './Modal.module.css';
+import NineSliceContainer from './NineSliceContainer';
+import Button from './Button';
 
 interface ModalProps {
   isOpen: boolean;
@@ -15,13 +17,13 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
 
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
-        <div className={styles.modalHeader}>
+      <NineSliceContainer variant='blue' className={styles.modalContent} onClick={e => e.stopPropagation()}>
+        <NineSliceContainer className={styles.modalHeader}>
           <h2 className={styles.modalTitle}>{title}</h2>
-          <button className={styles.closeButton} onClick={onClose}>&times;</button>
-        </div>
+          <Button className={styles.closeButton} onClick={onClose}>&times;</Button>
+        </NineSliceContainer>
         {children}
-      </div>
+      </NineSliceContainer>
     </div>
   );
 };

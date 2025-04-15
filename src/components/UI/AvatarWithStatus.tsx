@@ -9,10 +9,12 @@ interface AvatarWithStatusProps {
   userId: string;
   avatarUrl?: string | null;
   username: string;
-  size?: 'xsmall' | 'small' | 'medium' | 'large' | 'xlarge' | 'xxlarge' | 'xxxlarge' | 'xxxxlarge' | 'xxxxxlarge';
+  size?: 'xsmall' | 'small' | 'medium' | 'large' | 'xlarge' | 'xxlarge' | 'xxxlarge' | 'xxxxlarge' | 'xxxxxlarge' | 'xxxxxxlarge';
   className?: string;
   /** Whether to show a tooltip with status information */
   showStatusTooltip?: boolean;
+  /** Whether to show the status indicator dot */
+  showStatusIndicator?: boolean;
 }
 
 const AvatarWithStatus: React.FC<AvatarWithStatusProps> = ({
@@ -22,6 +24,7 @@ const AvatarWithStatus: React.FC<AvatarWithStatusProps> = ({
   size = 'medium',
   className = '',
   showStatusTooltip = false,
+  showStatusIndicator = true,
 }) => {
   const { userStatuses, inactivityThreshold } = useUserStatus();
   const userStatus = userStatuses[userId] || 'offline';
@@ -71,9 +74,11 @@ const AvatarWithStatus: React.FC<AvatarWithStatusProps> = ({
           {username && username[0] ? username[0].toUpperCase() : 'U'}
         </div>
       )}
-      <div className={`${styles.statusIndicator} ${statusClass}`}>
-        {userStatus === 'do_not_disturb' && <div className={styles.doNotDisturbLine} />}
-      </div>
+      {showStatusIndicator && (
+        <div className={`${styles.statusIndicator} ${statusClass}`}>
+          {userStatus === 'do_not_disturb' && <div className={styles.doNotDisturbLine} />}
+        </div>
+      )}
     </div>
   );
 };

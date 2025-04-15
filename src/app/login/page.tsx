@@ -8,6 +8,7 @@ import LoginModal from '@/components/Auth/LoginModal';
 import Button from '@/components/UI/Button';
 import Box from '@/components/UI/Box';
 import styles from './page.module.css';
+import { NineSliceContainer } from '@/components/UI';
 
 export default function LoginPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -61,11 +62,15 @@ export default function LoginPage() {
   if (loading && !loadingTimeout) {
     return (
       <div className={styles.loadingContainer}>
-        <Box variant="filled">
+        <NineSliceContainer variant="blue" className={styles.loginContent}>
           <div className={styles.loadingSpinner}></div>
-          <h2>Checking Authentication</h2>
-          <p>Please wait while we verify your login status...</p>
-        </Box>
+          <NineSliceContainer className={styles.logoContainer}>
+          <NineSliceContainer className={styles.loadingContainer_h2}>
+            Checking Authentication
+          </NineSliceContainer>
+          <NineSliceContainer className={styles.loadingContainer_p}>Please wait while we verify your login status...</NineSliceContainer>
+          </NineSliceContainer>
+        </NineSliceContainer>
       </div>
     );
   }
@@ -74,10 +79,12 @@ export default function LoginPage() {
   if (isAuthenticated || user) {
     return (
       <div className={styles.loadingContainer}>
-        <Box variant="filled">
+        <NineSliceContainer variant="blue" className={styles.loginContent}>
+          <NineSliceContainer className={styles.logoContainer}>
           <div className={styles.logoPlaceholder}>⏣</div>
-          <h2>You're already logged in!</h2>
-          <p>You can continue to your profile or the requested page.</p>
+          <h2 className={styles.loginTitle}>You're already logged in! </h2>
+          <p className={styles.loginDescription}>You can continue to your profile or the requested page.</p>
+          </NineSliceContainer>
           <div className={styles.actionButtons}>
             <Link href={redirectPath || '/profile'}>
               <Button 
@@ -88,7 +95,7 @@ export default function LoginPage() {
               </Button>
             </Link>
           </div>
-        </Box>
+        </NineSliceContainer>  
       </div>
     );
   }
@@ -114,14 +121,14 @@ export default function LoginPage() {
 
   return (
     <div className={styles.loginPage}>
-      <Box variant="filled" className={styles.loginContent}>
-        <div className={styles.logoContainer}>
+      <NineSliceContainer variant="blue" className={styles.loginContent}>
+        <NineSliceContainer className={styles.logoContainer}>
           <div className={styles.logoPlaceholder}>⏣</div>
-        </div>
         <h1 className={styles.loginTitle}>Welcome to Enderfall</h1>
         <p className={styles.loginDescription}>
           Connect with your Discord or Google account to access your profile, purchase history, and manage your Enderfall experience.
         </p>
+        </NineSliceContainer>
         
         {errorMessage && (
           <div className={styles.errorMessage}>
@@ -136,7 +143,7 @@ export default function LoginPage() {
         >
           Log In / Sign Up
         </Button>
-      </Box>
+      </NineSliceContainer>
       
       <LoginModal 
         isOpen={isModalOpen} 

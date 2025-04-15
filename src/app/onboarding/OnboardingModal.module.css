@@ -7,6 +7,10 @@
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
   overflow: hidden;
   animation: fadeIn 0.5s ease;
+  font-family: var(--font-MinecraftSeven);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm) !important;
 }
 
 @keyframes fadeIn {
@@ -41,11 +45,11 @@
 }
 
 .modalContent {
-  padding: var(--spacing-lg);
-}
-
-.formGroup {
-  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-lg) !important;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm) !important;
+  padding: var(--spacing-sm) !important;
 }
 
 .formLabel {
@@ -70,6 +74,9 @@
 
 .passwordContainer {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm) !important;
 }
 
 .passwordToggle {
@@ -131,18 +138,12 @@
 }
 
 .avatarPreview {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  background-color: var(--theme-tab-background);
-  margin-bottom: var(--spacing-md);
-  overflow: hidden;
-  border: 3px solid var(--theme-primary-color);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--theme-text-secondary);
-  font-size: 50px;
+  width: 120px !important;
+  height: 120px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
 }
 
 .avatarPreview img {
@@ -174,10 +175,18 @@
   margin-right: var(--spacing-xs);
 }
 
+.uploadButton {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: var(--spacing-sm) !important;
+  flex-direction: row !important;
+}
+
 .progressContainer {
-  display: flex;
-  justify-content: center;
-  margin-bottom: var(--spacing-lg);
+  display: flex !important;
+  justify-content: center !important;
+  margin-bottom: var(--spacing-md) !important;
 }
 
 .progressStep {
@@ -208,12 +217,12 @@
 }
 
 .stepLine {
-  width: 100%;
-  height: 2px;
-  background-color: var(--theme-border);
-  position: relative;
-  top: -10px;
-  z-index: 1;
+  width: 100% !important;
+  height: 2px !important;
+  background-color: var(--theme-border) !important;
+  position: relative !important;
+  top: 10px !important;
+  z-index: 1 !important;
 }
 
 .stepLine.active {
@@ -235,7 +244,7 @@
 .modalButtons {
   display: flex;
   justify-content: space-between;
-  margin-top: var(--spacing-xl);
+
 }
 
 .backButton, .nextButton {
@@ -245,6 +254,7 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+  margin: 0 !important;
 }
 
 .formError {

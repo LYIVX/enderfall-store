@@ -224,19 +224,6 @@
   color: white;
 }
 
-.loginButton {
-  background-color: var(--theme-primary-color);
-  color: var(--theme-text-primary);
-  padding: var(--spacing-xs) var(--spacing-lg);
-  border-radius: var(--border-radius-sm);
-  font-weight: 500;
-  transition: background-color 0.2s ease;
-  border: none;
-}
-
-.loginButton:hover {
-  background-color: var(--theme-secondary-color);
-}
 
 .menuButton {
   display: none;

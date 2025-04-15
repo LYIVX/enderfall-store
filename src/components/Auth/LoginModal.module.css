@@ -70,26 +70,14 @@
 }
 
 /* Custom button colors - applied on top of Button component */
-.discordButton {
-  background-color: var(--discord-color) !important;
-  color: white !important;
-}
 
-.discordButton:hover:not(:disabled) {
-  background-color: #5a57c4 !important;
-}
-
-.googleButton {
-  background-color: var(--google-color) !important;
-  color: white !important;
-}
-
-.googleButton:hover:not(:disabled) {
-  background-color: #3367d6 !important;
-}
-
-.emailButton, .googleButton, .discordButton {
+.emailButton, .googleButton, .discordButton, .backButton, .createAccountButton {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  justify-content: center;
   gap: 8px;
+  margin: 0 !important;
 }
 
 .divider {
@@ -141,4 +129,9 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  width: 100% !important;
+}
+
+.emailInput {
+  width: 100% !important;
 }

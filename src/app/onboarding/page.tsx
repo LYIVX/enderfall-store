@@ -10,6 +10,7 @@ import Input from '@/components/UI/Input';
 import Box from '@/components/UI/Box';
 import styles from './OnboardingModal.module.css';
 import AvatarWithStatus from '@/components/UI/AvatarWithStatus';
+import { NineSliceContainer } from '@/components/UI';
 
 // Password strength criteria
 const hasLower = (password: string) => /[a-z]/.test(password);
@@ -404,12 +405,12 @@ export default function OnboardingPage() {
   if (loading) {
     return (
       <div className={styles.container}>
-        <div className={styles.onboardingModal}>
-          <div className={styles.modalHeader}>
+        <NineSliceContainer variant="blue" className={styles.onboardingModal}>
+          <NineSliceContainer className={styles.modalHeader}>
             <h1>Setting Up Your Account</h1>
             <p>Loading your information...</p>
-          </div>
-        </div>
+          </NineSliceContainer>
+        </NineSliceContainer>
       </div>
     );
   }
@@ -544,18 +545,19 @@ export default function OnboardingPage() {
         return (
           <>
             <div className={styles.avatarSection}>
-              <div className={styles.avatarPreview}>
+              <NineSliceContainer className={styles.avatarPreview}>
                 {avatarPreview ? (
                   <AvatarWithStatus
                     userId="temp"
                     avatarUrl={avatarPreview}
                     username={username || 'User'}
-                    size="large"
+                    size="xxxxxxlarge"
+                    showStatusIndicator={false}
                   />
                 ) : (
                   <FaUser />
                 )}
-              </div>
+              </NineSliceContainer>
               <div className={styles.avatarUpload}>
                 <input
                   type="file"
@@ -605,19 +607,22 @@ export default function OnboardingPage() {
   
   return (
     <div className={styles.container}>
-      <Box className={styles.onboardingModal}>
-        <div className={styles.modalHeader}>
+      <NineSliceContainer variant="blue" className={styles.onboardingModal}>
+        <NineSliceContainer className={styles.modalHeader}>
           <h1>Welcome to Enderfall</h1>
           <p>Complete your account setup to get started</p>
-        </div>
+        </NineSliceContainer>
         
-        <div className={styles.modalContent}>
+        <NineSliceContainer className={styles.modalContent}>
           {/* Progress indicator */}
-          <div className={styles.progressContainer}>
+          <NineSliceContainer className={styles.progressContainer}>
             {STEPS.map((step, index) => (
               <React.Fragment key={step.id}>
                 <div className={styles.progressStep}>
-                  <div className={`${styles.stepDot} ${index < currentStep ? styles.complete : index === currentStep ? styles.active : ''}`}></div>
+                  <NineSliceContainer 
+                    variant={index < currentStep ? "success" : index === currentStep ? "primary" : undefined} 
+                    className={`${styles.stepDot} ${index < currentStep ? styles.complete : index === currentStep ? styles.active : ''}`}
+                  ></NineSliceContainer>
                   <div className={`${styles.stepLabel} ${index === currentStep ? styles.active : ''}`}>{step.label}</div>
                 </div>
                 {index < STEPS.length - 1 && (
@@ -625,7 +630,7 @@ export default function OnboardingPage() {
                 )}
               </React.Fragment>
             ))}
-          </div>
+          </NineSliceContainer>
           
           {/* Form content */}
           <div>
@@ -643,6 +648,7 @@ export default function OnboardingPage() {
                 size="medium"
                 onClick={handleBack}
                 disabled={isProcessing}
+                className={styles.backButton}
               >
                 Back
               </Button>
@@ -653,6 +659,7 @@ export default function OnboardingPage() {
                 size="medium"
                 onClick={handleNext}
                 disabled={isProcessing || !isCurrentStepValid}
+                className={styles.nextButton}
               >
                 {isProcessing ? 'Processing...' : 'Next'}
               </Button>
@@ -668,8 +675,8 @@ export default function OnboardingPage() {
               </Button>
             )}
           </div>
-        </div>
-      </Box>
+        </NineSliceContainer>
+      </NineSliceContainer>
     </div>
   );
 } 
