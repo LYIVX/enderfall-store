@@ -4,7 +4,6 @@ import { stripe } from '@/lib/stripe';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
-import { getRankNameFromPriceId } from '@/lib/rankUtils';
 
 // Create a Supabase client with the service role key for admin privileges
 const createServiceRoleClient = () => {
