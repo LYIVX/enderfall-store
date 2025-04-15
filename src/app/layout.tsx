@@ -8,8 +8,10 @@ import { AuthProvider } from '@/components/Auth/AuthContext';
 import { ThemeProvider } from '@/components/Theme/ThemeContext';
 import { ChatPreferencesProvider } from '@/components/Theme/ChatPreferencesContext';
 import { UserStatusProvider } from '@/components/Auth/UserStatusContext';
+import QuickMessageBubble from '@/components/Social/QuickMessageBubble';
 import { headers } from 'next/headers';
 import '../styles/fonts.css';
+import { Toaster } from 'react-hot-toast';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -61,6 +63,8 @@ export default function RootLayout({
                     {children}
                   </main>
                   <Footer navLinks={navLinks} />
+                  <QuickMessageBubble />
+                  <Toaster position="bottom-right" />
                 </div>
               </UserStatusProvider>
             </ChatPreferencesProvider>

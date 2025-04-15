@@ -554,7 +554,7 @@ export default function ConversationPage() {
     };
   }, [user, recipientUser, conversationId]);
 
-  // Update the handleTyping function to send typing status updates
+  // Handle typing in the message input
   const handleTyping = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     setNewMessage(newValue);
@@ -583,6 +583,14 @@ export default function ConversationPage() {
         updateTypingStatus(false);
         setIsTyping(false);
       }, 10000); // 10 seconds timeout, matching Android implementation
+    }
+  };
+
+  // Handle key press for message input
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage(e as unknown as React.FormEvent);
     }
   };
 
@@ -738,7 +746,7 @@ export default function ConversationPage() {
   
   // Make sure to scroll to bottom on any message changes
   useEffect(() => {
-    if (messages.length > 0) {
+    if (messages.length > 0 || recipientIsTyping) {
       setTimeout(scrollToBottom, 100); // Small delay to ensure DOM has updated
     }
   }, [messages.length, recipientIsTyping]);
@@ -950,7 +958,9 @@ export default function ConversationPage() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
     >
-      <NineSliceContainer className={`${styles.conversationHeader} ${styles.elevatedCard} ${backgroundClass}`}>
+      <NineSliceContainer 
+        variant={chatBackground !== 1 ? "ghost" : undefined} 
+        className={`${styles.conversationHeader} ${styles.elevatedCard} ${backgroundClass}`}>
         <Button 
           variant="ghost"
           size="medium"
@@ -1225,7 +1235,9 @@ export default function ConversationPage() {
         </div>
       </NineSliceContainer>
       
-      <NineSliceContainer className={`${styles.messagesContainer} ${styles.elevatedCard} ${backgroundClass} ${textSizeClass}`}>
+      <NineSliceContainer 
+        variant={chatBackground !== 1 ? "ghost" : undefined} 
+        className={`${styles.messagesContainer} ${styles.elevatedCard} ${backgroundClass} ${textSizeClass}`}>
         {messages.length === 0 ? (
           <>
             <motion.div 
@@ -1444,26 +1456,29 @@ export default function ConversationPage() {
         transition={{ delay: 0.2 }}
       >
         <NineSliceContainer 
+          variant={chatBackground !== 1 ? "ghost" : undefined}
           className={`${styles.messageForm} ${styles.elevatedCard} ${backgroundClass}`}
-          onSubmit={handleSendMessage}
         >
-          <Input
-            type="text"
-            placeholder={`Message ${recipientName}...`}
-            value={newMessage}
-            onChange={handleTyping}
-            className={styles.messageInput}
-            autoComplete="off"
-            label=""
-          />
-          <Button 
-            type="submit" 
-            variant="primary"
-            className={`${styles.sendButton} ${isTyping ? styles.sendActive : ''}`}
-            disabled={sending || !newMessage.trim()}
-          >
-            <FaPaperPlane />
-          </Button>
+          <form onSubmit={handleSendMessage} className={styles.messageFormInner}>
+            <Input
+              type="text"
+              placeholder={`Message ${recipientName}...`}
+              value={newMessage}
+              onChange={handleTyping}
+              onKeyDown={handleKeyDown}
+              className={styles.messageInput}
+              autoComplete="off"
+              label=""
+            />
+            <Button 
+              type="submit" 
+              variant="primary"
+              className={`${styles.sendButton} ${isTyping ? styles.sendActive : ''}`}
+              disabled={sending || !newMessage.trim()}
+            >
+              <FaPaperPlane />
+            </Button>
+          </form>
 
           {/* Debug buttons - uncomment for testing */}
           {/* 

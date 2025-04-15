@@ -14,9 +14,17 @@ interface ConversationItemProps {
   conversation: Conversation;
   currentUserId: string;
   isActive?: boolean;
+  shouldNavigate?: boolean;
+  onClick?: (conversation: Conversation) => void;
 }
 
-const ConversationItem = ({ conversation, currentUserId, isActive = false }: ConversationItemProps) => {
+const ConversationItem = ({ 
+  conversation, 
+  currentUserId, 
+  isActive = false, 
+  shouldNavigate = true,
+  onClick 
+}: ConversationItemProps) => {
   const router = useRouter();
   const [otherParticipants, setOtherParticipants] = useState<Profile[]>([]);
   const { userStatuses } = useUserStatus();
@@ -97,16 +105,21 @@ const ConversationItem = ({ conversation, currentUserId, isActive = false }: Con
   };
   
   const handleClick = () => {
-    // Get the other participant's username (the person we're talking to)
-    const otherParticipant = conversation.participants?.find(p => p.id !== currentUserId);
-    const otherUsername = otherParticipant?.username || 'unknown';
-    
-    // Get the current user's username
-    const currentUserParticipant = conversation.participants?.find(p => p.id === currentUserId);
-    const currentUsername = currentUserParticipant?.username || 'unknown';
-    
-    // Navigate to the username-based URL with both usernames as separate parameters
-    router.push(`/social/messages/${currentUsername}/${otherUsername}/${conversation.id}`);
+    if (shouldNavigate) {
+      // Get the other participant's username (the person we're talking to)
+      const otherParticipant = conversation.participants?.find(p => p.id !== currentUserId);
+      const otherUsername = otherParticipant?.username || 'unknown';
+      
+      // Get the current user's username
+      const currentUserParticipant = conversation.participants?.find(p => p.id === currentUserId);
+      const currentUsername = currentUserParticipant?.username || 'unknown';
+      
+      // Navigate to the username-based URL with both usernames as separate parameters
+      router.push(`/social/messages/${currentUsername}/${otherUsername}/${conversation.id}`);
+    } else if (onClick) {
+      // Use the custom onClick handler
+      onClick(conversation);
+    }
   };
   
   return (

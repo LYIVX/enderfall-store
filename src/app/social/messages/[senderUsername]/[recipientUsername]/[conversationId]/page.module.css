@@ -439,11 +439,17 @@
 
 .messageForm {
   display: flex;
-  gap: 0.75rem;
-  padding: 1rem;
-  background: var(--theme-tab-background);
-  border-radius: 12px;
-  align-items: center;
+  padding: var(--spacing-md);
+  border-radius: var(--spacing-md);
+  background-color: var(--theme-tab-background);
+  margin-bottom: 0;
+  gap: 8px;
+}
+
+.messageFormInner {
+  display: flex;
+  width: 100%;
+  gap: 8px;
 }
 
 .messageInput {
@@ -625,53 +631,42 @@
 /* Chat background patterns - subtle versions of the gradient colors */
 .chatBackground1 {
   background-color: rgba(17, 17, 17, 1) !important;
-  border-color: var(--border-see-through) !important;
-
 }
 
 .chatBackground2 {
   background-color: rgba(30, 30, 30, 1) !important;
-  border-color: var(--border-see-through) !important;
 }
 
 .chatBackground3 {
   background-color: rgba(249, 248, 251, 1) !important;
-  border-color: var(--border-see-through) !important;
 }
 
 .chatBackground4 {
   background-color: rgba(255, 255, 255, 1) !important;
-  border-color: var(--border-see-through) !important;
 }
 
 .chatBackground5 {
   background-color: rgba(50, 13, 69, 1) !important;
-  border-color: var(--border-see-through) !important;
 }
 
 .chatBackground6 {
   background-color: rgba(31, 37, 69, 1) !important;
-  border-color: var(--border-see-through) !important;
 }
 
 .chatBackground7 {
   background-color: rgba(76, 12, 12, 1) !important;
-  border-color: var(--border-see-through) !important;
 }
 
 .chatBackground8 {
   background-color: rgba(11, 50, 11, 1) !important;
-  border-color: var(--border-see-through) !important;
 }
 
 .chatBackground9 {
   background-color: rgba(51, 36, 0, 1) !important;
-  border-color: var(--border-see-through) !important;
 }
 
 .chatBackground10 {
   background-color: rgba(37, 4, 37, 1) !important;
-  border-color: var(--border-see-through) !important;
 }
 
 /* Themed input for colored backgrounds */
@@ -701,7 +696,6 @@
 .elevatedCard.chatBackground9,
 .elevatedCard.chatBackground10 {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
-  border: 4px var(--border-see-through) solid;
 }
 
 /* Text size classes */

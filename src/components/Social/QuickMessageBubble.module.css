@@ -1,0 +1,499 @@
+.bubbleContainer {
+  position: fixed;
+  right: 25px;
+  bottom: 25px;
+  z-index: 1000;
+}
+
+.bubbleButton {
+  width: 50px !important;
+  height: 50px !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  transition: all 0.3s ease;
+  position: relative;
+  margin: 0 !important;
+}
+
+.unreadBadge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  background-color: var(--theme-danger-color);
+  color: white;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  font-weight: bold;
+}
+
+.messagePanel {
+  position: absolute !important;
+  bottom: 60px !important;
+  right: 0 !important;
+  width: 400px !important;
+  max-height: 700px !important;
+  background-color: var(--theme-tab-background) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  gap: var(--spacing-lg) !important;
+}
+
+@media (max-width: 450px) {
+  .messagePanel {
+    width: 295px !important;
+  }
+}
+
+.messagePanelHeader {
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--theme-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: var(--spacing-sm);
+}
+
+.messagePanelTitle {
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.backButton, .closeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--spacing-sm);
+  padding: 0;
+}
+
+.messagePanelContent {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.loading, .emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--theme-text-secondary);
+  font-style: italic;
+}
+
+.messageView {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden !important;
+  gap: var(--spacing-md) !important;
+}
+
+.messagesContainer {
+  flex: 1;
+  overflow-y: auto !important;
+  padding: var(--spacing-md);
+  background-color: var(--theme-tab-background);
+  border-radius: 0;
+}
+
+.messagesList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dateDivider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 1rem 0;
+  position: relative;
+}
+
+.dateDivider span {
+  background-color: var(--theme-tab-background);
+  padding: 0 1rem;
+  font-size: 0.8rem;
+  color: var(--theme-text-secondary);
+  position: relative;
+  z-index: 1;
+  border-radius: 12px;
+  padding: 4px 12px;
+  background-color: var(--background-tertiary);
+}
+
+.dateDivider::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: var(--theme-border);
+}
+
+.messageItem {
+  display: flex;
+  flex-direction: column;
+  max-width: 85%;
+  align-self: flex-start;
+  padding: 0;
+  background-color: transparent;
+  border-radius: 0;
+  margin-bottom: 0.5rem;
+  transform-origin: left center;
+  transition: all 0.3s ease;
+}
+
+.ownMessage {
+  align-self: flex-end;
+  transform-origin: right center;
+}
+
+.messageAuthor {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  width: 100%;
+  transition: opacity 0.2s;
+}
+
+.messageAvatarContainer {
+  margin-right: 8px;
+}
+
+.messageUsername {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--theme-text-secondary);
+}
+
+.ownMessageIndicator {
+  font-size: 0.7rem;
+  color: var(--theme-text-secondary);
+  margin-bottom: 4px;
+  text-align: right;
+  font-weight: 500;
+  padding-right: var(--spacing-md);
+}
+
+.messageContent {
+  background: linear-gradient(225deg, var(--theme-secondary-color), var(--theme-primary-color));
+  color: var(--theme-text-primary);
+  padding: 0.75rem 1rem;
+  border-radius: var(--spacing-md);
+  max-width: 100%;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin: 0 var(--spacing-sm);
+  word-break: break-word;
+  transition: all 0.2s ease;
+  border-left: 3px solid var(--theme-secondary-color);
+}
+
+.ownMessageContent {
+  background: linear-gradient(135deg, var(--theme-primary-color), var(--theme-secondary-color));
+  color: var(--theme-text-primary);
+  border-radius: var(--spacing-md);
+  margin-right: var(--spacing-sm);
+  margin-left: auto;
+  border-left: none;
+  border-right: 3px solid var(--theme-primary-color);
+}
+
+.messageText {
+  margin: 0;
+  word-break: break-word;
+  white-space: pre-wrap;
+  color: var(--theme-text-primary);
+  overflow: visible;
+  font-size: 0.9rem;
+}
+
+.messageTime {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--theme-text-secondary);
+  margin-top: 0.25rem;
+  text-align: right;
+}
+
+.statusIcon, .statusIconRead {
+  margin-left: 5px;
+  font-size: 10px;
+  color: var(--theme-text-secondary);
+}
+
+.statusIconRead {
+  color: var(--theme-primary-color);
+}
+
+/* Typing indicator */
+.typingIndicator {
+  margin-bottom: 8px;
+  padding: 0 var(--spacing-sm);
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.typingIndicatorContent {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(225deg, var(--theme-secondary-color), var(--theme-primary-color));
+  color: var(--theme-text-primary);
+  padding: var(--spacing-sm);
+  border-radius: var(--spacing-md);
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  word-break: break-word;
+  transition: all 0.2s ease;
+  border-left: 3px solid var(--theme-secondary-color);
+  max-width: 60%;
+  margin: 0;
+}
+
+.typingText {
+  font-weight: 600;
+  color: var(--theme-text-primary);
+  margin-left: 8px;
+  font-size: 0.8rem;
+}
+
+.typingDots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.typingDots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--theme-text-primary);
+  margin: 0 2px;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+.typingDots span:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.typingDots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typingDots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+/* Message form */
+.messageForm {
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  background-color: var(--theme-tab-background);
+  border-top: 1px solid var(--theme-border);
+}
+
+.messageInput {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 18px;
+  border: 1px solid var(--theme-border);
+  background-color: var(--background-secondary);
+  color: var(--theme-text-primary);
+  font-size: 0.9rem;
+}
+
+.messageInput:focus {
+  border-color: var(--theme-primary-color);
+  outline: none;
+}
+
+.sendButton {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 52px !important;
+    height: 52px !important;
+    transition: all 0.3s ease;
+    transform: scale(0.9);
+}
+
+.sendActive {
+    transform: scale(1);
+  }
+
+/* Chat appearance styles from conversation page */
+.chatBackground1 {
+  background-color: rgba(17, 17, 17, 1) !important;
+}
+
+.chatBackground2 {
+  background-color: rgba(30, 30, 30, 1) !important;
+}
+
+.chatBackground3 {
+  background-color: rgba(249, 248, 251, 1) !important;
+}
+
+.chatBackground4 {
+  background-color: rgba(255, 255, 255, 1) !important;
+}
+
+.chatBackground5 {
+  background-color: rgba(50, 13, 69, 1) !important;
+}
+
+.chatBackground6 {
+  background-color: rgba(31, 37, 69, 1) !important;
+}
+
+.chatBackground7 {
+  background-color: rgba(76, 12, 12, 1) !important;
+}
+
+.chatBackground8 {
+  background-color: rgba(11, 50, 11, 1) !important;
+}
+
+.chatBackground9 {
+  background-color: rgba(51, 36, 0, 1) !important;
+}
+
+.chatBackground10 {
+  background-color: rgba(37, 4, 37, 1) !important;
+}
+
+/* Text sizes */
+.textSizeXSmall .messageText {
+  font-size: 0.7rem !important;
+  line-height: 1.2 !important;
+}
+
+.textSizeXSmall .messageTime,
+.textSizeXSmall .messageStatus,
+.textSizeXSmall .messageUsername {
+  font-size: 0.55rem !important;
+}
+
+.textSizeSmall .messageText {
+  font-size: 0.85rem !important;
+  line-height: 1.3 !important;
+}
+
+.textSizeSmall .messageTime,
+.textSizeSmall .messageStatus,
+.textSizeSmall .messageUsername {
+  font-size: 0.65rem !important;
+}
+
+.textSizeLarge .messageText {
+  font-size: 1.15rem !important;
+  line-height: 1.5 !important;
+}
+
+.textSizeLarge .messageTime,
+.textSizeLarge .messageStatus {
+  font-size: 0.8rem !important;
+}
+
+.textSizeLarge .messageUsername {
+  font-size: 0.9rem !important;
+}
+
+.textSizeXLarge .messageText {
+  font-size: 1.3rem !important;
+  line-height: 1.6 !important;
+}
+
+.textSizeXLarge .messageTime,
+.textSizeXLarge .messageStatus {
+  font-size: 0.9rem !important;
+}
+
+.textSizeXLarge .messageUsername {
+  font-size: 1rem !important;
+  font-weight: 600 !important;
+}
+
+.textSizeXXLarge .messageText {
+  font-size: 1.5rem !important;
+  line-height: 1.7 !important;
+  font-weight: 500 !important;
+}
+
+.textSizeXXLarge .messageTime,
+.textSizeXXLarge .messageStatus {
+  font-size: 1rem !important;
+}
+
+.textSizeXXLarge .messageUsername {
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+}
+
+/* Message styles */
+.bgColorOption1, .otherMessageGradient1 { 
+  background: var(--theme-primary-color) !important;  
+}
+.bgColorOption2, .otherMessageGradient2 { 
+  background: var(--theme-primary-light) !important; 
+}
+.bgColorOption3, .otherMessageGradient3 { 
+  background: var(--theme-primary-dark) !important; 
+}
+.bgColorOption4, .otherMessageGradient4 { 
+  background: var(--theme-secondary-color) !important; 
+}
+.bgColorOption5, .otherMessageGradient5 { 
+  background: var(--theme-secondary-light) !important; 
+}
+.bgColorOption6, .otherMessageGradient6 { 
+  background: var(--theme-secondary-dark) !important; 
+}
+.bgColorOption7, .otherMessageGradient7 { 
+  background: #cc4c4c !important; 
+}
+.bgColorOption8, .otherMessageGradient8 { 
+  background: #189819 !important; 
+}
+.bgColorOption9, .otherMessageGradient9 { 
+  background: #cd9800 !important; 
+}
+.bgColorOption10, .otherMessageGradient10 { 
+  background: #7f0080 !important; 
+} 
