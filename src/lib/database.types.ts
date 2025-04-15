@@ -1,15 +1,3 @@
-Need to install the following packages:
-supabase@2.20.5
-Ok to proceed? (y) 
-[?25l
-    Select a project:                                                                                             
-                                                                                                                  
-  >  1. wsjjasupxnzinvopxgum [name: enderfall_store, org: vercel_icfg_12muGUd0L1qD5d5qvpw4iera, region: us-east-1]
-                                                                                                                  
-                                                                                                                  
-    ↑/k up • ↓/j down • / filter • q quit • ? more                                                                
-                                                                                                                  [0D
-
 export type Json =
   | string
   | number
