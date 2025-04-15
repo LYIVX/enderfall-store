@@ -29,7 +29,7 @@ const ClientPrivacyPolicy = () => {
   return (
     <Box>
       <div className={styles.container}>
-        <h1 className={styles.title}>Privacy Policy</h1>
+        <h1 className={styles.title}>Enderfall's Privacy Policy</h1>
         <div className={styles.content}>
           <section className={styles.section}>
             <h2>1. Information We Collect</h2>

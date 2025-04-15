@@ -60,7 +60,6 @@
 
 .messagePanelHeader {
   padding: 12px 15px;
-  border-bottom: 1px solid var(--theme-border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -113,7 +112,7 @@
   overflow-y: auto !important;
   padding: var(--spacing-md);
   background-color: var(--theme-tab-background);
-  border-radius: 0;
+  border-radius: var(--spacing-md);
 }
 
 .messagesList {
@@ -209,17 +208,11 @@
   margin: 0 var(--spacing-sm);
   word-break: break-word;
   transition: all 0.2s ease;
-  border-left: 3px solid var(--theme-secondary-color);
 }
 
 .ownMessageContent {
   background: linear-gradient(135deg, var(--theme-primary-color), var(--theme-secondary-color));
   color: var(--theme-text-primary);
-  border-radius: var(--spacing-md);
-  margin-right: var(--spacing-sm);
-  margin-left: auto;
-  border-left: none;
-  border-right: 3px solid var(--theme-primary-color);
 }
 
 .messageText {
@@ -327,8 +320,6 @@
   display: flex;
   gap: 10px;
   padding: 12px;
-  background-color: var(--theme-tab-background);
-  border-top: 1px solid var(--theme-border);
 }
 
 .messageInput {
