@@ -234,12 +234,16 @@ const QuickMessageBubble = () => {
             sender_id: latestMessage.sender_id,
             content: latestMessage.content,
             is_read: latestMessage.is_read,
-            created_at: latestMessage.created_at
+            created_at: latestMessage.created_at,
+            username: undefined // Initialize the username property
           };
           
           // Add username if available from sender relationship
-          if (latestMessage.sender && latestMessage.sender.username) {
-            lastMessage.username = latestMessage.sender.username;
+          if (latestMessage.sender) {
+            const sender = Array.isArray(latestMessage.sender) ? latestMessage.sender[0] : latestMessage.sender;
+            if (sender && sender.username) {
+              lastMessage.username = sender.username;
+            }
           }
         }
 
