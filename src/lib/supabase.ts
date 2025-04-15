@@ -115,6 +115,7 @@ export interface Conversation {
   updated_at: string;
   participants?: Profile[];
   last_message?: Message;
+  unread_count?: number;
 }
 
 export interface Message {

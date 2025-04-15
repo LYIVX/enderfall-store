@@ -78,6 +78,7 @@ const QuickMessageBubble = () => {
     if (user) {
       fetchConversations();
       setupUnreadMessagesSubscription();
+      setupRealtimeUnreadCounters();
     }
   }, [user]);
 
@@ -98,8 +99,10 @@ const QuickMessageBubble = () => {
         (payload) => {
           // Ignore messages sent by the current user
           if (payload.new.sender_id !== user.id) {
-            // Update unread count
-            setUnreadCount(prev => prev + 1);
+            console.log('New unread message detected:', payload.new);
+            
+            // Refresh conversations to get updated unread counts
+            fetchConversations();
             
             // If the conversation is already selected, load its messages
             if (selectedConversation?.id === payload.new.conversation_id) {
@@ -124,6 +127,41 @@ const QuickMessageBubble = () => {
 
     return () => {
       supabase.removeChannel(subscription);
+    };
+  };
+
+  // Add this new function to setup real-time unread counter updates
+  const setupRealtimeUnreadCounters = () => {
+    if (!user) return;
+    
+    console.log('Setting up real-time unread counters');
+    
+    // Listen for message status updates (when messages are marked as read)
+    const readStatusSubscription = supabase
+      .channel(`read-status-updates-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messages',
+          filter: `sender_id=neq.${user.id}`
+        },
+        (payload) => {
+          // If a message's read status has changed
+          if (payload.old && payload.new && 
+              payload.old.is_read !== payload.new.is_read) {
+            console.log('Message read status changed:', payload);
+            
+            // Refresh conversations to get updated unread counts
+            fetchConversations();
+          }
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(readStatusSubscription);
     };
   };
 
@@ -205,10 +243,10 @@ const QuickMessageBubble = () => {
           }
         }
 
-        // Count unread messages
-        const unreadMessages = (conversation.last_message || []).filter(
+        // Count unread messages - messages that aren't from the current user and aren't read
+        const unreadCount = (conversation.last_message || []).filter(
           (msg: any) => !msg.is_read && msg.sender_id !== user.id
-        );
+        ).length;
 
         return {
           id: conversation.id,
@@ -217,7 +255,7 @@ const QuickMessageBubble = () => {
           updated_at: conversation.updated_at,
           participants: formattedParticipants,
           last_message: lastMessage,
-          unread_count: unreadMessages.length
+          unread_count: unreadCount
         };
       }) || [];
 
@@ -235,10 +273,24 @@ const QuickMessageBubble = () => {
     }
   };
 
-  // Select a conversation and load its messages
-  const handleSelectConversation = (conversation: any) => {
+  // Toggle the bubble open/closed
+  const toggleBubble = () => {
+    if (!isOpen) {
+      // If opening, refresh conversations but don't mark as read
+      fetchConversations();
+    }
+    setIsOpen(!isOpen);
+  };
+
+  // Mark a conversation as read when viewing it
+  const viewConversation = (conversation: any) => {
     setSelectedConversation(conversation);
     fetchMessages(conversation.id);
+  };
+
+  // Select a conversation and load its messages
+  const handleSelectConversation = (conversation: any) => {
+    viewConversation(conversation);
   };
 
   // Fetch messages for a specific conversation
@@ -279,11 +331,12 @@ const QuickMessageBubble = () => {
 
       setMessages(formattedMessages);
       
-      // Mark unread messages as read
+      // Find unread messages that aren't from the current user
       const unreadMessages = formattedMessages.filter(
         message => !message.is_read && message.sender_id !== user.id
       );
-      
+
+      // Mark messages as read immediately when viewing
       if (unreadMessages.length > 0) {
         markConversationAsRead(unreadMessages.map(msg => msg.id));
       }
@@ -298,10 +351,14 @@ const QuickMessageBubble = () => {
   // Mark a message as read
   const markMessageAsRead = async (messageId: string) => {
     try {
-      await supabase
+      const { error } = await supabase
         .from('messages')
         .update({ is_read: true })
         .eq('id', messageId);
+      
+      if (error) throw error;
+      
+      console.log(`Marked message ${messageId} as read in Supabase`);
       
       // Update local state
       setMessages(prev => 
@@ -310,8 +367,11 @@ const QuickMessageBubble = () => {
         )
       );
       
-      // Update unread count
-      fetchConversations();
+      // Update conversation list to refresh unread counts - but after a small delay
+      // to allow Supabase to process the updates
+      setTimeout(() => {
+        fetchConversations();
+      }, 300);
     } catch (error) {
       console.error('Error marking message as read:', error);
     }
@@ -322,20 +382,28 @@ const QuickMessageBubble = () => {
     if (messageIds.length === 0) return;
     
     try {
-      await supabase
+      // Update messages in Supabase
+      const { error } = await supabase
         .from('messages')
         .update({ is_read: true })
         .in('id', messageIds);
+        
+      if (error) throw error;
       
-      // Update local state
+      console.log(`Marked ${messageIds.length} messages as read in Supabase`);
+      
+      // Update local messages state
       setMessages(prev => 
         prev.map(message => 
           messageIds.includes(message.id) ? { ...message, is_read: true } : message
         )
       );
       
-      // Update unread count
-      fetchConversations();
+      // Update conversation list to refresh unread counts - but after a small delay
+      // to allow Supabase to process the updates
+      setTimeout(() => {
+        fetchConversations();
+      }, 300);
     } catch (error) {
       console.error('Error marking conversation as read:', error);
     }
@@ -486,12 +554,22 @@ const QuickMessageBubble = () => {
     }
   };
 
-  // Make sure to scroll to bottom on any message changes or typing indicator changes
+  // Add this effect to ensure scrolling happens when the message panel appears
   useEffect(() => {
-    if (selectedConversation && (messages.length > 0 || recipientIsTyping)) {
-      setTimeout(scrollToBottom, 100); // Small delay to ensure DOM has updated
+    if (isOpen && selectedConversation && messages.length > 0) {
+      // Use multiple timeouts to ensure scrolling happens after rendering
+      setTimeout(scrollToBottom, 50);
+      setTimeout(scrollToBottom, 150);
+      setTimeout(scrollToBottom, 300);
     }
-  }, [messages.length, recipientIsTyping, selectedConversation]);
+  }, [isOpen, selectedConversation, messages.length]);
+
+  // Add back the effect for typing indicators
+  useEffect(() => {
+    if (selectedConversation && recipientIsTyping) {
+      setTimeout(scrollToBottom, 100);
+    }
+  }, [recipientIsTyping, selectedConversation]);
 
   // Handle key press for message input
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -594,15 +672,8 @@ const QuickMessageBubble = () => {
   const handleBackToList = () => {
     setSelectedConversation(null);
     setMessages([]);
-  };
-
-  // Toggle the bubble open/closed
-  const toggleBubble = () => {
-    if (!isOpen) {
-      // If opening, refresh conversations
-      fetchConversations();
-    }
-    setIsOpen(!isOpen);
+    // Refresh conversation list to show updated unread counts
+    fetchConversations();
   };
 
   if (!user) return null;

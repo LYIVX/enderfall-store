@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Conversation, Profile } from '@/lib/supabase';
@@ -9,6 +9,7 @@ import { useUserStatus } from '@/components/Auth/UserStatusContext';
 import StatusIndicator from '@/components/UI/StatusIndicator';
 import AvatarWithStatus from '@/components/UI/AvatarWithStatus';
 import { Button, NineSliceContainer } from '../UI';
+import { supabase } from '@/lib/supabase';
 
 interface ConversationItemProps {
   conversation: Conversation;
@@ -28,6 +29,12 @@ const ConversationItem = ({
   const router = useRouter();
   const [otherParticipants, setOtherParticipants] = useState<Profile[]>([]);
   const { userStatuses } = useUserStatus();
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isTyping, setIsTyping] = useState(false);
+  const typingRecordsMapRef = useRef<{[recordId: string]: string}>({});
+  
+  // Get recipient user info
+  const recipient = otherParticipants.length > 0 ? otherParticipants[0] : null;
   
   useEffect(() => {
     console.log('ConversationItem - conversation:', conversation);
@@ -41,7 +48,143 @@ const ConversationItem = ({
       console.log('ConversationItem - other participants:', others);
       setOtherParticipants(others);
     }
-  }, [conversation.participants, currentUserId]);
+
+    // Calculate unread messages count
+    if ((conversation as any).messages) {
+      // If messages are already in the conversation object
+      const unreadMessages = ((conversation as any).messages as any[]).filter(
+        (msg: any) => !msg.is_read && msg.sender_id !== currentUserId
+      );
+      setUnreadCount(unreadMessages.length);
+    } else if (conversation.last_message && Array.isArray(conversation.last_message)) {
+      // If messages are in last_message field - match QuickMessageBubble calculation
+      const unreadCount = (conversation.last_message as any[]).filter(
+        (msg: any) => !msg.is_read && msg.sender_id !== currentUserId
+      ).length;
+      setUnreadCount(unreadCount);
+    } else {
+      // Default to conversation.unread_count if it exists
+      setUnreadCount(conversation.unread_count || 0);
+    }
+  }, [conversation, currentUserId]);
+  
+  // Add this effect to make sure unread count is updated in real-time
+  useEffect(() => {
+    // Function to check for unread messages
+    const checkUnreadMessages = async () => {
+      if (!conversation.id || !currentUserId) return;
+      
+      try {
+        // Fetch the latest messages for this conversation
+        const { data } = await supabase
+          .from('messages')
+          .select('id, is_read, sender_id')
+          .eq('conversation_id', conversation.id)
+          .eq('is_read', false)
+          .neq('sender_id', currentUserId);
+        
+        if (data) {
+          // Update the unread count
+          console.log(`Unread messages for conversation ${conversation.id}: ${data.length}`);
+          setUnreadCount(data.length);
+        }
+      } catch (error) {
+        console.error('Error fetching unread messages:', error);
+      }
+    };
+    
+    // Check immediately when component mounts
+    checkUnreadMessages();
+    
+    // Set up a subscription for messages table changes (new messages AND read status changes)
+    const channel = supabase
+      .channel(`unread-counter-${conversation.id}-${currentUserId}`)
+      .on('postgres_changes', {
+        event: 'INSERT', 
+        schema: 'public',
+        table: 'messages',
+        filter: `conversation_id=eq.${conversation.id}`
+      }, (payload) => {
+        console.log('New message inserted:', payload);
+        // Only increment if it's from another user
+        if (payload.new && payload.new.sender_id !== currentUserId) {
+          checkUnreadMessages();
+        }
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'messages',
+        filter: `conversation_id=eq.${conversation.id}`
+      }, (payload) => {
+        console.log('Message updated:', payload);
+        // If is_read status changed, update our count
+        if (payload.old && payload.new && 
+            payload.old.is_read !== payload.new.is_read) {
+          checkUnreadMessages();
+        }
+      })
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [conversation.id, currentUserId]);
+  
+  // Add this effect for typing status subscription
+  useEffect(() => {
+    if (!conversation.id || !currentUserId || !recipient) return;
+    
+    console.log(`Setting up typing subscription for conversation: ${conversation.id}`);
+    
+    // Set up real-time subscription for typing status
+    const typingStatusSubscription = supabase
+      .channel(`typing-${conversation.id}-${currentUserId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen for all events (INSERT, UPDATE, DELETE)
+          schema: 'public',
+          table: 'typing_status',
+          filter: `conversation_id=eq.${conversation.id}`
+        },
+        (payload: any) => {
+          console.log('Typing status changed:', payload);
+          
+          // Handle different event types
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            // Store record ID for future reference
+            if (payload.new && payload.new.id && payload.new.user_id) {
+              typingRecordsMapRef.current[payload.new.id] = payload.new.user_id;
+            }
+            
+            // Only update if it's another user's typing status (not current user)
+            if (payload.new && payload.new.user_id !== currentUserId) {
+              setIsTyping(payload.new.is_typing);
+            }
+          } 
+          else if (payload.eventType === 'DELETE') {
+            if (payload.old && payload.old.id) {
+              const recordId = payload.old.id;
+              const userId = typingRecordsMapRef.current[recordId];
+              
+              // If this was another user's record, set typing to false
+              if (userId && userId !== currentUserId) {
+                setIsTyping(false);
+              }
+              
+              // Clean up the mapping
+              delete typingRecordsMapRef.current[recordId];
+            }
+          }
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(typingStatusSubscription);
+    };
+  }, [conversation.id, currentUserId, recipient]);
   
   const formatTimestamp = (timestamp: string) => {
     try {
@@ -82,6 +225,11 @@ const ConversationItem = ({
   };
   
   const getLastMessagePreview = () => {
+    // If someone is typing, show typing indicator instead of last message
+    if (isTyping && recipient) {
+      return `${recipient.username || 'User'} is typing...`;
+    }
+    
     if (!conversation.last_message) {
       return 'No messages yet';
     }
@@ -128,21 +276,27 @@ const ConversationItem = ({
       className={`${styles.conversationItem} ${isActive ? styles.active : ''}`}
       onClick={handleClick}
     >
-      {otherParticipants.length > 0 ? (
-        <AvatarWithStatus
-          userId={otherParticipants[0].id}
-          avatarUrl={otherParticipants[0].avatar_url}
-          username={otherParticipants[0].username || 'User'}
-          size="medium"
-          className={styles.avatarWrapper}
-        />
-      ) : (
-        <div className={styles.defaultAvatarContainer}>
-          <div className={styles.defaultAvatar}>
-            {getConversationName()[0].toUpperCase()}
+      <div className={styles.avatarSection}>
+        {otherParticipants.length > 0 ? (
+          <AvatarWithStatus
+            userId={otherParticipants[0].id}
+            avatarUrl={otherParticipants[0].avatar_url}
+            username={otherParticipants[0].username || 'User'}
+            size="medium"
+            className={styles.avatarWrapper}
+          />
+        ) : (
+          <div className={styles.defaultAvatarContainer}>
+            <div className={styles.defaultAvatar}>
+              {getConversationName()[0].toUpperCase()}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+        
+        {(unreadCount > 0) && (
+          <span className={styles.unreadBadge}>{unreadCount}</span>
+        )}
+      </div>
       
       <div className={styles.content}>
         <div className={styles.header}>
@@ -154,7 +308,7 @@ const ConversationItem = ({
           )}
         </div>
         
-        <div className={styles.preview}>
+        <div className={isTyping ? styles.typingPreview : styles.preview}>
           {getLastMessagePreview()}
         </div>
       </div>
