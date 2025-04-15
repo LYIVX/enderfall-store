@@ -177,7 +177,7 @@ export default function Shop() {
         />
       </div>
       
-      <CollapsibleSidebar cartItemCount={cartItems.length}>
+      <CollapsibleSidebar cartItemCount={cartItems.length} className={styles.sidebar}>
         <MinecraftAvatar />
         <ShoppingCart
           cartItems={cartItems}

@@ -15,7 +15,7 @@ export const ThemeToggle: React.FC = () => {
     className={styles.themeToggle} 
     aria-label="Toggle theme"
     variant="info"
-    nineSlice="true"
+    nineSlice={true}
     size="medium"
     >
       {theme === 'dark' ? <FaSun className={styles.sunIcon} /> : <FaMoon className={styles.moonIcon} />}

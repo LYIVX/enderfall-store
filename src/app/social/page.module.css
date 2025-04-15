@@ -14,11 +14,11 @@
 
 /* Sidebar styles */
 .sidebar {
-  flex: 0 0 300px;
-  align-self: flex-start;
-  max-height: calc(100vh - 4rem);
-  border-radius: 10px;
-  background-color: var(--theme-tab-background);
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
 }
 
 .userProfile {
@@ -146,6 +146,18 @@
   font-weight: bold;
   color: var(--theme-text-primary);
   font-family: var(--font-MinecraftTen);
+}
+
+.recentFriends {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: var(--spacing-sm) !important;
+}
+
+.recentConversations {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: var(--spacing-sm) !important;
 }
 
 .recentFriendItem {
@@ -299,196 +311,6 @@
   padding: var(--spacing-sm) !important;
   margin: 0 !important;
   transition: all 0.2s;
-}
-
-/* Responsive styles */
-@media (max-width: 1024px) {
-  .socialContainer {
-    flex-direction: column;
-  }
-  
-  .sidebar {
-    flex: 0 0 auto;
-    width: 100%;
-    max-width: 360px;
-    margin-bottom: 1rem;
-  }
-}
-
-@media (max-width: 768px) {
-  .socialContainer {
-    flex-direction: column;
-  }
-  
-  .sidebar {
-    width: 100%;
-    max-width: 100%;
-    margin-bottom: 1rem;
-    overflow: auto;
-    padding: 1rem;
-  }
-  
-  .sidebarNav {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
-    gap: var(--spacing-xs);
-    justify-content: unset;
-  }
-  
-  .navButton {
-    flex: 1 0 auto;
-  }
-  
-  .recentFriends, 
-  .recentConversations {
-    display: flex !important;
-    flex-direction: column;
-    gap: var(--spacing-lg) !important;
-  }
-  
-  .contentTabs {
-    flex-wrap: wrap;
-  }
-  
-  .contentTabButton {
-    flex: 1 0 auto;
-    min-width: 100px;
-  }
-  
-  .toolbarContainer {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .categoryFilter,
-  .sortFilter,
-  .searchContainer {
-    width: 100%;
-  }
-  
-  .searchContainer {
-    max-width: 100%;
-  }
-  
-  .postsHeader,
-  .blogsHeader,
-  .forumsHeader {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-  
-  .postsHeader button,
-  .blogsHeader button,
-  .forumsHeader button {
-    align-self: flex-start;
-  }
-}
-
-@media (max-width: 576px) {
-  .socialPage {
-    padding: 1rem 0.5rem;
-  }
-  
-  .navButton {
-    min-width: 0;
-    padding: 0.5rem;
-    flex-direction: column;
-    justify-content: center;
-    text-align: center;
-    gap: 0.25rem;
-  }
-  
-  .navButton svg {
-    font-size: 1.5rem;
-  }
-  
-  .navButton span {
-    font-size: 0.8rem;
-  }
-  
-  .count {
-    margin: auto;
-  }
-  
-  .contentTabs {
-    flex-direction: column;
-  }
-  
-  .contentTabButton {
-    width: 100%;
-  }
-  
-  .toolbarContainer {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .categoryFilter,
-  .sortFilter,
-  .searchContainer {
-    width: 100%;
-  }
-  
-  .searchContainer {
-    max-width: 100%;
-  }
-  
-  .postsHeader,
-  .blogsHeader,
-  .forumsHeader {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-    width: 100%;
-  }
-  
-  .postsHeader button,
-  .blogsHeader button,
-  .forumsHeader button {
-    align-self: flex-start;
-  }
-  
-  .createForumButton {
-    width: 100%;
-    justify-content: center;
-  }
-  
-  .forumsHeaderButtons,
-  .postsHeaderButtons,
-  .blogsHeaderButtons {
-    flex-direction: column;
-    width: 100%;
-    gap: 0.5rem;
-  }
-  
-  .friendsFilterButton,
-  .createPostButton,
-  .createBlogButton,
-  .createForumButton {
-    width: 100%;
-  }
-}
-
-@media (max-width: 460px) {
-  .sidebarNav {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
-    gap: var(--spacing-xs);
-    justify-content: unset;
-  }
-  
-  .postFooter {
-    flex-direction: column;
-    gap: var(--spacing-sm);
-  }
-  
-  .authorInfo,
-  .postControls {
-    width: 100%;
-  }
 }
 
 .navButton span {
