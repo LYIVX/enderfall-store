@@ -23,9 +23,6 @@ import Link from 'next/link';
 import * as FaIcons from 'react-icons/fa';
 import { IconType } from 'react-icons';
 import FeaturedRanks from '@/components/Home/FeaturedRanks';
-import { IconPicker } from '@/components/Admin/IconPicker';
-import GradientEditor from '@/components/Admin/GradientEditor';
-import ColorPreview from '@/components/Admin/ColorPreview';
 import Slider from '@/components/UI/Slider';
 
 // Define the Category interface that was previously imported from supabase.ts
