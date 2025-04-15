@@ -236,7 +236,7 @@ async function handleCompletedCheckout(session: any) {
           amount: item.amount_total / 100,
           currency: item.currency,
           quantity: item.quantity,
-          rank_name: getRankNameFromPriceId(item.price?.id || '')
+          rank_name: getRankFromPriceId(item.price?.id || '')
         })),
         metadata: session.metadata || {}  // Store the original metadata for reference
       };

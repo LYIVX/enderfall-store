@@ -19,8 +19,6 @@
   max-height: calc(100vh - 4rem);
   border-radius: 10px;
   background-color: var(--theme-tab-background);
-  padding: 1.5rem;
-  margin-bottom: 1rem;
 }
 
 .userProfile {

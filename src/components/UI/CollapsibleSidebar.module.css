@@ -1,10 +1,11 @@
 .sidebar {
   width: 100%;
-  max-width: 360px;
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-sm);
+  display: flex !important;
+  flex-direction: column !important;
+  gap: var(--spacing-sm) !important;
   transition: transform 0.3s ease, opacity 0.3s ease;
+  align-self: flex-start;
+
 }
 
 .sidebarVisible {
@@ -19,7 +20,7 @@
 
 .sidebarToggle {
   display: none;
-  position: fixed;
+  position: fixed !important;
   right: -8px;
   top: 80px;
   z-index: 1000;
@@ -126,7 +127,7 @@ body:has(:global(.Navbar_navMenu__PMy7K.Navbar_active__ZDf7Z)) .sidebar {
 
 @media (max-width: 1200px) {
   .sidebar {
-    position: fixed;
+    position: fixed !important;
     z-index: 999;
     background-color: var(--theme-tab-background);
     backdrop-filter: blur(50px);
@@ -134,9 +135,9 @@ body:has(:global(.Navbar_navMenu__PMy7K.Navbar_active__ZDf7Z)) .sidebar {
     padding: var(--spacing-lg);
     right: 0;
     top: 80px;
-    height: calc(100vh - 70px);
+    height: calc(100vh - 70px) !important;
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-    overflow-y: auto;
+    overflow-y: auto !important;
   }
   .sidebar::-webkit-scrollbar-track {
     border-top-left-radius: var(--spacing-md);
@@ -149,6 +150,6 @@ body:has(:global(.Navbar_navMenu__PMy7K.Navbar_active__ZDf7Z)) .sidebar {
   }
   
   .sidebarToggle {
-    display: flex;
+    display: flex !important;
   }
 } 
