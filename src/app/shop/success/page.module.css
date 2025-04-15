@@ -1,0 +1,133 @@
+.shopContainer {
+  display: flex !important;
+  flex-direction: column !important;
+  flex-wrap: wrap;
+  align-content: center;
+  gap: var(--spacing-xl);
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto !important;
+  padding: var(--spacing-xl) var(--spacing-md) !important;
+  margin-top: var(--spacing-xl) !important;
+  position: relative;
+  font-family: var(--font-MinecraftSeven);
+}
+
+.successContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xl);
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: var(--spacing-xl) var(--spacing-md);
+  margin-top: var(--spacing-xl);
+  position: relative;
+  text-align: center;
+}
+
+.successBox {
+  background-color: var(--background-color);
+  border-radius: 8px;
+  padding: 2rem;
+}
+
+.successTitleContainer{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.successTitle {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  font-family: var(--font-MinecraftTen);
+  width: 100%;
+}
+
+.successMessage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  text-align: center;
+}
+
+.loadingMessage, .errorMessage {
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.purchaseSummary {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  text-align: left;
+}
+
+.purchaseSummary h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+  color: var(--theme-primary-color);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 0.5rem;
+}
+
+.purchaseItemsList {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem 0;
+}
+
+.purchaseItem {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.purchaseItem:last-child {
+  border-bottom: none;
+}
+
+.itemDetails {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.itemName {
+  font-weight: 600;
+  flex: 1;
+}
+
+.itemQuantity {
+  margin-left: 0.5rem;
+  color: var(--text-color-secondary);
+  font-size: 0.9rem;
+}
+
+.itemPrice {
+  font-weight: 500;
+  color: var(--primary-color);
+}
+
+.purchaseTotal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.totalAmount {
+  font-size: 1.2rem;
+  color: var(--primary-color);
+}
+
+.returnButton {
+  align-self: center;
+  margin: 0 !important;
+} 

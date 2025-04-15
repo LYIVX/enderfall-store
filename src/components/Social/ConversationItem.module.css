@@ -1,0 +1,126 @@
+.conversationItem {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  transition: transform 0.2s;
+  margin: 0 !important;
+  padding: var(--spacing-md) !important;
+  width: 100% !important;
+  height: 150% !important;
+}
+
+.conversationItem:hover {
+  transform: scale(1.01);
+}
+
+.conversationItem.active {
+  background-color: var(--theme-tab-background);
+  border-left: 3px solid var(--theme-info-color);
+}
+
+.avatarWrapper {
+  position: relative;
+  top: 2px;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--spacing-sm);
+  overflow: hidden;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.defaultAvatarContainer {
+  position: relative;
+  width: 40px;
+  height: 40px;
+}
+
+.defaultAvatar {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--theme-tab-background);
+  color: var(--theme-text-primary);
+  font-weight: bold;
+  font-size: 1.2rem;
+  border-radius: var(--spacing-sm);
+}
+
+.statusBadge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  border: 2px solid var(--theme-tab-background);
+}
+
+.content {
+  flex: 1;
+  overflow: hidden;
+  padding: var(--spacing-sm);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+
+.name {
+  font-weight: bold;
+  color: var(--theme-text-primary);
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 70%;
+}
+
+.time {
+  font-size: 0.75rem;
+  color: var(--theme-text-secondary);
+}
+
+.preview {
+  font-size: 0.85rem;
+  color: var(--theme-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 576px) {
+  .conversationItem {
+    padding: 0.5rem;
+  }
+  
+  .avatar {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .name {
+    font-size: 0.85rem;
+  }
+  
+  .preview {
+    font-size: 0.75rem;
+  }
+} 

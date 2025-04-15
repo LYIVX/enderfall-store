@@ -1,0 +1,257 @@
+.colorSliderContainer {
+  margin: var(--spacing-md) 0;
+  width: 100%;
+}
+
+.colorSliderContainer.vertical {
+  height: 200px;
+  width: 40px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Add the slider label styles from Slider.module.css */
+.sliderLabel {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-xs);
+  font-size: 0.9rem;
+  color: var(--theme-text-secondary);
+}
+
+.valueDisplay {
+  font-weight: 500;
+  color: var(--theme-text-primary);
+}
+
+.colorSliderWrapper {
+  position: relative;
+  width: 100%;
+  height: 24px;
+  cursor: pointer;
+  user-select: none;
+  touch-action: none;
+}
+
+.colorSliderWrapper.vertical {
+  width: 24px;
+  height: 100%;
+  margin: 0 auto;
+}
+
+.colorSlider {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--theme-border);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  z-index: 1;
+}
+
+.colorStop {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.4);
+  top: 50%;
+  transform: translate(-50%, -50%);
+  cursor: grab;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  z-index: 2;
+  touch-action: none;
+}
+
+.vertical .colorStop {
+  left: 50%;
+  top: auto;
+  transform: translate(-50%, 50%);
+}
+
+.colorStop:hover {
+  transform: translate(-50%, -50%) scale(1.15);
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+}
+
+.vertical .colorStop:hover {
+  transform: translate(-50%, 50%) scale(1.15);
+}
+
+.colorStop.active {
+  transform: translate(-50%, -50%) scale(1.25);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.6), 0 0 0 2px var(--theme-primary-color);
+  z-index: 3;
+}
+
+.vertical .colorStop.active {
+  transform: translate(-50%, 50%) scale(1.25);
+}
+
+.colorStop:active {
+  cursor: grabbing;
+}
+
+/* Add grabbing cursor when dragging anywhere */
+.colorSliderWrapper:active {
+  cursor: grabbing;
+}
+
+/* Tooltip styles from Slider.module.css */
+.tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--theme-tab-background);
+  color: var(--theme-text-primary);
+  padding: 4px 8px;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.8rem;
+  margin-bottom: 8px;
+  white-space: nowrap;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.vertical .tooltip {
+  bottom: auto;
+  left: auto;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-bottom: 0;
+  margin-right: 8px;
+}
+
+.tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 4px;
+  border-style: solid;
+  border-color: var(--theme-tab-background) transparent transparent transparent;
+}
+
+.vertical .tooltip::after {
+  top: 50%;
+  left: 100%;
+  transform: translateY(-50%);
+  border-color: transparent transparent transparent var(--theme-tab-background);
+}
+
+.removeButton {
+  background: none;
+  border: none;
+  color: var(--theme-error-color, #ff4757);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
+  transition: opacity 0.2s, transform 0.2s;
+  margin-left: 4px;
+}
+
+.removeButton:hover {
+  opacity: 1;
+  transform: scale(1.2);
+}
+
+/* Mark styles from Slider.module.css */
+.sliderMark {
+  position: absolute;
+  width: 2px;
+  height: 12px;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background-color: var(--theme-text-primary);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.vertical .sliderMark {
+  width: 12px;
+  height: 2px;
+  top: auto;
+  left: 50%;
+  transform: translate(-50%, 0);
+}
+
+/* Disabled state from Slider.module.css */
+.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.disabled .colorStop {
+  cursor: not-allowed;
+}
+
+/* Styles for the multi-handle Slider integration */
+.colorMultiSlider {
+  position: absolute !important;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+}
+
+.vertical .colorMultiSlider {
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+}
+
+/* Custom styling for the slider in color slider context */
+.colorMultiSlider :global(.slider) {
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+/* Make slider thumbs completely transparent but functional */
+.colorMultiSlider :global(.sliderThumb) {
+  opacity: 0;
+  width: 24px;
+  height: 24px;
+  z-index: 1;
+}
+
+/* Hide the slider track */
+.colorMultiSlider :global(.sliderTrack),
+.colorMultiSlider :global(.sliderProgress),
+.colorMultiSlider :global(.sliderProgressMulti) {
+  opacity: 0;
+}
+
+/* Help message for color slider */
+.colorSliderContainer::after {
+  content: "Click: Add | Right-click: Remove";
+  display: block;
+  font-size: 0.75rem;
+  color: var(--theme-text-secondary);
+  opacity: 0.7;
+  text-align: right;
+  margin-top: 4px;
+}
+
+.vertical.colorSliderContainer::after {
+  writing-mode: vertical-lr;
+  transform: rotate(180deg);
+  margin-top: 0;
+  margin-left: 4px;
+  text-align: left;
+  height: auto;
+} 

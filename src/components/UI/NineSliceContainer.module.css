@@ -1,0 +1,98 @@
+.container {
+  position: relative;
+  background-color: transparent;
+  box-sizing: border-box;
+  overflow: visible;
+  padding: 8px 12px;
+  margin: 0;
+  border-width: 8px 8px 10px 8px;
+  border-style: solid;
+  border-image: url('/images/containers/standard.png') 3 3 5 3 fill repeat;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+.container[data-active="true"] {
+  transform: translateY(1px);
+}
+
+/* Variant Styles */
+.primary {
+  border-image: url('/images/containers/primary.png') 3 3 5 3 fill repeat !important;
+}
+
+.secondary {
+  border-image: url('/images/containers/secondary.png') 3 3 5 3 fill repeat !important;
+}
+
+.standard {
+  border-image: var(--theme-nine-slice-container-standard);
+}
+
+.blue {
+  border-image: var(--theme-bg-secondary) !important;
+}
+
+.gold {
+  border-image: var(--theme-bg-primary) !important;
+}
+
+.ghost {
+  border-image: url('/images/containers/ghost.png') 3 3 5 3 fill repeat !important;
+}
+
+.ghost-blur {
+  border-image: url('/images/containers/ghost-blur.png') 3 3 5 3 fill repeat !important;
+}
+
+.success {
+  border-image: url('/images/containers/success.png') 3 3 5 3 fill repeat !important;
+}
+
+.danger {
+  border-image: url('/images/containers/danger.png') 3 3 5 3 fill repeat !important;
+}
+
+.warning {
+  border-image: url('/images/containers/warning.png') 3 3 5 3 fill repeat !important;
+}
+
+.info {
+  border-image: url('/images/containers/info.png') 3 3 5 3 fill repeat !important;
+}
+
+.container {
+  border-image: var(--theme-nine-slice-container-standard);
+}
+
+.panel {
+  border-image: url('/images/containers/standard.png') 3 3 5 3 fill repeat !important;
+}
+
+/* Size Variants */
+.small {
+  padding: 4px 8px;
+  font-size: var(--font-size-xs);
+}
+
+.medium {
+  padding: 6px 10px;
+  font-size: var(--font-size-sm);
+}
+
+.large {
+  padding: 8px 12px;
+  font-size: var(--font-size-md);
+}
+
+.fullWidth {
+  width: 100%;
+}
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+  .container {
+    padding: 6px 8px;
+  }
+} 

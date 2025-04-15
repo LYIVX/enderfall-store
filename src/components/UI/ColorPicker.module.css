@@ -1,0 +1,71 @@
+.colorPickerWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  width: 100%;
+}
+
+.horizontal {
+  flex-direction: row;
+  align-items: center;
+}
+
+.horizontal .label {
+  min-width: 150px;
+  margin-right: var(--spacing-md);
+}
+
+.label {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--theme-text-primary);
+}
+
+.colorContainer {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.colorPicker {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: 1px solid var(--theme-border);
+  border-radius: var(--border-radius-sm);
+  background: none;
+  cursor: pointer;
+}
+
+.colorPicker:focus {
+  outline: none;
+  border-color: var(--theme-primary-color);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.colorText {
+  flex: 1;
+  padding: var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--theme-border);
+  background-color: var(--theme-input-background);
+  color: var(--theme-text-primary);
+  font-size: var(--font-size-md);
+  font-family: monospace;
+}
+
+.colorText:focus {
+  outline: none;
+  border-color: var(--theme-primary-color);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.error {
+  border-color: var(--theme-error-color);
+}
+
+.errorMessage {
+  color: var(--theme-error-color);
+  font-size: var(--font-size-xs);
+  margin-top: var(--spacing-xxs);
+} 

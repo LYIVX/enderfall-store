@@ -1,0 +1,29 @@
+.homePage {
+  display: flex;
+  gap: var(--spacing-xl);
+  max-width: 1400px;
+  margin: 0 auto;
+  margin-top: var(--spacing-xl);
+  padding: var(--spacing-xl) var(--spacing-md);
+  position: relative;
+}
+
+.mainContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+.sidebar {
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+@media (max-width: 1200px) {
+  .homePage {
+    flex-direction: column;
+  }
+} 

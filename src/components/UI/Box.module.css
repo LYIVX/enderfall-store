@@ -1,0 +1,38 @@
+.box {
+  background-color: var(--theme-bg-primary);
+  border-radius: var(--border-radius-md);
+  overflow: visible;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+}
+
+.header {
+  padding: var(--spacing-md);
+  background-color: var(--theme-tab-header);
+  color: var(--theme-text-light);
+  font-weight: 600;
+  font-size: var(--font-size-md);
+  border-bottom: var(--border-width) solid var(--theme-border);
+  text-align: center;
+  border-top-left-radius: var(--border-radius-md);
+  border-top-right-radius: var(--border-radius-md);
+}
+
+.content {
+  padding: var(--spacing-md);
+}
+
+/* Variants */
+.default {
+  background-color: var(--theme-tab-background);
+  backdrop-filter: blur(10px);
+}
+
+.outlined {
+  background-color: transparent;
+  border: var(--border-width) solid var(--theme-border);
+}
+
+.filled {
+  background-color: var(--theme-bg-primary);
+} 

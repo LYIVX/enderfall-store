@@ -1,0 +1,275 @@
+.onboardingModal {
+  max-width: 600px;
+  width: 90%;
+  margin: 0 auto;
+  background-color: var(--theme-tab-background) !important;
+  border-radius: var(--border-radius-lg);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modalHeader {
+  padding: var(--spacing-lg);
+  background-color: var(--theme-primary-color);
+  color: var(--theme-text-primary);
+  text-align: center;
+  border-radius: var(--border-radius-lg);
+}
+
+.modalHeader h1 {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+}
+
+.modalHeader p {
+  margin: var(--spacing-sm) 0 0;
+  opacity: 0.9;
+  font-size: var(--font-size-md);
+}
+
+.modalContent {
+  padding: var(--spacing-lg);
+}
+
+.formGroup {
+  margin-bottom: var(--spacing-lg);
+}
+
+.formLabel {
+  display: block;
+  margin-bottom: var(--spacing-xs);
+  font-weight: 500;
+  color: var(--theme-text-primary);
+}
+
+.formInput, .formPassword {
+  width: 100%;
+  padding: var(--spacing-md);
+  font-size: var(--font-size-md);
+  transition: border-color 0.2s ease;
+}
+
+.formInput:focus, .formPassword:focus {
+  outline: none;
+  border-color: var(--theme-primary-color);
+  box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.2);
+}
+
+.passwordContainer {
+  position: relative;
+}
+
+.passwordToggle {
+  position: absolute;
+  right: var(--spacing-md);
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--theme-text-secondary);
+  cursor: pointer;
+  font-size: var(--font-size-md);
+}
+
+.passwordStrength {
+  margin-top: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--theme-text-secondary);
+}
+
+.passwordStrengthMeter {
+  height: 4px;
+  background-color: var(--bg-dark);
+  border-radius: 2px;
+  margin-top: var(--spacing-xs);
+  overflow: hidden;
+}
+
+.passwordStrengthIndicator {
+  height: 100%;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.weak { 
+  background-color: var(--error);
+  width: 25%;
+}
+
+.fair { 
+  background-color: var(--warning);
+  width: 50%;
+}
+
+.good { 
+  background-color: var(--success);
+  width: 75%;
+}
+
+.strong { 
+  background-color: var(--success);
+  width: 100%;
+}
+
+.avatarSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+}
+
+.avatarPreview {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background-color: var(--theme-tab-background);
+  margin-bottom: var(--spacing-md);
+  overflow: hidden;
+  border: 3px solid var(--theme-primary-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--theme-text-secondary);
+  font-size: 50px;
+}
+
+.avatarPreview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatarPreview svg {
+  opacity: 0.6;
+}
+
+.avatarUpload {
+  position: relative;
+}
+
+.uploadInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.uploadButton svg {
+  margin-right: var(--spacing-xs);
+}
+
+.progressContainer {
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--spacing-lg);
+}
+
+.progressStep {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 24%;
+}
+
+.stepDot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: var(--theme-tab-background);
+  border: 2px solid var(--border-color);
+  position: relative;
+  z-index: 2;
+}
+
+.stepDot.active {
+  background-color: var(--theme-primary-color);
+  border-color: var(--theme-primary-dark);
+}
+
+.stepDot.complete {
+  background-color: var(--theme-success-color);
+  border-color: var(--theme-success-dark);
+}
+
+.stepLine {
+  width: 100%;
+  height: 2px;
+  background-color: var(--theme-border);
+  position: relative;
+  top: -10px;
+  z-index: 1;
+}
+
+.stepLine.active {
+  background-color: var(--theme-primary-color);
+}
+
+.stepLabel {
+  margin-top: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--theme-text-secondary);
+  text-align: center;
+}
+
+.stepLabel.active {
+  color: var(--theme-primary-color);
+  font-weight: 500;
+}
+
+.modalButtons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--spacing-xl);
+}
+
+.backButton, .nextButton {
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.formError {
+  margin-top: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--theme-error-color);
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
+}
+
+.formHelp {
+  margin-top: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--theme-text-secondary);
+}
+
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--spacing-lg);
+} 

@@ -1,0 +1,149 @@
+.goalSection {
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-sm);
+  font-family: var(--font-MinecraftSeven);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.sectionHeader {
+  text-align: center;
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+}
+
+.sectionTitle {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--theme-text-primary);
+  text-align: center;
+  font-family: var(--font-MinecraftTen);
+}
+
+.goalContainer {
+  display: flex;
+  justify-content: center;
+}
+
+.goalBox {
+  width: 100%;
+  max-width: 360px;
+  height: 100%;
+  transition: transform var(--transition-fast);
+  text-align: center;
+  align-items: center;
+}
+
+.goalBox:hover {
+  transform: translateY(-5px);
+}
+
+.goalIcon {
+  font-size: 2.5rem;
+  margin-bottom: var(--spacing-md);
+  display: flex;
+  justify-content: center;
+}
+
+.goalContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.3s ease;
+}
+
+.goalContent:hover .progressBar {
+  filter: brightness(1.2);
+}
+
+.goalTitle {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--theme-text-primary);
+  margin-bottom: var(--spacing-md);
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+}
+
+.goalDescription {
+  font-size: var(--font-size-sm);
+  color: var(--theme-text-secondary);
+  line-height: 1.5;
+  margin-bottom: var(--spacing-md);
+  padding: 0 var(--spacing-sm);
+}
+
+.goalAmount {
+  margin-bottom: var(--spacing-md);
+  font-size: var(--font-size-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  background-color: rgba(79, 70, 229, 0.1);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  transition: transform 0.3s ease;
+}
+
+.goalBox:hover .goalAmount {
+  transform: scale(1.05);
+}
+
+.currentAmount {
+  font-weight: 700;
+  color: var(--theme-primary-color);
+}
+
+.separator {
+  color: var(--theme-text-secondary);
+}
+
+.targetAmount {
+  font-weight: 500;
+  color: var(--theme-text-primary);
+}
+
+.progressWrapper {
+  width: 100%;
+  margin-bottom: var(--spacing-md);
+  padding: 0 var(--spacing-md);
+}
+
+.progressContainer {
+  width: 100%;
+  height: 10px !important;
+  overflow: visible;
+  position: relative;
+  padding: 0 !important;
+  min-height: unset !important;
+}
+
+.progressBar {
+  height: 100%;
+  transition: width 0.5s ease;
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  padding: 0 !important;
+  min-height: unset;
+  margin: 0 !important;
+  max-width: 220px !important;
+}
+
+.percentageText {
+  margin-top: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--theme-text-primary);
+}
+
+.loadingState, .emptyState, .goalContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+} 

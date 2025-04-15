@@ -1,0 +1,146 @@
+.contentCell {
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.defaultAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--theme-primary-color);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.userAvatar {
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Column sizing classes */
+.colSmall {
+  width: 80px;
+  min-width: 80px;
+}
+
+.colMedium {
+  width: 120px;
+  min-width: 120px;
+}
+
+.colLarge {
+  width: 200px;
+  min-width: 150px;
+}
+
+.colAuto {
+  width: auto;
+}
+
+.colContent {
+  max-width: 300px;
+  width: 300px;
+}
+
+.colAvatar {
+  width: 60px;
+  min-width: 60px;
+  text-align: center;
+}
+
+.colActions {
+  width: 120px;
+  min-width: 120px;
+  white-space: nowrap;
+}
+
+.participantItem {
+  display: flex;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.participantName {
+  margin-left: 8px;
+  font-size: 14px;
+}
+
+/* Badge styles */
+.statusBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.badgeSuccess {
+  composes: statusBadge;
+  background-color: rgba(46, 204, 113, 0.2);
+  color: #27ae60;
+}
+
+.badgeWarning {
+  composes: statusBadge;
+  background-color: rgba(241, 196, 15, 0.2);
+  color: #f39c12;
+}
+
+.badgeInfo {
+  composes: statusBadge;
+  background-color: rgba(52, 152, 219, 0.2);
+  color: #2980b9;
+}
+
+.badge {
+  composes: statusBadge;
+  background-color: rgba(189, 195, 199, 0.2);
+  color: #7f8c8d;
+}
+
+.participantsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.participantItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.currentUser {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--theme-info-color);
+  margin-left: 4px;
+}
+
+.avatarContainer {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.noAvatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background-color: var(--theme-secondary-color);
+  color: white;
+  border-radius: 50%;
+  font-size: 12px;
+} 

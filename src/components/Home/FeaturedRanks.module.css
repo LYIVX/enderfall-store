@@ -1,0 +1,209 @@
+.featuredSection {
+  position: relative;
+  font-family: var(--font-MinecraftSeven);
+  display: flex !important;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.sectionHeader {
+  text-align: center;
+}
+
+.sectionTitle {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--theme-text-primary);
+  margin: 0;
+  font-family: var(--font-MinecraftTen);
+}
+
+.featuredContainer {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.featuredBox {
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  display: flex !important;
+  flex-direction: column;
+  gap: var(--spacing-sm) !important;
+  align-items: center;
+  justify-content: center;
+}
+
+.rankContent {
+  display: flex !important;
+  flex-direction: column;
+  gap: var(--spacing-sm) !important;
+  align-items: center;
+  animation: fadeIn 0.5s ease-in-out;
+  width: 100% !important;
+}
+
+.footerContainer {
+  display: flex !important;
+  flex-direction: column;
+  gap: var(--spacing-sm) !important;
+  align-items: center;
+  justify-content: center;
+  width: 100% !important;
+}
+
+.rankContainer {
+  display: flex !important;
+  flex-direction: column;
+  gap: var(--spacing-sm) !important;
+  align-items: center;
+  justify-content: center;
+  width: 100% !important;
+  transition: transform var(--transition-fast);
+  padding: var(--spacing-sm) !important;
+}
+
+.rankContainer:hover {
+  transform: translateY(-5px);
+}
+
+.badgeContainer {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  width: 100%;
+  gap: var(--spacing-sm);
+  justify-content: center;
+}
+
+.exclusiveBadge, .newBadge, .popularBadge {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  width: 100%;
+}
+
+.featuredIcon {
+  font-size: 3rem;
+}
+
+.featuredTitle {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--theme-text-primary);
+}
+
+.featuredDescription {
+  color: var(--theme-text-secondary);
+  max-width: 80%;
+}
+
+.carouselContainer {
+  display: flex !important;
+  justify-content: center;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: var(--theme-muted);
+  border: 1px solid var(--theme-border);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.activeDot {
+  transform: scale(1.2);
+}
+
+.featuredCta {
+  display: flex !important;
+  justify-content: center;
+  flex-direction: row;
+  border-radius: var(--border-radius-md);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  margin: 0 !important;
+}
+
+.priceTag {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--theme-primary-color);
+  background-color: rgba(99, 102, 241, 0.1);
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-radius: var(--border-radius-full);
+  margin-bottom: var(--spacing-md);
+}
+
+.featuredPerks {
+  display: flex !important;
+  flex-direction: column;
+  gap: var(--spacing-sm) !important;
+  width: 100%;
+  max-width: 300px;
+}
+
+.perk {
+  display: flex !important;
+  align-items: center;
+  gap: var(--spacing-sm) !important;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  width: 100%;
+}
+
+.perkIcon {
+  color: var(--theme-primary-color);
+  display: flex !important;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.perkName {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--theme-text-primary);
+}
+
+.loadingState {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  color: var(--theme-text-secondary);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 1200px) {
+  .badgeContainer {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 640px) {
+  .featuredBox {
+    padding: var(--spacing-lg) var(--spacing-md);
+  }
+  
+  .featuredTitle {
+    font-size: var(--font-size-lg);
+  }
+  
+  .featuredDescription {
+    max-width: 100%;
+  }
+  
+  .featuredPerks {
+    max-width: 100%;
+  }
+} 

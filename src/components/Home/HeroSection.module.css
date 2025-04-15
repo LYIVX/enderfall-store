@@ -1,0 +1,114 @@
+.heroSection {
+  padding: var(--spacing-sm) !important;
+  position: relative;
+  overflow: hidden;
+  font-family: var(--font-MinecraftSeven);
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+}
+
+.heroSection::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-size: cover;
+  opacity: 0.1;
+  z-index: 0;
+}
+
+.heroContent {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: var(--spacing-sm);
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+}
+
+.heroTitle {
+  font-size: var(--font-size-xxxl);
+  font-weight: 700;
+  color: var(--theme-text-primary);
+  font-family: var(--font-MinecraftTen);
+}
+
+.highlight {
+  color: var(--theme-secondary-color);
+}
+
+.heroDescription {
+  font-size: var(--font-size-lg);
+  color: var(--theme-text-secondary);
+  line-height: 1.6;
+}
+
+.heroButtons {
+  display: flex;
+  width: 100%;
+  gap: var(--spacing-md);
+  justify-content: stretch;
+}
+
+.heroButtonPlay, .heroButtonLearn {
+  width: 50% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.heroStats {
+  width: 100%;
+  display: flex !important;
+  justify-content: center;
+  gap: var(--spacing-xxl);
+  padding: var(--spacing-lg) var(--spacing-md);
+  background-color: var(--theme-tab-background);
+  position: relative;
+  z-index: 1;
+}
+
+.statItem {
+  text-align: center;
+}
+
+.statNumber {
+  font-size: var(--font-size-xxl);
+  font-weight: 700;
+  color: var(--theme-secondary-color);
+  margin-bottom: var(--spacing-xs);
+}
+
+.statLabel {
+  font-size: var(--font-size-sm);
+  color: var(--theme-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+@media (max-width: 768px) {
+  .heroTitle {
+    font-size: var(--font-size-xxl);
+  }
+  
+  .heroDescription {
+    font-size: var(--font-size-md);
+  }
+  
+  .heroButtons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .heroStats {
+    flex-direction: column;
+    gap: var(--spacing-lg);
+  }
+} 

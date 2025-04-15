@@ -1,0 +1,26 @@
+/* Import global styles and variables from the styles folder */
+@import '../styles/globals.css'; 
+
+/* Add default style for status-related elements */
+.avatarContainer, 
+[class*='avatarContainer'],
+[class*='Avatar'] {
+  overflow: visible !important;
+}
+
+.statusIndicator,
+[class*='statusIndicator'] {
+  overflow: visible !important;
+  z-index: 5;
+} 
+
+/* Pixel Font Rendering Optimization */
+.pixel-font {
+  font-smooth: never;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: geometricPrecision;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+} 

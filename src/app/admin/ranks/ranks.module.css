@@ -1,0 +1,1960 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--spacing-md);
+}
+
+.ranksAdminContainer{
+  gap: var(--spacing-sm);
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  background-color: var(--theme-tab-background);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+}
+
+.title {
+  font-size: var(--font-size-xl);
+  color: var(--theme-text-primary);
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.saveButton, .resetButton, .createButton {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.saveButton svg, .resetButton svg, .createButton svg {
+  font-size: 0.9em;
+}
+
+.infoBox {
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+}
+
+.infoIcon {
+  color: var(--theme-info-color);
+  font-size: 1.2rem;
+  margin-top: 2px;
+}
+
+.infoBox p {
+  margin: 0;
+  color: var(--theme-text-secondary);
+  line-height: 1.5;
+}
+
+.orderInstructionsBox{
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+}
+
+.orderInstructionsBox p {
+  margin: 0;
+  color: var(--theme-text-secondary);
+  line-height: 1.5;
+}
+
+.previewLink {
+  display: flex;
+}
+
+.previewLink a {
+  color: var(--theme-primary-color);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.previewLink a:hover {
+  text-decoration: underline;
+}
+
+.rankItem {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+  padding: var(--spacing-sm);
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.rankItem:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+              0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.rankIcon {
+  font-size: 1.5rem;
+  min-width: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.rankInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  text-align: left;
+}
+
+.rankName {
+  width: 100%;
+  font-weight: 600;
+  color: var(--theme-text-primary);
+  background-color: var(--theme-tab-background);
+  padding: var(--spacing-sm);
+  border-radius: var(--border-radius-sm); 
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.rankPrice {
+  font-weight: 700;
+  color: var(--theme-secondary-color);
+  background-color: rgba(79, 70, 229, 0.1);
+  padding: var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  display: inline-block;
+  font-size: var(--font-size-md);
+}
+
+.rankCategory {
+  font-size: var(--font-size-md);
+  color: var(--theme-text-secondary);
+  background-color: var(--theme-tab-background);
+  padding: var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  white-space: nowrap;
+}
+
+.exclusiveTag, .newTag, .popularTag {
+  font-size: 0.8em;
+  display: inline-flex;
+  align-items: center;
+}
+
+.exclusiveTag {
+  color: #f6d365;
+}
+
+.newTag {
+  color: #00c9ff;
+}
+
+.popularTag {
+  color: #ff5757;
+}
+
+
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+  font-size: var(--font-size-lg);
+  color: var(--theme-text-secondary);
+}
+
+/* Create Rank Form Styles */
+.sectionTitle {
+  font-size: var(--font-size-lg);
+  color: var(--theme-text-primary);
+  background-color: var(--theme-tab-background);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.subsectionTitle {
+  font-size: var(--font-size-md);
+  color: var(--theme-text-primary);
+  margin-top: var(--spacing-xl);
+  font-weight: 600;
+  background-color: var(--theme-tab-background);
+  border-radius: var(--spacing-sm);
+  padding: var(--spacing-md);
+}
+
+.createFormContainer {
+  background-color: var(--theme-card-background);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+  border: 1px solid var(--theme-border);
+}
+
+.createForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.formRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 4px solid var(--theme-secondary-color);
+}
+
+.formRow > div {
+  flex: 1;
+}
+
+.draggableListWrapper :global(.DraggableList_draggableListContainer__NlVVH) {
+  padding: 0 !important;
+  background-color: transparent;
+}
+
+.categoryListHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.categoryListHeader h3 {
+  margin: 0;
+}
+
+/* Colors Section Styles */
+.colorSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.gradientTypeSelector {
+  display: flex;
+  justify-content: space-between;
+  flex-direction: row;
+  gap: var(--spacing-sm);
+  background-color: var(--theme-tab-background);
+  border-radius: var(--spacing-sm);
+  padding: var(--spacing-md);
+}
+
+.gradientTypeLabel {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--theme-text-primary);
+  
+}
+
+.gradientTypeOptions {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.gradientTypeButton {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--theme-border);
+  background-color: var(--theme-card-background-alt);
+  color: var(--theme-text-primary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+
+.gradientTypeButton.active {
+  background-color: var(--theme-primary-color);
+  color: white;
+  border-color: var(--theme-primary-color);
+}
+
+.colorPreview {
+  height: 300px;
+  width: 100%;
+  border-radius: var(--border-radius-md);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.colorPreviewLabel {
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  font-size: var(--font-size-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+}
+
+.colorForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+}
+
+.colorPickerRow {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--spacing-md);
+  width: 100%;
+}
+
+.addColorButton {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  height: 42px;
+  flex-shrink: 0;
+}
+
+.addColorButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.colorPositionWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.colorPositionLabel {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--theme-text-primary);
+}
+
+.colorPositionSlider {
+  width: 100%;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--theme-border);
+  border-radius: var(--border-radius-full);
+}
+
+.colorPositionSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--theme-primary-color);
+  cursor: pointer;
+}
+
+.colorPositionValue {
+  font-size: var(--font-size-sm);
+  color: var(--theme-text-secondary);
+  align-self: flex-end;
+}
+
+.colorsList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+}
+
+.colorsListTitle {
+  font-size: var(--font-size-sm);
+  color: var(--theme-text-secondary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.colorsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--spacing-sm);
+}
+
+.colorItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background-color: var(--theme-background);
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--theme-border);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.colorItem:hover {
+  background-color: var(--theme-card-background-alt);
+  transform: translateY(-2px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+}
+
+.activeColorItem {
+  background-color: var(--theme-card-background-alt);
+  border-color: var(--theme-primary-color);
+  box-shadow: 0 0 0 1px var(--theme-primary-color);
+  transform: translateY(-2px);
+}
+
+.colorSwatch {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--theme-border);
+  overflow: hidden;
+}
+
+.colorItemContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.colorItemValue {
+  font-weight: 600;
+  color: var(--theme-text-primary);
+  font-size: var(--font-size-sm);
+  font-family: monospace;
+}
+
+.colorItemPosition {
+  color: var(--theme-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.removeColorButton {
+  background: none;
+  border: none;
+  color: var(--theme-error-color);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+  padding: var(--spacing-xs);
+}
+
+.removeColorButton:hover {
+  opacity: 1;
+}
+
+.removeColorButton:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Perks Section Styles */
+.perksSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-lg);
+  border-top: 4px solid var(--theme-secondary-color);
+}
+
+.perkForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+}
+
+.addPerkButton {
+  align-self: flex-end;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.perksList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.perksListTitle {
+  font-size: var(--font-size-sm);
+  color: var(--theme-text-secondary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.perkItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm);
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+  margin-bottom: var(--spa);
+}
+
+.perkItemIcon {
+  color: var(--theme-primary-color);
+  font-size: 1.2rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 24px;
+}
+
+.perkItemContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.perkItemName {
+  font-weight: 600;
+  color: var(--theme-text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.perkItemTooltip {
+  color: var(--theme-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.removePerkButton {
+  background: none;
+  border: none;
+  color: var(--theme-error-color);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+  padding: var(--spacing-xs);
+}
+
+.removePerkButton:hover {
+  opacity: 1;
+}
+
+.togglesContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-xs);
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--spacing-md);
+}
+
+.createRankButton {
+  min-width: 150px;
+}
+
+.featuredRanksSection {
+  margin-top: var(--spacing-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.featuredActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .title {
+    margin-bottom: var(--spacing-sm);
+  }
+  
+  .actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+ 
+  .colorsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .gradientTypeOptions {
+    flex-wrap: wrap;
+  }
+
+  .gradientTypeButton {
+    flex: 1;
+    min-width: 90px;
+    text-align: center;
+    padding: var(--spacing-xs);
+  }
+}
+
+/* Modal styles */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--theme-tab-background);
+  backdrop-filter: blur(50px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: var(--spacing-md);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  background-color: var(--theme-tab-background);
+  margin-bottom: var(--spacing-md);
+}
+
+.modalTitle {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: var(--theme-text-primary);
+  margin: 0;
+}
+
+.modalClose {
+  background: none;
+  border: none;
+  color: var(--theme-text-secondary);
+  font-size: var(--font-size-xl);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xs);
+  border-radius: var(--border-radius-sm);
+  transition: all 0.2s ease;
+}
+
+.modalClose:hover {
+  color: var(--theme-text-primary);
+  background-color: var(--theme-hover);
+}
+
+.modalBody {
+  padding-right: var(--spacing-md);
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modalFooter {
+  padding: var(--spacing-md);
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  background-color: var(--theme-tab-background);
+}
+
+/* Ranks list for selector */
+.ranksList {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+}
+
+
+.rankSelectButton {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-md);
+  background-color: var(--theme-card-background);
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.2s ease;
+}
+
+.rankSelectButton:hover {
+  background-color: var(--theme-card-background-alt);
+}
+
+.rankIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background-color: var(--theme-primary-color);
+  color: white;
+  border-radius: var(--border-radius-sm);
+  margin-right: var(--spacing-md);
+  font-size: var(--font-size-lg);
+  flex-shrink: 0;
+}
+
+.rankDetails {
+  flex: 1;
+  min-width: 0;
+}
+
+.rankCategory {
+  font-size: var(--font-size-xs);
+  color: var(--theme-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.noRanks {
+  text-align: center;
+  padding: var(--spacing-xl);
+  color: var(--theme-text-secondary);
+  font-style: italic;
+}
+
+.loading {
+  text-align: center;
+  padding: var(--spacing-xl);
+  color: var(--theme-text-secondary);
+}
+
+/* Form header styles */
+.formHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--theme-tab-background);
+  border-radius: var(--spacing-sm);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.formTitle {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: var(--theme-text-primary);
+  margin: 0;
+}
+
+.formClose {
+  background: none;
+  border: none;
+  color: var(--theme-text-secondary);
+  font-size: var(--font-size-xl);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xs);
+  border-radius: var(--border-radius-sm);
+  transition: all 0.2s ease;
+}
+
+.formClose:hover {
+  color: var(--theme-text-primary);
+  background-color: var(--theme-hover);
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+  margin-right: var(--spacing-sm);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Category Manager Styles */
+.categoryManager {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  padding: var(--spacing-md);
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+}
+
+.categoryForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: var(--spacing-xl);
+}
+
+.categoriesOrderHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--theme-tab-background);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+}
+
+.categoriesOrderSection {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.orderInstructions {
+  font-size: var(--font-size-sm);
+  color: var(--theme-text-secondary);
+  background-color: var(--theme-tab-background);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+}
+
+.categoryOrderActions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.saveCategoryOrderButton {
+  min-width: 120px;
+}
+
+.categoryOrderList {
+  border-radius: 6px;
+}
+
+.categoriesList {
+  margin-top: 1.5rem;
+}
+
+.sectionSubtitle {
+  font-weight: 600;
+  color: var(--theme-text-primary);
+}
+
+.categoryContainer {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.categoriesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+}
+
+.categoryCard {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--spacing-sm);
+  width: 100%;
+  padding: var(--spacing-sm);
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.categoryCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+              0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.categoryItemActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.categoryIcon {
+  font-size: 1.5rem;
+  min-width: 40px;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--theme-primary-color);
+  color: white;
+  border-radius: var(--border-radius-sm);
+  margin-right: var(--spacing-md);
+  flex-shrink: 0;
+}
+
+.categoryInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  text-align: left;
+  min-width: 0;
+}
+
+.categoryName {
+  width: 100%;
+  font-weight: 600;
+  color: var(--theme-text-primary);
+  background-color: var(--theme-tab-background);
+  padding: var(--spacing-sm);
+  border-radius: var(--border-radius-sm); 
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.categoryActions {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-left: var(--spacing-md);
+}
+
+.editCategoryButton,
+.deleteCategoryButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--border-radius-sm);
+  border: none;
+  background: none;
+  color: var(--theme-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.editCategoryButton:hover {
+  color: var(--theme-primary-color);
+  background-color: var(--theme-hover);
+}
+
+.deleteCategoryButton:hover {
+  color: var(--theme-error-color);
+  background-color: var(--theme-hover);
+}
+
+.editCategoryButton:disabled,
+.deleteCategoryButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.noCategories {
+  text-align: center;
+  padding: var(--spacing-xl);
+  color: var(--theme-text-secondary);
+  font-style: italic;
+}
+
+.categoryButton {
+  margin-left: var(--spacing-sm);
+}
+
+.featuredRanksManager {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background-color: var(--card-bg);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.featuredRanksHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.sectionDescription {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+
+.featuredRanksActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.saveFeaturedRanksButton {
+  min-width: 160px;
+}
+
+.previewLink {
+  color: var(--theme-primary-color);
+  text-decoration: underline;
+  font-size: 0.9rem;
+}
+
+.rankManagerSection {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+}
+
+.rankManagerHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background-color: var(--theme-tab-background);
+  padding: var(--spacing-md);
+  border-radius: var(--spacing-md);
+}
+
+.rankManagerActions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.rankManagerButton {
+  min-width: 180px;
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  background-color: var(--theme-tab-background);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+}
+
+.pageTitle {
+  font-size: var(--font-size-xl);
+  margin: 0;
+  color: var(--theme-text-primary);
+}
+
+.pageDescription {
+  margin-bottom: var(--spacing-md);
+  background-color: var(--theme-tab-background);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+}
+
+.actionsContainer {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+/* Tab styles */
+.adminTabs {
+  width: 100%;
+}
+
+/* Edit Rank Container */
+.rankSelectList {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+  max-height: 500px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  background-color: var(--bg-secondary);
+}
+
+.rankSelectItem {
+  border-bottom: 1px solid var(--border-color);
+  background: var(--theme-tab-background);
+  border-radius: var(--spacing-sm);
+}
+
+.rankSelectItem {
+  margin-top: var(--spacing-sm);
+}
+
+.rankSelectItem:first-child {
+  margin-top: 0;
+}
+
+.rankSelectItem:last-child {
+  border-bottom: none;
+}
+
+.rankSelectButton {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 1rem;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  color: var(--text-primary);
+}
+
+.rankSelectButton:hover {
+  background-color: var(--hover-color);
+}
+
+.rankIcon {
+  font-size: 1.5rem;
+  margin-right: 1rem;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: var(--bg-primary);
+}
+
+.rankDetails {
+  flex: 1;
+}
+
+.rankCategory {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.noRanks {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-secondary);
+  background-color: var(--bg-secondary);
+  border-radius: 0.5rem;
+  border: 1px dashed var(--border-color);
+}
+
+/* Form */
+.form {
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.formHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.formTitle {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.formClose {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 1.25rem;
+  padding: 0.25rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.formClose:hover {
+  color: var(--text-primary);
+  background-color: var(--hover-color);
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+@media (max-width: 768px) {
+  .formRow {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+}
+
+/* Featured Ranks Section */
+.sectionTitle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+}
+
+.featuredRanksActions {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+.saveFeaturedRanksButton,
+.previewButton {
+  white-space: nowrap;
+}
+
+/* Preview Modal */
+.previewModal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.previewModalContent {
+  background-color: var(--theme-card-background);
+  border-radius: var(--border-radius-lg);
+  width: 90%;
+  max-width: 1000px;
+  max-height: 90vh;
+  overflow: auto;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--theme-border);
+}
+
+.previewModalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--theme-border);
+}
+
+.previewModalHeader h3 {
+  margin: 0;
+  font-size: var(--font-size-lg);
+}
+
+.closeModalButton {
+  background: none;
+  border: none;
+  color: var(--theme-text-secondary);
+  cursor: pointer;
+  font-size: var(--font-size-lg);
+  padding: var(--spacing-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.closeModalButton:hover {
+  background-color: var(--theme-background-lighter);
+  color: var(--theme-text-primary);
+}
+
+.previewModalBody {
+  padding: var(--spacing-md);
+  max-height: calc(90vh - 80px);
+  overflow: auto;
+}
+
+/* Colors Section Styles */
+.colorSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.gradientTypeSelector {
+  display: flex;
+  justify-content: space-between;
+  flex-direction: row;
+  gap: var(--spacing-sm);
+  background-color: var(--theme-tab-background);
+  border-radius: var(--spacing-sm);
+  padding: var(--spacing-md);
+}
+
+.gradientTypeLabel {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--theme-text-primary);
+  
+}
+
+.gradientTypeOptions {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.gradientTypeButton {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--theme-border);
+  background-color: var(--theme-card-background-alt);
+  color: var(--theme-text-primary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.gradientTypeButton.active {
+  background-color: var(--theme-primary-color);
+  color: white;
+  border-color: var(--theme-primary-color);
+}
+
+
+.colorPreviewLabel {
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  font-size: var(--font-size-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+}
+
+.colorForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+}
+
+.colorPickerRow {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--spacing-md);
+  width: 100%;
+}
+
+.addColorButton {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  height: 42px;
+  flex-shrink: 0;
+}
+
+.addColorButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.colorPositionWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.colorPositionLabel {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--theme-text-primary);
+}
+
+.colorPositionSlider {
+  width: 100%;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--theme-border);
+  border-radius: var(--border-radius-full);
+}
+
+.colorPositionSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--theme-primary-color);
+  cursor: pointer;
+}
+
+.colorPositionValue {
+  font-size: var(--font-size-sm);
+  color: var(--theme-text-secondary);
+  align-self: flex-end;
+}
+
+.colorsList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+}
+
+.colorsListTitle {
+  font-size: var(--font-size-sm);
+  color: var(--theme-text-secondary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.colorsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--spacing-sm);
+}
+
+.colorItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background-color: var(--theme-background);
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--theme-border);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.colorItem:hover {
+  background-color: var(--theme-card-background-alt);
+  transform: translateY(-2px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+}
+
+.activeColorItem {
+  background-color: var(--theme-card-background-alt);
+  border-color: var(--theme-primary-color);
+  box-shadow: 0 0 0 1px var(--theme-primary-color);
+  transform: translateY(-2px);
+}
+
+.colorSwatch {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--theme-border);
+  overflow: hidden;
+}
+
+.colorItemContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.colorItemValue {
+  font-weight: 600;
+  color: var(--theme-text-primary);
+  font-size: var(--font-size-sm);
+  font-family: monospace;
+}
+
+.colorItemPosition {
+  color: var(--theme-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.removeColorButton {
+  background: none;
+  border: none;
+  color: var(--theme-error-color);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+  padding: var(--spacing-xs);
+}
+
+.removeColorButton:hover {
+  opacity: 1;
+}
+
+.removeColorButton:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Perks Section Styles */
+.perksSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-lg);
+  border-top: 4px solid var(--theme-secondary-color);
+}
+
+.perkForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+}
+
+.addPerkButton {
+  align-self: flex-end;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.perksList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.perksListTitle {
+  font-size: var(--font-size-sm);
+  color: var(--theme-text-secondary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.perkItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm);
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+  margin-bottom: var(--spa);
+}
+
+.perkItemIcon {
+  color: var(--theme-primary-color);
+  font-size: 1.2rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 24px;
+}
+
+.perkItemContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.perkItemName {
+  font-weight: 600;
+  color: var(--theme-text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.perkItemTooltip {
+  color: var(--theme-text-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.removePerkButton {
+  background: none;
+  border: none;
+  color: var(--theme-error-color);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+  padding: var(--spacing-xs);
+}
+
+.removePerkButton:hover {
+  opacity: 1;
+}
+
+.togglesContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-xs);
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--spacing-md);
+}
+
+.createRankButton {
+  min-width: 150px;
+}
+
+.featuredRanksSection {
+  margin-top: var(--spacing-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.featuredActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .title {
+    margin-bottom: var(--spacing-sm);
+  }
+  
+  .actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .rankItem {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .rankItemActions, .rankIcon {
+    display: flex !important;
+    flex-direction: row !important;
+    margin: 0 !important;
+  }
+  
+  .rankName {
+    width: 100%;
+  }
+
+  .colorsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .gradientTypeOptions {
+    flex-wrap: wrap;
+  }
+
+  .gradientTypeButton {
+    flex: 1;
+    min-width: 90px;
+    text-align: center;
+    padding: var(--spacing-xs);
+  }
+}
+
+/* Style for featured ranks section */
+.featuredRanksManager1 {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.featuredRanksManager1 .draggableListWrapper {
+  flex: 1;
+  min-height: 600px;
+  display: flex;
+}
+
+.featuredRanksManager1 .draggableListWrapper > div {
+  width: 100%;
+  height: 100%;
+}
+
+.categoryListHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.categoryListHeader h3 {
+  margin: 0;
+}
+
+.deleteRankButton {
+  background-color: var(--theme-error);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin-left: 10px;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.deleteRankButton:hover {
+  background-color: var(--theme-error-dark, #c62828);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.rankSelectItem {
+  display: flex;
+  align-items: center;
+}
+
+/* New styles for multi-category rank draggable lists */
+.ranksListContainer {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.ranksListContainer > div {
+  /* Target the multiListsContainer */
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+.ranksCategoryList {
+  margin-bottom: 1.5rem;
+  min-width: 0; /* Prevent overflow of flex items */
+}
+
+.ranksCategoryList h3 {
+  font-size: 1.2rem;
+  margin-bottom: 0.75rem;
+  color: var(--theme-primary-color);
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.sectionSubtitle {
+  font-size: 1rem;
+  color: var(--theme-text-secondary);
+  margin: 0;
+}
+
+.noContent {
+  padding: 2rem;
+  text-align: center;
+  color: var(--theme-text-secondary);
+  font-style: italic;
+  background-color: var(--theme-background-secondary);
+  border-radius: var(--border-radius-md);
+}
+
+.categoriesList {
+  margin-top: 1rem;
+}
+
+.featuredRanksList {
+  height: 100%;
+  min-height: 400px;
+}
+
+.featuredRanksManager {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.managerBox {
+  padding: 1rem;
+  background-color: var(--theme-background-secondary);
+  border-radius: var(--border-radius-md);
+  flex: 1;
+}
+
+.actionsPanel {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.errorMessage {
+  padding: 1rem;
+  color: var(--theme-error-color);
+  background-color: var(--theme-error-light);
+  border-radius: var(--border-radius-md);
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+/* Adjust for smaller screens */
+@media (max-width: 1024px) {
+  .ranksListContainer > div {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ranksListWrapper {
+  width: 100%;
+  overflow: hidden;
+  padding: 0.5rem;
+  background-color: var(--theme-background-secondary);
+  border-radius: var(--border-radius-md);
+}
+
+.rankItemActions {
+  display: flex;
+  flex-direction: column;
+  margin-right: var(--spacing-xs);
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.upgradeSection {
+  margin-top: var(--spacing-xl);
+  margin-bottom: var(--spacing-xl);
+  background-color: var(--theme-background-secondary);
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.upgradeFields {
+  margin-top: 1rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.upgradeHelpText {
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--theme-text-muted);
+  line-height: 1.4;
+}
+
+.colorContainer {
+  padding: 0.75rem;
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md); 
+}
+
+.gradientAngleLabel {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--theme-text-primary);
+}
+
+.colorHelpText {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-sm);
+  color: var(--theme-text-secondary);
+}
+
+.colorHelpText .infoIcon {
+  flex-shrink: 0;
+  color: var(--theme-info-color);
+  margin-top: 2px;
+}
+.verticalSliderContainer {
+  height: 300px;
+  display: flex;
+  justify-content: center;
+} 
+
+.verticalSliderPreviewContainer {
+  height: 300px;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+} 
+
+.gradientAngleSelector {
+  margin-left: 40px;
+  margin-bottom: var(--spacing-sm);
+}

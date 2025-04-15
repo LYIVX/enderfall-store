@@ -1,0 +1,153 @@
+.toggleContainer {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  user-select: none;
+}
+
+.toggle {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 24px;
+  border-radius: 24px;
+  cursor: pointer;
+  transition: var(--transition-normal);
+  border: none;
+  padding: 0;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.slider {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  display: flex;
+  align-items: center;
+  transition: var(--transition-normal);
+}
+
+.slider::before {
+  content: '';
+  position: absolute;
+  height: 20px;
+  width: 20px;
+  left: 0;
+  bottom: 0;
+  background-color: white;
+  border-radius: 50%;
+  transition: var(--transition-normal);
+  transform: translateX(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.enabled .slider::before {
+  transform: translateX(24px);
+}
+
+.iconContainer {
+  position: absolute;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 20px;
+  width: 20px;
+  color: var(--theme-text-light);
+  z-index: 1;
+  transition: var(--transition-normal);
+}
+
+.enabled .iconContainer {
+  transform: translateX(24px);
+}
+
+.disabled .iconContainer {
+  transform: translateX(0);
+}
+
+.label {
+  font-size: var(--font-size-sm);
+  color: var(--theme-text-primary);
+  font-weight: 500;
+}
+
+/* Size variations */
+.small .toggle {
+  width: 36px;
+  height: 18px;
+}
+
+.small .slider::before {
+  height: 14px;
+  width: 14px;
+}
+
+.small .enabled .slider::before {
+  transform: translateX(18px);
+}
+
+.small .iconContainer {
+  height: 14px;
+  width: 14px;
+}
+
+.small .enabled .iconContainer {
+  transform: translateX(18px);
+}
+
+.large .toggle {
+  width: 60px;
+  height: 30px;
+}
+
+.large .slider::before {
+  height: 26px;
+  width: 26px;
+}
+
+.large .enabled .slider::before {
+  transform: translateX(30px);
+}
+
+.large .iconContainer {
+  height: 26px;
+  width: 26px;
+}
+
+.large .enabled .iconContainer {
+  transform: translateX(30px);
+}
+
+/* Label position variations */
+.leftLabel {
+  flex-direction: row;
+}
+
+.rightLabel {
+  flex-direction: row;
+}
+
+/* Focus styles for accessibility */
+
+/* Hover state for disabled toggle */
+.disabled.toggle:hover {
+  outline-offset: 2px;
+  outline: 2px solid var(--theme-primary-color);
+  transition: var(--transition-normal);
+}
+
+/* Hover state for enabled toggle */
+.enabled.toggle:hover {
+  outline-offset: 2px;
+  outline: 2px solid var(--theme-secondary-color);
+  transition: var(--transition-normal);
+}
+
+/* Disabled state */
+.toggle:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+} 

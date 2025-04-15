@@ -1,0 +1,183 @@
+.tabsContainer {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.tabsContainerVertical {
+  display: flex;
+  flex-direction: row;
+  gap: var(--spacing-md);
+  width: 100%;
+}
+
+.tabsList {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: var(--spacing-sm);
+  background-color: var(--theme-tab-background);
+  overflow: hidden;
+  border-radius: var(--border-radius-md);
+  margin-bottom: var(--spacing-sm) !important;
+  min-height: 60px !important;
+}
+
+.tabsListVertical {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: var(--spacing-sm);
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+  min-width: 200px;
+  flex-shrink: 0;
+}
+
+.tabContainer {
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+  box-shadow: var(--shadow-sm);
+  width: 100%;
+}
+
+.tabContainerVertical {
+  display: flex;
+  flex-direction: row;
+  gap: var(--spacing-md);
+}
+
+/* Inside the container, we want to adjust some margins */
+.tabContainer .tabsList,
+.tabContainer .tabsListVertical {
+  margin-bottom: var(--spacing-md);
+}
+
+.tabContainer .tabsListVertical {
+  margin-bottom: 0;
+}
+
+.tab {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: var(--spacing-sm) !important;
+  padding: var(--spacing-md) !important;
+  margin: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 60px !important;
+  color: var(--theme-text-primary);
+  background: none;
+  border: none;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex: 1 1 auto !important;
+  position: relative;
+  box-sizing: border-box !important;
+}
+
+.tabVertical {
+  justify-content: flex-start;
+  border-radius: var(--border-radius-md);
+  margin: var(--spacing-sm);
+}
+
+.tab:hover {
+  background-color: var(--theme-tab-background);
+}
+
+.tab.active {
+  color: var(--theme-bg-secondary-color);
+  font-weight: 600;
+}
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 5.5px;
+  left: 7px;
+  width: calc(100% - 14px);
+  height: 2px;
+  background-color: var(--theme-bg-secondary-color);
+}
+
+.tabVertical.active::after {
+  display: none;
+}
+
+.tabVertical.active {
+  background-color: var(--theme-tab-background);
+}
+
+.activeIndicator {
+  margin-left: auto;
+  width: 2px;
+  height: calc(100% - 16px);
+  background-color: var(--theme-bg-secondary-color);
+  position: absolute;
+  right: 2.5px;
+  top: 7px;
+}
+
+.tabIcon {
+  font-size: 1.1rem;
+}
+
+.tabText {
+  display: inline-block;
+}
+
+.tabContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.withBackground {
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+@media (max-width: 768px) {
+  .tabsList {
+    flex-wrap: wrap;
+  }
+
+  .tab {
+    flex: 1 0 auto;
+    min-width: 100px;
+  }
+  
+  .tabsListVertical {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-xs);
+    min-width: auto;
+  }
+  
+  .tabVertical {
+    margin: var(--spacing-xs);
+  }
+}
+
+@media (max-width: 576px) {
+  .tabsList {
+    flex-direction: column;
+  }
+
+  .tab {
+    width: 100%;
+  }
+  
+  .tabIcon {
+    margin-right: 0;
+    font-size: 1.2rem;
+  }
+  
+  .tabsListVertical {
+    grid-template-columns: 1fr;
+  }
+} 

@@ -1,0 +1,110 @@
+.modalContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.modalText {
+  color: var(--theme-text-secondary);
+  margin-bottom: var(--spacing-lg);
+  line-height: 1.6;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-lg);
+}
+
+.inputGroup label {
+  color: var(--theme-text-primary);
+  font-weight: 500;
+  font-size: var(--font-size-sm);
+}
+
+.inputWrapper {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.input {
+  flex: 1;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--theme-border);
+  background-color: var(--theme-input-bg);
+  color: var(--theme-text-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-size-md);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--theme-primary-color);
+  box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.2);
+}
+
+.buttonGroup {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+}
+
+.validationResult {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-sm);
+  margin-top: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+}
+
+.valid {
+  background-color: var(--theme-success-color-dark);
+  color: var(--theme-text-primary);
+}
+
+.invalid {
+  background-color: var(--theme-error-color-dark);
+  color: var(--theme-text-primary);
+}
+
+.validIcon {
+  color: var(--theme-success-color-light);
+}
+
+.invalidIcon {
+  color: var(--theme-error-color);
+}
+
+.errorMessage {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--theme-error-color);
+  border-radius: var(--border-radius-sm);
+  margin-top: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+}
+
+.successMessage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-xl);
+  text-align: center;
+}
+
+.successIcon {
+  font-size: 3rem;
+  color: var(--theme-success-color);
+}
+
+.icon {
+  margin-right: var(--spacing-sm);
+  font-size: var(--font-size-lg);
+} 

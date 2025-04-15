@@ -1,0 +1,65 @@
+.tableSelectorContainer {
+  position: fixed;
+  z-index: 1100; /* Higher than the modal z-index */
+  background: linear-gradient(135deg, var(--theme-bg-primary) 0%, var(--theme-bg-secondary) 100%);  
+  border-radius: var(--border-radius-sm);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  padding: var(--spacing-md);
+  width: 240px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.tableSelectorHeader {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--theme-text-primary);
+  margin-bottom: var(--spacing-sm);
+  text-align: center;
+  border-radius: var(--border-radius-sm);
+  padding: var(--spacing-xs);
+  background-color: var(--theme-tab-background);
+}
+
+.tableSelectorGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--spacing-sm);
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-sm);
+}
+
+.tableSelectorRow {
+  display: flex;
+  gap: 2px;
+}
+
+.tableSelectorCell {
+  width: 24px;
+  height: 24px;
+  background-color: var(--theme-primary-light);
+  border: 1px solid var(--theme-border);
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  transition: background-color 0.1s ease, border-color 0.1s ease;
+}
+
+.tableSelectorCell.selected {
+  background-color: var(--theme-secondary-light);
+  border-color: var(--theme-border);
+}
+
+.tableSelectorFooter {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--spacing-sm);
+}
+
+@media (max-width: 768px) {
+  .tableSelectorContainer {
+    width: 90%;
+    max-width: 240px;
+  }
+} 

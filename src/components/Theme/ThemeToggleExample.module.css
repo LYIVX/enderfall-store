@@ -1,0 +1,33 @@
+.toggleExamples {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-lg);
+  background-color: var(--theme-card-bg);
+  border-radius: var(--border-radius-md);
+  max-width: 500px;
+  margin: 0 auto;
+  box-shadow: var(--shadow-md);
+}
+
+.toggleExamples h3 {
+  margin: 0 0 var(--spacing-md) 0;
+  font-size: var(--font-size-lg);
+  color: var(--theme-text-primary);
+  text-align: center;
+}
+
+.toggleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md);
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-sm);
+}
+
+.toggleRow label {
+  font-size: var(--font-size-md);
+  color: var(--theme-text-primary);
+  font-weight: 500;
+} 

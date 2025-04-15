@@ -1,0 +1,210 @@
+.createPostContainer {
+  width: 100%;
+  padding: var(--spacing-lg);
+}
+
+.formTitle {
+  font-size: var(--font-size-xl);
+  color: var(--theme-text-primary);
+  margin-bottom: var(--spacing-lg);
+}
+
+.errorMessage {
+  background-color: var(--theme-error-light);
+  color: var(--theme-error);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--border-radius-sm);
+  margin-bottom: var(--spacing-md);
+  font-size: var(--font-size-sm);
+}
+
+.forumForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.error {
+  color: var(--error-color);
+  background-color: var(--error-bg);
+  padding: 0.75rem;
+  border-radius: var(--border-radius-sm);
+  margin-top: 0.5rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.contentLabel {
+  display: block;
+  margin-bottom: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--theme-text-primary);
+  font-weight: 500;
+}
+
+.contentPreview {
+  background-color: var(--theme-bg-secondary);
+  border: 1px solid var(--theme-border);
+  border-radius: var(--border-radius-sm);
+  padding: var(--spacing-md);
+  min-height: 100px;
+  cursor: pointer;
+  transition: border-color var(--transition-fast);
+}
+
+.contentPreview:hover {
+  border-color: var(--theme-primary-color);
+}
+
+.contentActions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--spacing-xs);
+}
+
+.contentText {
+  color: var(--theme-text-primary);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.placeholderText {
+  color: var(--theme-text-secondary);
+  font-size: var(--font-size-sm);
+  font-style: italic;
+}
+
+.textArea {
+  background-color: var(--theme-input-background);
+  border: 1px solid var(--theme-input-border);
+  border-radius: var(--border-radius-sm);
+  padding: 0.75rem;
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  color: var(--theme-text-primary);
+  resize: vertical;
+  width: 100%;
+}
+
+.textArea:focus {
+  outline: none;
+  border-color: var(--theme-input-border-hover);
+}
+
+.togglesContainer {
+  display: flex;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+}
+
+.toggleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-md);
+}
+
+.toggleLabel {
+  font-size: var(--font-size-sm);
+  color: var(--theme-text-primary);
+  font-weight: 500;
+}
+
+.toggleGroup label {
+  font-size: var(--font-size-sm);
+  color: var(--theme-text-primary);
+  font-weight: 500;
+}
+
+.toggleHint {
+  font-size: var(--font-size-xs);
+  color: var(--theme-text-secondary);
+  font-style: italic;
+  margin-top: var(--spacing-xs);
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+  .formActions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+
+.markdownPreview {
+  white-space: pre-wrap;
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+  color: var(--theme-text-primary);
+  max-height: 200px;
+  overflow-y: auto;
+  padding: var(--spacing-xs);
+}
+
+.markdownPreview h1,
+.markdownPreview h2,
+.markdownPreview h3,
+.markdownPreview h4,
+.markdownPreview h5,
+.markdownPreview h6 {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.markdownPreview p {
+  margin-bottom: 1rem;
+}
+
+.markdownPreview ul,
+.markdownPreview ol {
+  padding-left: 2rem;
+  margin-bottom: 1rem;
+}
+
+.markdownPreview code {
+  background-color: var(--theme-code-bg);
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+.markdownPreview pre {
+  background-color: var(--theme-code-bg);
+  padding: 1rem;
+  border-radius: var(--border-radius-sm);
+  overflow-x: auto;
+  margin-bottom: 1rem;
+}
+
+.markdownPreview pre code {
+  background-color: transparent;
+  padding: 0;
+  border-radius: 0;
+}
+
+.markdownPreview img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--border-radius-sm);
+}
+
+.markdownPreview blockquote {
+  padding-left: 1rem;
+  border-left: 4px solid var(--theme-border);
+  color: var(--theme-text-secondary);
+  margin-bottom: 1rem;
+} 

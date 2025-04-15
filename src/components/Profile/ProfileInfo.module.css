@@ -1,0 +1,153 @@
+.profileHeader {
+  margin-bottom: 2rem;
+}
+
+.profileHeader h2 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  color: var(--theme-text-primary);
+  font-size: 1.5rem;
+}
+
+.sectionDescription {
+  color: var(--theme-text-secondary);
+  margin-bottom: 2rem;
+}
+
+/* Linked Accounts */
+.linkedAccounts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.accountCard {
+  display: flex;
+  align-items: center;
+  padding: 1.5rem;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--theme-border);
+  transition: all 0.3s ease;
+}
+
+.accountCard.linked {
+  border-color: var(--theme-border);
+  background-color: var(--theme-tab-background);
+}
+
+.accountIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background-color: var(--theme-primary-color);
+  color: var(--theme-text-primary);
+  border-radius: 12px;
+  margin-right: 1rem;
+  font-size: 1.5rem;
+  transition: transform var(--transition-fast) ease;
+}
+
+.accountIcon:hover {
+  transform: scale(1.1);
+  transition: transform var(--transition-fast) ease;
+}
+
+.accountInfo {
+  flex: 1;
+}
+
+.accountInfo h3 {
+  margin: 0 0 0.5rem;
+  color: var(--theme-text-primary);
+}
+
+.accountDetail {
+  color: var(--theme-text-secondary);
+  margin: 0 0 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.verifiedIcon {
+  color: var(--theme-success-color);
+  transition: transform var(--transition-fast) ease;
+}
+
+.verifiedIcon:hover {
+  color: var(--theme-success-color-dark);
+  transform: scale(1.2);
+  transition: transform var(--transition-fast) ease;
+}
+
+.linkButton,
+.editButton,
+.unlinkButton {
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius-sm);
+  border: none;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.linkButton {
+  background-color: var(--theme-primary-color);
+  color: var(--theme-text-primary);
+}
+
+.linkButton:hover {
+  background-color: var(--theme-primary-dark);
+}
+
+.editButton {
+  background-color: var(--theme-primary-color);
+  color: var(--theme-text-primary);
+}
+
+.editButton:hover {
+  background-color: var(--theme-primary-dark);
+}
+
+.unlinkButton {
+  background-color: var(--theme-error-color);
+  color: var(--theme-text-primary);
+}
+
+.unlinkButton:hover {
+  background-color: var(--theme-error-color-dark);
+}
+
+.unlinkButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Info Box */
+.infoBox {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+  border-left: 4px solid var(--theme-primary-color);
+}
+
+.infoBox svg {
+  margin-right: 1rem;
+  font-size: 1.25rem;
+  color: var(--theme-primary-color);
+  flex-shrink: 0;
+  margin-top: 0.25rem;
+}
+
+.infoBox p {
+  margin: 0;
+  color: var(--theme-text-secondary);
+  font-size: 0.925rem;
+  line-height: 1.5;
+} 

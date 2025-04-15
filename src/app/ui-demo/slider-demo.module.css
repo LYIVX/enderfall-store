@@ -1,0 +1,131 @@
+.container {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  background-color: var(--theme-bg-primary);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.title {
+  font-size: 1.8rem;
+  margin-bottom: 1.5rem;
+  color: var(--theme-text-primary);
+  border-bottom: 1px solid var(--theme-border);
+  padding-bottom: 0.5rem;
+}
+
+.section {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background-color: var(--theme-bg-secondary);
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--theme-border);
+}
+
+.sectionTitle {
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+  color: var(--theme-text-primary);
+}
+
+.description {
+  margin-bottom: 1.5rem;
+  color: var(--theme-text-secondary);
+  font-size: 0.9rem;
+}
+
+/* Vertical Slider Demo Styles */
+.verticalDemo {
+  height: 300px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Color Slider Demo Styles */
+.colorSlidersContainer {
+  display: flex;
+  gap: 3rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.colorSliderDemo {
+  flex: 1;
+  min-width: 280px;
+}
+
+.demoTitle {
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  color: var(--theme-text-primary);
+}
+
+.horizontalSliderContainer {
+  width: 100%;
+}
+
+.verticalSliderContainer {
+  height: 300px;
+  display: flex;
+  justify-content: center;
+}
+
+.colorSwatchPreview {
+  padding: 1rem;
+  background-color: var(--theme-bg-primary);
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--theme-border);
+}
+
+.previewTitle {
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  color: var(--theme-text-primary);
+}
+
+.previewBox {
+  height: 100px;
+  width: 100%;
+  border-radius: var(--border-radius-md);
+  margin-bottom: 1rem;
+  border: 1px solid var(--theme-border);
+}
+
+.gradientControls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.gradientTypeButton {
+  padding: 0.5rem 1rem;
+  background-color: var(--theme-bg-secondary);
+  border: 1px solid var(--theme-border);
+  border-radius: var(--border-radius-sm);
+  color: var(--theme-text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.gradientTypeButton:hover {
+  background-color: var(--theme-bg-tertiary);
+}
+
+.gradientTypeButton.active {
+  background-color: var(--theme-primary-color);
+  color: white;
+  border-color: var(--theme-primary-dark);
+}
+
+@media (max-width: 768px) {
+  .colorSlidersContainer {
+    flex-direction: column;
+    gap: 2rem;
+  }
+  
+  .colorSliderDemo {
+    width: 100%;
+  }
+} 

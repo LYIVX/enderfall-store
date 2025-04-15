@@ -1,0 +1,423 @@
+.textEditorContainer {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.toolbarToggleContainer {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+}
+
+.toggleLabel {
+  margin-left: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--theme-text-secondary);
+}
+
+.toggleSwitch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 22px;
+}
+
+.toggleSwitch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggleSlider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--theme-bg-secondary);
+  transition: .4s;
+  border-radius: 22px;
+  border: 1px solid var(--theme-border);
+}
+
+.toggleSlider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  bottom: 2px;
+  background-color: var(--theme-text-primary);
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .toggleSlider {
+  background-color: var(--theme-primary-color);
+}
+
+input:checked + .toggleSlider:before {
+  transform: translateX(22px);
+  background-color: var(--theme-text-primary);
+}
+
+.textArea {
+  width: 100% !important;
+  min-height: 200px !important;
+  margin-bottom: var(--spacing-md) !important;
+}
+
+/* Override TextArea component styling to match our editor */
+.textArea textarea {
+  min-height: 200px;
+  padding: var(--spacing-md);
+  background-color: var(--theme-tab-background);
+  color: var(--theme-text-primary);
+  font-size: var(--font-size-md);
+  resize: vertical;
+}
+
+.textArea textarea:focus {
+  border-color: var(--theme-accent);
+  box-shadow: 0 0 0 2px rgba(var(--theme-accent-rgb), 0.2);
+}
+
+/* Hide wrapper element's margin since we control margin in the editor */
+.textArea > div {
+  margin: 0 !important;
+}
+
+.previewContainer {
+  margin-bottom: var(--spacing-md);
+}
+
+.previewTitle {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--theme-text-medium);
+  margin-bottom: var(--spacing-xs);
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-sm);
+  padding: var(--spacing-xs);
+  text-align: center;
+  margin-bottom: var(--spacing-md);
+}
+
+.previewBox {
+  width: 100%;
+  min-height: 100px;
+  padding: var(--spacing-md);
+  border: 1px solid var(--theme-border);
+  border-radius: var(--border-radius-sm);
+  background-color: var(--theme-bg-secondary);
+  color: var(--theme-text-primary);
+  font-size: var(--font-size-md);
+  white-space: pre-wrap;
+  overflow-y: auto;
+}
+
+.markdownPreview {
+  font-family: inherit;
+}
+
+.markdownPreview h1,
+.markdownPreview h2,
+.markdownPreview h3,
+.markdownPreview h4,
+.markdownPreview h5,
+.markdownPreview h6 {
+  margin-top: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
+  color: var(--theme-text-primary);
+  font-weight: 600;
+}
+
+.markdownPreview h1 {
+  font-size: 1.75em;
+  border-bottom: 1px solid var(--theme-border);
+  padding-bottom: var(--spacing-xs);
+}
+
+.markdownPreview h2 {
+  font-size: 1.5em;
+}
+
+.markdownPreview h3 {
+  font-size: 1.25em;
+}
+
+.markdownPreview p {
+  margin-bottom: var(--spacing-md);
+}
+
+.markdownPreview ul, 
+.markdownPreview ol {
+  margin: var(--spacing-sm) 0;
+  padding-left: var(--spacing-xl);
+}
+
+.markdownPreview li {
+  margin-bottom: var(--spacing-xs);
+}
+
+.markdownPreview a {
+  color: var(--theme-accent);
+  text-decoration: none;
+}
+
+.markdownPreview a:hover {
+  text-decoration: underline;
+}
+
+.markdownPreview code:not(pre code) {
+  font-family: monospace;
+  background-color: var(--theme-tab-background);
+  padding: 0.2em 0.4em;
+  font-size: 0.9em;
+  border-radius: var(--border-radius-xs);
+}
+
+.markdownPreview pre {
+  margin: var(--spacing-md) 0;
+  padding: 0 !important;
+  overflow-x: auto;
+  border-radius: var(--border-radius-sm);
+  background-color: transparent !important;
+  border-left: 4px solid var(--theme-primary-color);
+  position: relative;
+}
+
+/* Add filename/language label above code blocks */
+.markdownPreview pre::before {
+  content: attr(data-language);
+  position: absolute;
+  top: -24px;
+  right: 8px;
+  background-color: var(--theme-primary-color);
+  color: rgb(0, 0, 0);
+  padding: 2px 8px;
+  font-size: 0.75rem;
+  border-radius: var(--border-radius-sm) var(--border-radius-sm) 0 0;
+  opacity: 0.8;
+  text-transform: uppercase;
+}
+
+/* Remove padding from syntax highlighter container to prevent double padding */
+.markdownPreview pre > div {
+  margin: 0 !important;
+  border-radius: var(--border-radius-sm);
+}
+
+/* Format inline code (not in code blocks) */
+.markdownPreview code:not(pre code) {
+  font-family: monospace;
+  background-color: var(--theme-tab-background);
+  padding: 0.2em 0.4em;
+  font-size: 0.9em;
+  border-radius: var(--border-radius-xs);
+}
+
+/* Override default syntax highlighter styles */
+.markdownPreview :global(.language-jsx),
+.markdownPreview :global(.language-tsx),
+.markdownPreview :global(.language-javascript),
+.markdownPreview :global(.language-typescript) {
+  tab-size: 2 !important;
+}
+
+.markdownPreview blockquote {
+  border-left: 4px solid var(--theme-accent);
+  padding-left: var(--spacing-md);
+  margin-left: var(--spacing-md);
+  color: var(--theme-text-medium);
+}
+
+.previewPlaceholder {
+  color: var(--theme-text-light);
+  font-style: italic;
+}
+
+.buttonContainer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
+}
+
+.cancelButton, .saveButton {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-radius: var(--border-radius-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancelButton {
+  background: transparent;
+  border: 1px solid var(--theme-border);
+  color: var(--theme-text-medium);
+}
+
+.cancelButton:hover {
+  background-color: var(--theme-bg-secondary);
+  color: var(--theme-text-primary);
+}
+
+.saveButton {
+  background-color: var(--theme-accent);
+  border: 1px solid var(--theme-accent);
+  color: white;
+}
+
+.saveButton:hover {
+  background-color: var(--theme-accent-hover);
+}
+
+.markdownPreview table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: var(--spacing-md) 0;
+}
+
+.markdownPreview th {
+  background-color: var(--theme-primary-color);
+  color: var(--theme-text-primary);
+  font-weight: 600;
+  text-align: left;
+}
+
+.markdownPreview th,
+.markdownPreview td {
+  border: 1px solid var(--theme-border);
+  padding: var(--spacing-sm);
+}
+
+.markdownPreview tr:nth-child(even) {
+  background-color: var(--theme-secondary-light);
+}
+
+.markdownPreview tr:nth-child(odd) {
+  background-color: var(--theme-secondary-dark);
+}
+
+.markdownPreview tr:hover {
+  background-color: var(--theme-tab-background);
+}
+
+.markdownPreview div[style*="text-align"] {
+  margin: var(--spacing-sm) 0;
+}
+
+.markdownPreview div[style*="text-align"] h1,
+.markdownPreview div[style*="text-align"] h2,
+.markdownPreview div[style*="text-align"] h3,
+.markdownPreview div[style*="text-align"] h4,
+.markdownPreview div[style*="text-align"] h5,
+.markdownPreview div[style*="text-align"] h6 {
+  text-align: inherit;
+}
+
+.markdownPreview div[style*="text-align"] ul,
+.markdownPreview div[style*="text-align"] ol {
+  display: inline-block;
+  text-align: left;
+}
+
+.markdownPreview div[style*="text-align"] blockquote {
+  display: inline-block;
+  text-align: left;
+}
+
+.markdownPreview div[style*="text-align"] pre {
+  display: inline-block;
+  text-align: left;
+  max-width: 100%;
+}
+
+.markdownPreview div[style*="text-align: center"] {
+  text-align: center;
+}
+
+.markdownPreview div[style*="text-align: right"] {
+  text-align: right;
+}
+
+.markdownPreview div[style*="text-align: justify"] {
+  text-align: justify;
+}
+
+.markdownPreview div[style*="text-align: left"] {
+  text-align: left;
+}
+
+.markdownPreview .align-left,
+.markdownPreview .align-center,
+.markdownPreview .align-right,
+.markdownPreview .align-justify {
+  display: block;
+  margin: var(--spacing-xs) 0;
+}
+
+.markdownPreview h1 .align-left,
+.markdownPreview h2 .align-left,
+.markdownPreview h3 .align-left,
+.markdownPreview h4 .align-left,
+.markdownPreview h5 .align-left,
+.markdownPreview h6 .align-left,
+.markdownPreview p .align-left,
+.markdownPreview .align-left {
+  text-align: left;
+}
+
+.markdownPreview h1 .align-center,
+.markdownPreview h2 .align-center,
+.markdownPreview h3 .align-center,
+.markdownPreview h4 .align-center,
+.markdownPreview h5 .align-center,
+.markdownPreview h6 .align-center,
+.markdownPreview p .align-center,
+.markdownPreview .align-center {
+  text-align: center;
+}
+
+.markdownPreview h1 .align-right,
+.markdownPreview h2 .align-right,
+.markdownPreview h3 .align-right,
+.markdownPreview h4 .align-right,
+.markdownPreview h5 .align-right,
+.markdownPreview h6 .align-right,
+.markdownPreview p .align-right,
+.markdownPreview .align-right {
+  text-align: right;
+}
+
+.markdownPreview h1 .align-justify,
+.markdownPreview h2 .align-justify,
+.markdownPreview h3 .align-justify,
+.markdownPreview h4 .align-justify,
+.markdownPreview h5 .align-justify,
+.markdownPreview h6 .align-justify,
+.markdownPreview p .align-justify,
+.markdownPreview .align-justify {
+  text-align: justify;
+}
+
+/* Special styling for images with custom dimensions */
+.markdownPreview :global(.markdown-image) {
+  object-fit: contain !important;
+  display: block !important;
+  margin: var(--spacing-md) auto !important;
+}
+
+/* Container for images */
+.markdownPreview :global(p:has(.markdown-image)) {
+  display: flex;
+  justify-content: center;
+  margin: var(--spacing-md) 0;
+}
+
+
+
+
+

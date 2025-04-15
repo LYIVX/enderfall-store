@@ -1,0 +1,128 @@
+.historyHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-lg);
+}
+
+.headerTitle {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--theme-text-primary);
+
+}
+
+.historyContent {
+  display: flex;
+  flex-direction: column;
+}
+
+.purchasesList, .transactionsList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.purchaseItem, .transactionItem {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--spacing-md);
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+  transition: background-color 0.2s ease;
+}
+
+.purchaseItem:hover, .transactionItem:hover {
+  background-color: var(--bg-medium);
+}
+
+.purchaseInfo, .transactionInfo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.purchaseName, .transactionId {
+  font-size: var(--font-size-md);
+  color: var(--theme-text-primary);
+  font-weight: 500;
+}
+
+.purchaseCategory, .itemsList {
+  font-size: var(--font-size-sm);
+  color: var(--theme-text-secondary);
+}
+
+.transactionItemDetail {
+  padding: var(--spacing-xs) 0;
+}
+
+.purchaseDetails, .transactionDetails {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--spacing-xs);
+}
+
+.purchasePrice, .transactionPrice {
+  font-size: var(--font-size-md);
+  color: var(--theme-primary-color);
+  font-weight: 600;
+}
+
+.purchaseDate, .transactionDate {
+  font-size: var(--font-size-sm);
+  color: var(--theme-text-secondary);
+}
+
+.transactionStatus {
+  font-size: var(--font-size-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  font-weight: 500;
+}
+
+.statusSuccess {
+  background-color: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
+}
+
+.statusError {
+  background-color: rgba(244, 67, 54, 0.1);
+  color: #F44336;
+}
+
+.statusWarning {
+  background-color: rgba(255, 152, 0, 0.1);
+  color: #FF9800;
+}
+
+.statusProcessing {
+  background-color: rgba(33, 150, 243, 0.1);
+  color: #2196F3;
+}
+
+.noPurchases, .noTransactions, .loading, .error {
+  text-align: center;
+  padding: var(--spacing-xl);
+  color: var(--theme-text-secondary);
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-md);
+}
+
+.error {
+  color: #F44336;
+  background-color: rgba(244, 67, 54, 0.1);
+}
+
+@media (max-width: 768px) {
+  .purchaseItem, .transactionItem {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+
+  .purchaseDetails, .transactionDetails {
+    align-items: flex-start;
+  }
+} 

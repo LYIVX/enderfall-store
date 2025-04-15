@@ -1,0 +1,134 @@
+.createPost {
+  background-color: var(--theme-tab-background);
+  border-radius: var(--spacing-sm);
+  padding: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.textareaWrapper {
+  margin-bottom: 1rem;
+}
+
+.textareaWrapper label {
+  background-color: var(--theme-tab-background);
+  border-radius: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  font-size: var(--font-size-lg);
+}
+
+.errorMessage {
+  margin: 0.5rem 0;
+  padding: 0.5rem;
+  border-radius: var(--spacing-xs);
+  background-color: rgba(var(--theme-error-color-rgb), 0.1);
+  color: var(--theme-error-color);
+  font-size: 0.9rem;
+}
+
+.imagePreview {
+  margin: 1rem 0;
+}
+
+.imageContainer {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  border-radius: var(--spacing-sm);
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.previewImage {
+  max-width: 100%;
+  max-height: 300px;
+  display: block;
+  object-fit: contain;
+}
+
+.removeImageButton {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: var(--theme-text-primary);
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.removeImageButton:hover {
+  background-color: var(--theme-error-color);
+}
+
+.optionsRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+  gap: 1rem;
+}
+
+/* Hide the file input but keep it accessible */
+.fileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.uploadButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.imageInfo {
+  flex: 1;
+  overflow: hidden;
+}
+
+.fileName {
+  font-size: 0.9rem;
+  color: var(--theme-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 250px;
+  display: inline-block;
+}
+
+.submitRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.submitButton {
+  min-width: 100px;
+}
+
+@media (max-width: 576px) {
+  .optionsRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .imageInfo {
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+  
+  .fileName {
+    max-width: 100%;
+  }
+} 

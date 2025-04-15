@@ -1,0 +1,97 @@
+.iconSelectorContainer {
+  width: 100%;
+  position: relative;
+  margin-bottom: var(--spacing-md);
+}
+
+.iconSelectorLabel {
+  display: block;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--theme-text-primary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.iconSelectorPreview {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  border: 1px solid var(--theme-border);
+  border-radius: var(--border-radius-sm);
+  background-color: var(--theme-bg-secondary);
+}
+
+.selectedIconWrapper {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: var(--spacing-sm);
+  overflow: hidden;
+}
+
+.selectedIcon {
+  font-size: 1.5rem;
+  color: var(--theme-primary-color);
+  min-width: 24px;
+}
+
+.selectedIconName {
+  font-family: monospace;
+  color: var(--theme-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.iconSelectorButton {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background-color: var(--theme-primary-color);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  transition: background-color 0.2s ease;
+}
+
+.iconSelectorButton:hover {
+  background-color: var(--theme-primary-dark);
+}
+
+.iconSelectorPopover {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  z-index: 100;
+  margin-top: var(--spacing-xs);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  border-radius: var(--border-radius-md);
+  background-color: var(--theme-tab-background-rgb);
+  backdrop-filter: blur(50px);
+  -webkit-backdrop-filter: blur(50px);
+}
+
+.iconSelectorPopoverContent {
+  padding: var(--spacing-md);
+}
+
+.iconPreview {
+  font-size: 1.1rem;
+  color: currentColor;
+}
+
+@media (max-width: 768px) {
+  .iconSelectorPopover {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 90%;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow-y: auto;
+    z-index: 1000;
+  }
+} 

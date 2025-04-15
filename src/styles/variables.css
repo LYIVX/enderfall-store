@@ -1,0 +1,223 @@
+:root {
+  --primary-color: #7c4dff; --primary-color-dark: #5e35b1; --primary-color-light: #b388ff;
+  --primary-hover: var(--primary-color-dark);
+  --primary-active: rgba(94, 53, 177, 0.500);
+  --primary-rgb: 79, 70, 229;
+  --secondary-color: #00e5ff; --secondary-color-dark: #008a99; --secondary-color-light: #74f1ff;
+  --secondary-hover: var(--secondary-color-dark);
+  --accent-color: var(--secondary-color);
+
+  --nav-footer-dark: #333941;
+  --nav-footer-light: #9c9c9c;
+
+  --bg-primary: url('/images/containers/gold.png') 3 3 5 3 fill repeat;
+  --bg-secondary: url('/images/containers/blue.png') 3 3 5 3 fill repeat;
+
+  --tab-header-primary: rgba(106, 17, 203, 0.3);
+  --tab-header-accent: rgba(17, 203, 194, 0.3);
+
+  --tab-background: rgba(0, 0, 0, 0.1);
+  --tab-background-dark: rgba(0, 0, 0, 0.3); 
+  --tab-blur: backdrop-filter: blur(10px); 
+
+  /* Brand Colors */
+  --discord-color: #7289DA;
+  --google-color: #4285F4;
+  --minecraft-color: #008000;
+  --twitter-color: #1DA1F2;
+  --twitch-color: #9146FF;
+  --youtube-color: #FF0000;
+
+  /* UI Colors */
+  --bg-dark: #121212;
+  --bg-semi-dark: #272727;
+  --bg-medium: #888888;
+  --bg-semi-light: #e9e9e9;
+  --bg-light: #ffffff;
+
+  --text-light: #ffffff;
+  --text-light-hover: #9c9c9c;
+  --text-medium: #808080;
+  --text-medium-hover: #575757;
+  --text-dark: #000000;
+  --text-dark-hover: #3a3a3a;
+  
+  /* Status Colors */
+  --success: #10b981; --warning: #f59e0b; --error: #ef4444; --info: #3b82f6;
+  --success-dark: #059669; --warning-dark: #b45309; --error-dark: #b91c1c; --info-dark: #1d4ed8;
+  --success-light: #a7f3d0; --warning-light: #fde68a; --error-light: #fecaca; --info-light: #93c5fd;
+  
+  /* Border Styles */
+  --border-color-dark: #3d3d3d;
+  --border-color-light: #9e9e9e;
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+  --border-radius-xl: 16px;
+  --border-width: 1px;
+  --border-width-thick: 2px;
+  --border-see-through: rgba(0, 0, 0, 0.25);
+  
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-xxl: 48px;
+  
+  /* Typography */
+  --font-family: 'MinecraftTen', 'Courier New', monospace, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  --font-MinecraftTen: 'MinecraftTen', 'Courier New', monospace;
+  --font-MinecraftSeven: 'MinecraftSeven', 'Courier New', monospace;
+  --font-MinecraftFive: 'MinecraftFive', 'Courier New', monospace;
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 20px;
+  --font-size-xxl: 24px;
+  --font-size-xxxl: 32px;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  
+  /* Animation */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
+  
+  /* Layout Variables */
+  --nav-height: 80px;
+  --footer-height: 290px;
+  --max-width: 1200px;
+
+  /* Scrollbar Variables */
+  --scrollbar-track: var(--theme-tab-background);
+  --scrollbar-thumb: var(--theme-primary-dark);
+  --scrollbar-thumb-hover: var(--theme-primary-color);
+
+  /* Theme Colors - will be used with theme switching */
+  --theme-primary-color: var(--primary-color);
+  --theme-primary-dark: var(--primary-color-dark);
+  --theme-primary-light: var(--primary-color-light);
+  --theme-primary-active: var(--primary-active);
+  --theme-secondary-color: var(--secondary-color);
+  --theme-secondary-dark: var(--secondary-color-dark);
+  --theme-secondary-light: var(--secondary-color-light);
+
+  --theme-bg-primary: var(--bg-primary);
+  --theme-bg-primary-color: #fbbf3f;
+  --theme-bg-secondary: var(--bg-secondary);
+  --theme-bg-secondary-color: #596ee9;
+
+  --theme-text-primary: var(--text-light);
+  --theme-text-primary-hover: var(--text-light-hover);
+  --theme-text-secondary: var(--text-medium);
+  --theme-text-secondary-hover: var(--text-medium-hover);
+  --theme-text-tertiary: var(--text-dark);
+  --theme-text-tertiary-hover: var(--text-dark-hover);
+  --theme-text-hover: var(--text-light-hover);
+
+  --theme-tab-header: var(--tab-header-primary);
+  --theme-tab-background: var(--tab-background);
+  --theme-nav-footer: var(--nav-footer-dark);
+  --theme-border: var(--border-color-light);
+  --theme-hover: rgba(255,255,255,0.1);
+  --theme-active: rgba(106,17,203,0.4);
+  --theme-card-bg: rgba(30,34,49,0.95);
+  --theme-navbar-bg: rgba(20, 24, 39, 0.95);
+  --theme-input-bg: var(--theme-text-tertiary);
+  --theme-input-text: var(--theme-text-primary);
+  --theme-success-color: var(--success);  
+  --theme-success-color-dark: var(--success-dark);
+  --theme-success-color-light: var(--success-light);
+  --theme-warning-color: var(--warning);
+  --theme-warning-color-dark: var(--warning-dark);
+  --theme-warning-color-light: var(--warning-light);
+  --theme-error-color: var(--error);
+  --theme-error-color-dark: var(--error-dark);
+  --theme-error-color-light: var(--error-light);
+  --theme-info-color: var(--info);
+  --theme-info-color-dark: var(--info-dark);
+  --theme-info-color-light: var(--info-light);
+
+  --theme-nine-slice-standard: url('/images/buttons/button.png') 3 3 5 3 fill repeat;
+  --theme-nine-slice-container-standard: url('/images/buttons/button.png') 3 3 5 3 fill repeat;
+  --theme-nine-slice-standard-hover: url('/images/buttons/button_highlighted.png') 3 3 5 3 fill repeat;
+  --theme-nine-slice-standard-disabled: url('/images/buttons/button_disabled.png') 3 3 5 3 fill repeat;
+
+  --theme-nine-slice-input: url('/images/inputs/text_field.png') 3 3 5 3 fill repeat;
+  --theme-nine-slice-input-hover: url('/images/inputs/text_field_highlighted.png') 3 3 5 3 fill repeat;
+  --theme-nine-slice-input-disabled: url('/images/inputs/text_field_disabled.png') 3 3 5 3 fill repeat;
+} 
+
+/* Light Theme CSS Variables */
+body.light-theme {
+
+  --theme-text-primary: var(--text-dark);
+  --theme-text-primary-hover: var(--text-dark-hover);
+  --theme-text-secondary: var(--text-medium-hover);
+  --theme-text-secondary-hover: var(--text-medium);
+  --theme-text-tertiary: var(--text-light);
+  --theme-text-tertiary-hover: var(--text-light-hover);
+  --theme-text-hover: var(--text-dark-hover);
+
+  --theme-nav-footer: var(--nav-footer-light);
+  --theme-border: var(--border-color-dark);
+  --theme-hover: rgba(124,77,255,0.1);
+  --theme-card-bg: rgba(250, 250, 255, 0.95);
+  --theme-navbar-bg: rgba(250, 250, 255, 0.95);
+  --theme-input-bg: var(--bg-light);
+  --theme-input-text: var(--text-light);
+
+  --theme-nine-slice-standard: url('/images/buttons/light-button.png') 3 3 5 3 fill repeat;
+  --theme-nine-slice-container-standard: url('/images/containers/standard-light.png') 3 3 5 3 fill repeat;
+  --theme-nine-slice-standard-hover: url('/images/buttons/light-button_highlighted.png') 3 3 5 3 fill repeat;
+  --theme-nine-slice-standard-disabled: url('/images/buttons/light-button_disabled.png') 3 3 5 3 fill repeat;
+
+  --theme-nine-slice-input: url('/images/inputs/text_field_light.png') 3 3 5 3 fill repeat;
+  --theme-nine-slice-input-hover: url('/images/inputs/text_field_light_highlighted.png') 3 3 5 3 fill repeat;
+  --theme-nine-slice-input-disabled: url('/images/inputs/text_field_light_disabled.png') 3 3 5 3 fill repeat;
+}
+
+/* Accent Swap Theme - Uses accent colors as primary and primary as accent */
+body.accent-theme {
+  /* Keep current theme's background (works with both light/dark) */
+  --theme-primary-color: var(--secondary-color);
+  --theme-primary-dark: var(--secondary-color-dark);
+  --theme-primary-light: var(--secondary-color-light);
+  --theme-secondary-color: var(--primary-color);
+  --theme-secondary-dark: var(--primary-color-dark);
+  --theme-secondary-light: var(--primary-color-light);
+
+  --theme-bg-primary: var(--bg-secondary);
+  --theme-bg-primary-color: #596ee9;
+  --theme-bg-secondary: var(--bg-primary);
+  --theme-bg-secondary-color: #fbbf3f;
+  --accent-color: var(--secondary-color);
+  --accent-dark: var(--secondary-color-dark);
+  --accent-light: var(--secondary-color-light);
+  --primary-rgb: 0, 229, 255; /* Updated RGB for brand-accent */
+
+  --theme-tab-header: var(--tab-header-accent);
+  
+  /* Update hover effects to match new primary color */
+  --theme-hover: rgba(0, 229, 255, 0.1);
+  --theme-active: rgba(17, 203, 203, 0.4);
+  --fx-hover: rgba(0, 229, 255, 0.1);
+}
+
+/* Override for light theme + accent theme together */
+body.light-theme.accent-theme {
+
+  --theme-hover: rgba(0, 229, 255, 0.1);
+  
+  /* Ensure card backgrounds and other elements match light theme */
+  --theme-card-bg: rgba(250, 250, 255, 0.95);
+  --theme-navbar-bg: rgba(250, 250, 255, 0.95);
+  
+  /* More vibrant borders for better contrast with light theme */
+}

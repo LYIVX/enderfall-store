@@ -1,0 +1,189 @@
+.cartSection {
+  padding: var(--spacing-sm);
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column;
+  gap: var(--spacing-sm) !important;
+  font-family: var(--font-MinecraftSeven);
+}
+
+.sectionHeader {
+  text-align: center;
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+}
+
+.sectionTitle {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--theme-text-primary);
+  margin-bottom: var(--spacing-sm);
+  text-align: center;
+  font-family: var(--font-MinecraftTen);
+}
+
+.cartContainer {
+  display: flex;
+  justify-content: center;
+}
+
+.cartBox {
+  width: 100%;
+  max-width: 360px;
+  height: 100%;
+  transition: transform var(--transition-fast);
+  text-align: center;
+  align-items: center;
+}
+
+.cartBox:hover {
+  transform: translateY(-5px);
+}
+
+.cartIcon {
+  font-size: 2.5rem;
+  display: flex;
+  justify-content: center;
+}
+
+.cartTitle {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--theme-text-primary);
+  width: 100% !important;
+}
+
+.cartDescription {
+  font-size: var(--font-size-sm);
+  color: var(--theme-text-secondary);
+  line-height: 1.5;
+  padding: 0 var(--spacing-sm);
+}
+
+.cartContent, .emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm) !important;
+}
+
+.cartItemsList {
+  list-style: none;
+  display: flex !important;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  width: 100%;
+  padding: var(--spacing-sm);
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: var(--border-radius-md);
+}
+
+.cartItem {
+  display: flex !important;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-sm);
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-sm);
+  transition: transform 0.2s ease;
+}
+
+.cartItem:hover {
+  transform: translateX(2px);
+}
+
+.itemDetails {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  text-align: left;
+}
+
+.itemName {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--theme-text-primary);
+  font-family: var(--font-MinecraftTen);
+}
+
+.itemPrice {
+  font-size: var(--font-size-xs);
+  color: var(--theme-primary-color);
+  font-weight: 600;
+}
+
+.removeButton {
+  background: none;
+  border: none;
+  color: var(--theme-text-primary);
+  font-size: var(--font-size-lg);
+  width: 40px !important;
+  height: 40px !important;
+  cursor: pointer;
+  margin: 0 !important;
+  padding: 0 !important;
+  transition: all var(--transition-fast);
+  border-radius: 50%;
+}
+
+.cartSummary {
+  padding: var(--spacing-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  width: 100%;
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+}
+
+.totalLine {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--theme-text-primary);
+  font-weight: 500;
+}
+
+.totalPrice {
+  font-weight: 700;
+  color: var(--theme-primary-color);
+  font-size: var(--font-size-md);
+  transition: transform 0.3s ease;
+}
+
+.cartBox:hover .totalPrice {
+  transform: scale(1.05);
+}
+.loginPrompt {
+  background-color: var(--theme-warning-background);
+  color: var(--theme-warning-color);
+  padding: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  text-align: center;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+
+.cartActions {
+  display: flex !important;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: var(--spacing-md);
+}
+
+.clearButton, .checkoutButton {
+  flex: 1;
+  transition: all var(--transition-fast) !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.clearButton:hover, .checkoutButton:hover {
+  transform: translateY(-2px);
+} 

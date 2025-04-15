@@ -1,0 +1,25 @@
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--spacing-xl);
+}
+
+.content-wrapper {
+  background-color: var(--theme-bg-primary);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-xl);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.content-wrapper h1 {
+  margin-top: 0;
+  margin-bottom: var(--spacing-lg);
+  color: var(--theme-text-primary);
+}
+
+.content-wrapper p {
+  margin-bottom: var(--spacing-xl);
+  color: var(--theme-text-medium);
+  line-height: 1.6;
+} 

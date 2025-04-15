@@ -1,0 +1,78 @@
+.userSearch {
+  border-radius: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background-color: var(--theme-tab-background);
+  justify-content: center;
+  display: flex;
+  flex-direction: column;
+}
+
+.searchTitle {
+  margin-top: 0;
+  margin-bottom: var(--spacing-sm);
+  font-size: 1.2rem;
+  color: var(--theme-text-primary);
+}
+
+.searchForm {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+  flex-wrap: nowrap;
+  justify-content: space-evenly;
+  flex-direction: row;
+  align-items: center;
+}
+
+.searchInput {
+  flex: 1;
+}
+
+.searchButton {
+  display: flex;
+  align-items: center;
+  flex-direction: row !important;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) !important;
+  margin: 0 !important;
+  transition: all 0.2s;
+}
+
+.searchResults {
+  margin-top: 1rem;
+}
+
+.searching, 
+.noResults {
+  padding: 1rem;
+  text-align: center;
+  color: var(--theme-text-secondary);
+  background-color: var(--theme-tab-background);
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.resultsCount {
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+  color: var(--theme-text-secondary);
+}
+
+.resultsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+@media (max-width: 576px) {
+  .searchForm {
+    flex-direction: column;
+  }
+  
+  .searchButton {
+    width: 100%;
+    justify-content: center;
+  }
+} 

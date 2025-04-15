@@ -1,0 +1,263 @@
+.socialPost {
+  background-color: var(--theme-tab-background);
+  border-radius: var(--spacing-sm);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.postHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  background-color: var(--theme-tab-background);
+  border-radius: var(--spacing-sm);
+  padding: var(--spacing-sm);
+}
+
+.authorInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+}
+
+.authorAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--spacing-sm);
+}
+
+.authorAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.authorDetails {
+  display: flex;
+  flex-direction: column;
+}
+
+.authorName {
+  font-weight: bold;
+  color: var(--theme-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.adminBadge {
+  font-size: 0.6rem;
+  padding: 2px 4px;
+  background-color: var(--theme-error-color);
+  color: var(--theme-text-primary);
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.postTime {
+  font-size: 0.8rem;
+  color: var(--theme-text-secondary);
+}
+
+.postActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.actionButton {
+  padding: 0.4rem;
+  font-weight: 500;
+  padding: var(--spacing-md);
+}
+
+.deleteButton {
+  color: var(--theme-error-color) !important;
+}
+
+.editButton {
+  color: var(--theme-info-color) !important;
+}
+
+.actionButton:hover {
+  color: var(--theme-text-secondary) !important;
+}
+
+.postContent {
+  margin-bottom: 1rem;
+  color: var(--theme-text-primary);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  background-color: var(--theme-tab-background);
+  border-radius: var(--spacing-sm);
+  padding: var(--spacing-md);
+}
+
+.contentText {
+  white-space: pre-wrap;
+}
+
+.imageContainer {
+  margin-top: 1rem;
+  overflow: hidden;
+  max-height: 400px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  background-color: var(--theme-tab-background);
+  transition: box-shadow 0.2s ease;
+  border-radius: var(--spacing-md);
+}
+
+.postImage {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.postFooter {
+  display: flex;
+  justify-content: flex-start;
+  gap: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--theme-border);
+}
+
+.footerButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--theme-text-secondary);
+}
+
+.footerButton:hover, .footerButton.active {
+  color: var(--theme-info-color);
+}
+
+.liked {
+  color: var(--theme-error-color);
+}
+
+.liked:hover {
+  color: var(--theme-error-color);
+}
+
+.commentsSection {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--theme-border);
+}
+
+.commentsList {
+  margin-bottom: 1rem;
+  max-height: 300px;
+  overflow-y: auto;
+  background-color: var(--theme-tab-background);
+  border-radius: var(--spacing-sm);
+  padding: var(--spacing-md);
+}
+
+.noComments {
+  color: var(--theme-text-secondary);
+  font-size: 0.9rem;
+  font-style: italic;
+  text-align: center;
+  padding: 1rem 0;
+}
+
+.comment {
+  padding: 0.75rem;
+  background-color: var(--theme-tab-background);
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+  border-radius: var(--spacing-sm);
+  padding: var(--spacing-md);
+}
+
+.commentHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.commentAuthor {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.commentAvatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.commentAuthorName {
+  font-weight: 500;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.commentAdminBadge {
+  font-size: 0.6rem;
+  padding: 1px 3px;
+  background-color: var(--theme-error-color);
+  color: var(--theme-text-primary);
+  border-radius: 3px;
+  font-weight: bold;
+}
+
+.commentTime {
+  font-size: 0.75rem;
+  color: var(--theme-text-secondary);
+}
+
+.commentContent {
+  font-size: 0.9rem;
+  color: var(--theme-text-primary);
+  line-height: 1.4;
+}
+
+.commentForm {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.commentInput {
+  flex: 1;
+}
+
+.commentSubmit {
+  align-self: flex-end;
+}
+
+@media (max-width: 576px) {
+  .postHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .postActions {
+    align-self: flex-end;
+  }
+  
+  .commentForm {
+    flex-direction: column;
+  }
+  
+  .commentSubmit {
+    align-self: flex-end;
+  }
+} 

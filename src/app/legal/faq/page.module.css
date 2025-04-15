@@ -1,0 +1,155 @@
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+  margin-top: var(--spacing-xl);
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  color: var(--theme-text-primary);
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-sm);
+  padding: var(--spacing-md);
+  text-align: center;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.faqItem {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--background-secondary);
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-sm);
+  padding: var(--spacing-md);
+}
+
+.questionButton {
+  width: 100%;
+  padding: 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.questionButton:hover {
+  background-color: var(--background-hover);
+}
+
+.questionButton span {
+  text-align: left;
+  flex: 1;
+  margin-right: 1rem;
+}
+
+.questionButton svg {
+  color: var(--text-secondary);
+  transition: transform 0.3s ease;
+  font-size: 1rem;
+}
+
+.answer {
+  padding: 0 1.25rem;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: all 0.3s ease-in-out;
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-sm);
+  padding: var(--spacing-md);
+}
+
+.answer p {
+  padding: 1.25rem 0;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.faqItem[data-open="true"] .answer {
+  max-height: 500px;
+  opacity: 1;
+  border-top: 1px solid var(--border-color);
+}
+
+.faqItem[data-open="false"] .answer {
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  opacity: 0;
+}
+
+.faqItem[data-open="true"] .questionButton svg {
+  transform: rotate(180deg);
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.buttonGroup button {
+  gap: 1rem;
+  flex: 1;
+}
+
+@media (max-width: 768px) {
+  .buttonGroup {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+
+.notification {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: var(--theme-primary-color, #4a7dff);
+  color: white;
+  padding: 1rem 1.5rem;
+  border-radius: var(--border-radius-sm, 6px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  animation: slideIn 0.3s ease-out forwards;
+  cursor: pointer;
+}
+
+.notification svg {
+  font-size: 1.25rem;
+}
+
+.notification p {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+} 

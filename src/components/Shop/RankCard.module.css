@@ -1,0 +1,247 @@
+.rankCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-xl);
+  color: var(--theme-text-on-primary);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.05);
+  overflow: visible;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  gap: var(--spacing-sm);
+  font-family: var(--font-MinecraftSeven);
+}
+
+.rankCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Icon overflow styles */
+.iconOverflow {
+  position: absolute !important;
+  top: -25px;
+  right: -25px;
+  width: 70px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 64px !important;
+  background-color: var(--tab-background-dark);
+  border-radius: 50%;
+  z-index: 3;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  border: 3px solid var(--tab-background-dark);
+  overflow: visible;
+  transition: transform 0.3s ease;
+}
+
+.rankCard:hover .iconOverflow {
+  transform: rotate(15deg) scale(1.1);
+}
+
+/* Badge styles */
+.badgeContainer {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  width: 100%;
+  gap: var(--spacing-sm);
+  justify-content: center;
+}
+
+@media (max-width: 415px) {
+}
+
+.exclusiveBadge, .newBadge, .popularBadge {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  width: 100%;
+}
+
+/* Header styles */
+.cardHeader {
+  margin-top: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  background-color: var(--tab-background-dark);
+  padding: var(--spacing-md);
+  border-radius: var(--spacing-sm);
+  gap: var(--spacing-md);
+}
+
+.rankTitle {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  font-family: var(--font-MinecraftTen);
+}
+
+.priceTag {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  background-color: var(--tab-background);
+  padding: var(--spacing-md);
+  border-radius: var(--spacing-sm);
+}
+
+/* Description styles */
+.rankDescription {
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  opacity: 0.9;
+  flex-grow: 0;
+  background-color: var(--tab-background-dark);
+  padding: var(--spacing-md);
+  border-radius: var(--spacing-sm);
+}
+
+/* Perks section styles */
+.perksSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  flex-grow: 1;
+  background-color: var(--tab-background-dark);
+  padding: var(--spacing-md);
+  border-radius: var(--spacing-sm);
+}
+
+.perksTitle {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  margin: var(--spacing-xs);
+}
+
+.perksList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.perkItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+  transition: background-color 0.2s ease;
+}
+
+.perkItem:hover {
+  background-color: var(--tab-background-dark);
+}
+
+.perkIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-md);
+}
+
+.perkName {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+
+.cardFooter {
+  display: flex !important;
+  justify-content: flex-end !important;
+  margin-top: auto !important;
+}
+
+.addToCartButton {
+
+  width: 100%;
+  margin: 0 !important;
+}
+
+/* Quantity controls */
+.quantityControls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: var(--spacing-sm);
+  background-color: var(--tab-background-dark);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-xs);
+}
+
+
+.quantityButton:hover {
+  transform: scale(1.1);
+}
+
+.quantityDisplay {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  background-color: var(--theme-tab-background);
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  min-width: 40px;
+  text-align: center;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .rankCard {
+    padding: var(--spacing-sm);
+  }
+  
+  .rankTitle {
+    font-size: var(--font-size-lg);
+  }
+  
+  .priceTag {
+    font-size: var(--font-size-md);
+  }
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .rankCard {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* Add styles for upgrade title */
+.upgradeTitle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-xs);
+  font-weight: 700;
+  font-size: var(--font-size-lg);
+  width: 100%;
+  text-align: center;
+  color: var(--theme-text-primary);
+}
+
+.fromRank, .toRank {
+  padding: var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 45%;
+}
+
+.upgradeArrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-md);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.5; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+  100% { opacity: 0.5; transform: scale(0.8); }
+} 

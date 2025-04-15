@@ -1,0 +1,516 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  gap: var(--spacing-sm);
+  margin: var(--spacing-sm);
+}
+
+.buttonIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1em;
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Variants */
+.primary {
+  background-color: var(--theme-primary-color);
+  color: var(--theme-text-primary);
+}
+
+.primary:hover:not(:disabled) {
+  background-color: var(--theme-primary-dark);
+  color: var(--theme-text-secondary);
+
+}
+
+.primary:active:not(:disabled), .primary[data-active="true"] {
+  background-color: var(--theme-primary-active);
+  transform: translateY(1px);
+}
+
+.secondary {
+  background-color: var(--theme-secondary-color);
+  color: var(--theme-text-primary);
+}
+
+.secondary:hover:not(:disabled) {
+  background-color: var(--theme-secondary-dark);
+  color: var(--theme-text-secondary);
+}
+
+.secondary:active:not(:disabled), .secondary[data-active="true"] {
+  background-color: var(--theme-secondary-dark);
+  transform: translateY(1px);
+}
+
+.ghost {
+  background-color: transparent;
+  color: var(--theme-text-primary);
+}
+
+.ghost:hover:not(:disabled) {
+  background-color: var(--theme-hover);
+  color: var(--theme-text-secondary);
+}
+
+.ghost:active:not(:disabled), .ghost[data-active="true"] {
+  background-color: var(--theme-active);
+  color: var(--theme-text-light);
+  transform: translateY(1px);
+}
+
+.danger {
+  background-color: var(--theme-error-color);
+  color: var(--theme-text-primary);
+}
+
+.danger:hover:not(:disabled) {
+  background-color: var(--theme-error-color-dark);
+  color: var(--theme-text-secondary);
+}
+
+.danger:active:not(:disabled), .danger[data-active="true"] {
+  background-color: var(--theme-error-color-darker);
+  transform: translateY(1px);
+}
+
+.success {
+  background-color: var(--theme-success-color);
+  color: var(--theme-text-primary);
+}
+
+.success:hover:not(:disabled) {
+  background-color: var(--theme-success-color-dark);
+  color: var(--theme-text-secondary);
+}
+
+.success:active:not(:disabled), .success[data-active="true"] {
+  background-color: var(--theme-success-color-darker);
+  transform: translateY(1px);
+}
+
+.warning {
+  background-color: var(--theme-warning-color);
+  color: var(--theme-text-primary);
+}
+
+.warning:hover:not(:disabled) {
+  background-color: var(--theme-warning-color-dark);
+  color: var(--theme-text-secondary);
+}
+
+.warning:active:not(:disabled), .warning[data-active="true"] {
+  background-color: var(--theme-warning-color-darker);
+  transform: translateY(1px);
+}
+
+.info {
+  background-color: var(--theme-info-color);
+  color: var(--theme-text-primary);
+}
+
+.info:hover:not(:disabled) {
+  background-color: var(--theme-info-color-dark);
+  color: var(--theme-text-secondary);
+}
+
+.info:active:not(:disabled), .info[data-active="true"] {
+  background-color: var(--theme-info-color-darker);
+  transform: translateY(1px);
+}
+
+.edit {
+  color: var(--theme-info-color);
+}
+
+.edit:hover:not(:disabled) {
+  background-color: var(--theme-tab-background);
+  color: var(--theme-text-secondary);
+}
+
+.edit:active:not(:disabled), .info[data-active="true"] {
+  background-color: var(--theme-tab-background);
+  transform: translateY(1px);
+}
+
+.delete {
+  color: var(--theme-error-color);
+}
+
+.delete:hover:not(:disabled) {
+  background-color: var(--theme-tab-background);
+  color: var(--theme-text-secondary);
+}
+
+.delete:active:not(:disabled), .info[data-active="true"] {
+  background-color: var(--theme-tab-background);
+  transform: translateY(1px);
+}
+
+.view {
+  color: var(--theme-primary-color);
+}
+
+.view:hover:not(:disabled) {
+  background-color: var(--theme-tab-background);
+  color: var(--theme-text-secondary);
+}
+
+.view:active:not(:disabled), .info[data-active="true"] {
+  background-color: var(--theme-tab-background);
+  transform: translateY(1px);
+}
+
+.friend {
+  color: var(--theme-success-color);
+}
+
+.friend:hover:not(:disabled) {
+  background-color: var(--theme-tab-background);
+  color: var(--theme-text-secondary);
+}
+
+.friend:active:not(:disabled), .info[data-active="true"] {
+  background-color: var(--theme-tab-background);
+  transform: translateY(1px);
+}
+
+/* Nine Slice Base */
+.nineSliceBase {
+  background-color: transparent;
+  color: var(--theme-text-primary);
+  padding: 0 20px;
+  position: relative;
+  border: none;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 10px;
+  z-index: 1;
+  font-weight: 500;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+  font-family: 'MinecraftSeven', 'Courier New', monospace;
+  letter-spacing: 1px;
+  font-size: 16px;
+  text-transform: none;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: never;
+  font-smooth: never;
+  text-rendering: optimizeSpeed;
+  line-height: 1;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.nineSliceBase::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  border-style: solid;
+  border-width: 8px 8px 10px 8px;
+  border-image: var(--theme-nine-slice-standard);
+  border-image-width: 8px 8px 10px 8px;
+  image-rendering: pixelated;
+  z-index: -1;
+}
+
+.nineSliceBase:hover:not(:disabled)::before {
+  border-image: var(--theme-nine-slice-standard-hover);
+}
+
+.nineSliceBase:disabled::before {
+  border-image: var(--theme-nine-slice-standard-disabled);
+  opacity: 1;
+}
+
+.nineSliceBase:disabled {
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+/* Nine Slice Base Active State */
+.nineSliceBase:active:not(:disabled), .nineSliceBase[data-active="true"] {
+  /* Use the disabled button image but keep the cursor as pointer */
+  transform: translateY(1px); /* Small shift to indicate being pressed */
+}
+
+.nineSliceBase:active:not(:disabled)::before, .nineSliceBase[data-active="true"]::before {
+  border-image: var(--theme-nine-slice-standard-disabled);
+}
+
+/* Nine Slice Variants */
+.nineSlice-primary::before {
+  border-image: url('/images/buttons/primary-button.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-primary:hover:not(:disabled)::before {
+  border-image: url('/images/buttons/primary-button_highlighted.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-primary:disabled::before {
+  border-image: url('/images/buttons/primary-button_disabled.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-secondary::before {
+  border-image: url('/images/buttons/secondary-button.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-secondary:hover:not(:disabled)::before {
+  border-image: url('/images/buttons/secondary-button_highlighted.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-secondary:disabled::before {
+  border-image: url('/images/buttons/secondary-button_disabled.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-ghost::before {
+  border-image: url('/images/buttons/ghost-button.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-ghost:hover:not(:disabled)::before {
+  border-image: url('/images/buttons/ghost-button_highlighted.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-danger::before {
+  border-image: url('/images/buttons/danger-button.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-danger:hover:not(:disabled)::before {
+  border-image: url('/images/buttons/danger-button_highlighted.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-danger:disabled::before {
+  border-image: url('/images/buttons/danger-button_disabled.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-success::before {
+  border-image: url('/images/buttons/success-button.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-success:hover:not(:disabled)::before {
+  border-image: url('/images/buttons/success-button_highlighted.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-success:disabled::before {
+  border-image: url('/images/buttons/success-button_disabled.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-warning::before {
+  border-image: url('/images/buttons/warning-button.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-warning:hover:not(:disabled)::before {
+  border-image: url('/images/buttons/warning-button_highlighted.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-warning:disabled::before {
+  border-image: url('/images/buttons/warning-button_disabled.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-info::before {
+  border-image: url('/images/buttons/info-button.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-info:hover:not(:disabled)::before {
+  border-image: url('/images/buttons/info-button_highlighted.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-info:disabled::before {
+  border-image: url('/images/buttons/info-button_disabled.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-edit::before {
+  border-image: url('/images/buttons/info-button.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-edit:hover:not(:disabled)::before {
+  border-image: url('/images/buttons/info-button_highlighted.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-delete::before {
+  border-image: url('/images/buttons/danger-button.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-delete:hover:not(:disabled)::before {
+  border-image: url('/images/buttons/danger-button_highlighted.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-view::before {
+  border-image: url('/images/buttons/warning-button.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-view:hover:not(:disabled)::before {
+  border-image: url('/images/buttons/warning-button_highlighted.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-friend::before {
+  border-image: url('/images/buttons/success-button.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-friend:hover:not(:disabled)::before {
+  border-image: url('/images/buttons/success-button_highlighted.png') 3 3 5 3 fill repeat;
+}
+
+/* Nine Slice Variant Active States */
+.nineSlice-primary:active:not(:disabled)::before, .nineSlice-primary[data-active="true"]::before {
+  border-image: url('/images/buttons/primary-button_disabled.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-ghost:active:not(:disabled)::before, .nineSlice-ghost[data-active="true"]::before {
+  border-image: url('/images/buttons/ghost-button_disabled.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-secondary:active:not(:disabled)::before, .nineSlice-secondary[data-active="true"]::before {
+  border-image: url('/images/buttons/secondary-button_disabled.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-danger:active:not(:disabled)::before, .nineSlice-danger[data-active="true"]::before {
+  border-image: url('/images/buttons/danger-button_disabled.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-success:active:not(:disabled)::before, .nineSlice-success[data-active="true"]::before {
+  border-image: url('/images/buttons/success-button_disabled.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-warning:active:not(:disabled)::before, .nineSlice-warning[data-active="true"]::before {
+  border-image: url('/images/buttons/warning-button_disabled.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-info:active:not(:disabled)::before, .nineSlice-info[data-active="true"]::before {
+  border-image: url('/images/buttons/info-button_disabled.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-edit:active:not(:disabled)::before, .nineSlice-edit[data-active="true"]::before {
+  border-image: url('/images/buttons/info-button_disabled.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-delete:active:not(:disabled)::before, .nineSlice-delete[data-active="true"]::before {
+  border-image: url('/images/buttons/danger-button_disabled.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-view:active:not(:disabled)::before, .nineSlice-view[data-active="true"]::before {
+  border-image: url('/images/buttons/warning-button_disabled.png') 3 3 5 3 fill repeat;
+}
+
+.nineSlice-friend:active:not(:disabled)::before, .nineSlice-friend[data-active="true"]::before {
+  border-image: url('/images/buttons/success-button_disabled.png') 3 3 5 3 fill repeat;
+}
+
+/* Standard Button (uses default nine-slice textures) */
+.standard {
+  /* Inherits all styles from nineSliceBase, no need to duplicate */
+  composes: nineSliceBase;
+}
+
+.standard::before {
+  /* Only override the border-image to use default button textures */
+  border-image: var(--theme-nine-slice-standard);
+}
+
+.standard:hover:not(:disabled)::before {
+  border-image: var(--theme-nine-slice-standard-hover);
+}
+
+.standard:disabled::before {
+  border-image: var(--theme-nine-slice-standard-disabled);
+}
+
+/* Standard Button Active State */
+.standard:active:not(:disabled)::before, .standard[data-active="true"]::before {
+  border-image: var(--theme-nine-slice-standard-disabled);
+}
+
+/* Sizes */
+.small {
+  height: 30px;
+  padding: 0 var(--spacing-md);
+  font-size: var(--button-font-size-small);
+}
+
+.medium {
+  height: 38px;
+  padding: 0 var(--spacing-lg);
+  font-size: var(--button-font-size-medium);
+}
+
+.large {
+  height: 46px;
+  padding: 0 var(--spacing-xl);
+  font-size: var(--button-font-size-large);
+}
+
+.fullWidth {
+  width: 100%;
+}
+
+/* Adjust icon position for perfect centering */
+.nineSliceBase .buttonIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Size modifications for nine-slice buttons */
+.nineSliceBase.small {
+  height: 30px;
+  padding: 0 var(--spacing-md);
+  font-size: var(--button-font-size-small);
+  padding-top: 3px !important;
+  padding-bottom: 6px !important;
+}
+
+.nineSliceBase.small::before {
+  border-width: 6px 6px 8px 6px; /* Smaller borders for small buttons */
+  border-image-width: 6px 6px 8px 6px;
+}
+
+.nineSliceBase.medium {
+  height: 38px;
+  padding: 0 var(--spacing-lg);
+  font-size: var(--button-font-size-medium);
+  padding-top: 4px !important;
+  padding-bottom: 8px !important;
+}
+
+.nineSliceBase.medium::before {
+  border-width: 7px 7px 9px 7px; /* Medium borders for medium buttons */
+  border-image-width: 7px 7px 9px 7px;
+}
+
+.nineSliceBase.large {
+  height: 46px;
+  padding: 0 var(--spacing-xl);
+  font-size: var(--button-font-size-large);
+  padding-top: 5px !important;
+  padding-bottom: 12px !important;
+}
+
+.nineSliceBase.large::before {
+  border-width: 8px 8px 10px 8px; /* Original borders for large buttons */
+  border-image-width: 8px 8px 10px 8px;
+}

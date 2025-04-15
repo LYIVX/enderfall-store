@@ -1,0 +1,218 @@
+.sliderContainer {
+  width: 100%;
+}
+
+.sliderContainer.vertical {
+  width: 40px;
+  display: flex;
+  flex-direction: column;
+}
+
+.sliderLabel {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-xs);
+  font-size: 0.9rem;
+  color: var(--theme-text-secondary);
+}
+
+.valueDisplay {
+  font-weight: 500;
+  color: var(--theme-text-primary);
+}
+
+.slider {
+  position: relative;
+  width: 100%;
+  height: 24px;
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--theme-text-primary);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  overflow: visible;
+  user-select: none;
+  touch-action: none;
+}
+
+.slider.vertical {
+  width: 24px;
+  height: 100%;
+  margin: 0 auto;
+}
+
+.sliderTrack {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--border-radius-md);
+  background-color: var(--theme-tab-background);
+}
+
+.sliderProgress {
+  position: absolute;
+  height: 100%;
+  left: 0;
+  top: 0;
+  background: linear-gradient(90deg, var(--theme-primary-light) 0%, var(--theme-primary-color) 50%, var(--theme-primary-dark) 100%);
+  border-radius: var(--border-radius-md);
+  opacity: 1;
+  pointer-events: none;
+}
+
+.vertical .sliderProgress {
+  width: 100%;
+  height: auto;
+  top: auto;
+  background: linear-gradient(0deg, var(--theme-primary-light) 0%, var(--theme-primary-color) 50%, var(--theme-primary-dark) 100%);
+}
+
+.sliderProgressMulti {
+  position: absolute;
+  height: 100%;
+  top: 0;
+  background: linear-gradient(90deg, var(--theme-primary-light) 0%, var(--theme-primary-color) 50%, var(--theme-primary-dark) 100%);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.vertical .sliderProgressMulti {
+  width: 100%;
+  height: auto;
+  top: auto;
+  background: linear-gradient(0deg, var(--theme-primary-light) 0%, var(--theme-primary-color) 50%, var(--theme-primary-dark) 100%);
+}
+
+.sliderThumb {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--theme-text-primary);
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.4);
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  cursor: grab;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  background-color: var(--theme-primary-color);
+  touch-action: none;
+}
+
+.vertical .sliderThumb {
+  left: 50%;
+  top: auto;
+  transform: translate(-50%, 50%);
+}
+
+.sliderThumb:hover {
+  transform: translate(-50%, -50%) scale(1.15);
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+}
+
+.vertical .sliderThumb:hover {
+  transform: translate(-50%, 50%) scale(1.15);
+}
+
+.sliderThumb.active {
+  transform: translate(-50%, -50%) scale(1.25);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.6), 0 0 0 2px var(--theme-primary-color);
+  z-index: 3;
+}
+
+.vertical .sliderThumb.active {
+  transform: translate(-50%, 50%) scale(1.25);
+}
+
+.sliderThumb:active {
+  cursor: grabbing;
+  transform: translate(-50%, -50%) scale(1.25);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.6), 0 0 0 2px var(--theme-primary-color);
+  z-index: 3;
+}
+
+.vertical .sliderThumb:active {
+  transform: translate(-50%, 50%) scale(1.25);
+}
+
+/* Add grabbing cursor when dragging anywhere in the component */
+.sliderContainer:active .slider {
+  cursor: grabbing;
+}
+
+.sliderMark {
+  position: absolute;
+  width: 2px;
+  height: 12px;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background-color: var(--theme-text-primary);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.vertical .sliderMark {
+  width: 12px;
+  height: 2px;
+  top: auto;
+  left: 50%;
+  transform: translate(-50%, 0);
+}
+
+.tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--theme-tab-background);
+  color: var(--theme-text-primary);
+  padding: 4px 8px;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.8rem;
+  margin-bottom: 8px;
+  white-space: nowrap;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+}
+
+.vertical .tooltip {
+  bottom: auto;
+  left: auto;
+  right: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-bottom: 0;
+  margin-right: 8px;
+}
+
+.tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 4px;
+  border-style: solid;
+  border-color: var(--theme-tab-background) transparent transparent transparent;
+}
+
+.vertical .tooltip::after {
+  top: 50%;
+  left: 100%;
+  transform: translateY(-50%);
+  border-color: transparent transparent transparent var(--theme-tab-background);
+}
+
+.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.disabled .sliderThumb {
+  cursor: not-allowed;
+}
+
+.disabled .sliderProgress,
+.disabled .sliderProgressMulti {
+  background-color: var(--theme-border);
+} 

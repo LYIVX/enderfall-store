@@ -1,0 +1,17 @@
+/* Add global styles to ensure all avatar containers have visible overflow */
+[class*='avatarContainer'],
+[class*='Avatar'],
+[class*='avatar'],
+.miniAvatar,
+.userAvatar,
+.authorAvatar,
+.profileAvatar,
+.commentAvatar {
+  overflow: visible !important;
+}
+
+.statusIndicator,
+[class*='statusIndicator'] {
+  overflow: visible !important;
+  z-index: 5;
+} 

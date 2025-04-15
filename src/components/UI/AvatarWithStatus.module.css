@@ -1,0 +1,190 @@
+.avatarContainer {
+  position: relative;
+  display: inline-block;
+  overflow: visible;
+}
+
+.avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: contain;
+}
+
+.defaultAvatar {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--theme-primary-color);
+  color: var(--theme-text-primary);
+  border-radius: 50%;
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+/* Status indicator styles */
+.statusIndicator {
+  position: absolute;
+  bottom: -3px;
+  right: -3px;
+  border: 2px solid var(--theme-background);
+  z-index: 5;
+  overflow: visible;
+}
+
+.online {
+  background-color: #4CAF50; /* Green */
+  animation: pulse 2s infinite;
+}
+
+.doNotDisturb {
+  background-color: #F44336; /* Red */
+}
+
+.offline {
+  background-color: #9E9E9E; /* Gray */
+}
+
+/* Status indicator sizes */
+
+.xsmall {
+  width: 16px;
+  height: 16px;
+}
+
+.xsmall .statusIndicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.small {
+  width: 24px;
+  height: 24px;
+}
+
+.small .statusIndicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.medium {
+  width: 32px;
+  height: 32px;
+}
+
+.medium .statusIndicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.large {
+  width: 40px;
+  height: 40px;
+}
+
+.large .statusIndicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.xlarge {
+  width: 48px;
+  height: 48px;
+}
+
+.xlarge .statusIndicator {  
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+}
+
+.xxlarge {
+  width: 56px;
+  height: 56px;
+}
+
+.xxlarge .statusIndicator { 
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+}
+
+.xxxlarge {
+  width: 64px;
+  height: 64px;
+}
+
+.xxxlarge .statusIndicator {  
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+}
+
+.xxxxlarge {
+  width: 72px;
+  height: 72px;
+}
+
+.xxxxlarge .statusIndicator { 
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+}
+
+.xxxxxlarge {
+  width: 80px;
+  height: 80px;
+}
+
+.xxxxxlarge .statusIndicator {  
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+}
+
+
+
+
+
+/* Default avatar sizing */
+.small .defaultAvatar {
+  font-size: 0.7rem;
+}
+
+.medium .defaultAvatar {
+  font-size: 1rem;
+}
+
+.large .defaultAvatar {
+  font-size: 1.5rem;
+}
+
+/* DND line */
+.doNotDisturbLine {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 70%;
+  height: 2px;
+  background-color: var(--theme-background);
+}
+
+/* Pulse animation for online status */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 1);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(76, 175, 80, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+  }
+} 

@@ -1,0 +1,542 @@
+.navbar {
+  background: transparent;
+  padding: var(--spacing-md) 0;
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 100;
+  height: var(--nav-height);
+  z-index: 9999;
+  font-family: 'MinecraftSeven', 'Courier New', monospace;
+}
+
+.navbarNineSlice {
+  background-color: var(--theme-nav-footer);
+  padding: var(--spacing-md) 0;
+  position: fixed;
+  top: -16px;
+  width: 100%;
+  z-index: 100;
+  height: var(--nav-height);
+  z-index: 9999;
+  font-family: 'MinecraftSeven', 'Courier New', monospace;
+}
+
+.navbarContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.logoContainer {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.title {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--theme-text-primary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-family: 'MinecraftTen', 'Courier New', monospace;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+.title:hover {
+  color: var(--theme-primary-color);
+}
+
+.logoImage {
+  display: block;
+  margin-top: 3.4rem;
+  width: 150px;
+  height: 150px;
+  z-index: 9999999 !important;
+}
+
+.navMenu {
+  display: flex;
+  align-items: center;
+  background-color: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  position: relative;
+  height: 60px;
+  width: auto;
+  justify-self: center;
+}
+
+.navMenu > div {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(2px);
+}
+
+.navDivider {
+  height: 38px;
+  width: 3px;
+  background-color: var(--theme-primary-color);
+}
+
+.navLinks {
+  display: flex;
+  list-style: none;
+  gap: var(--spacing-sm);
+  font-family: 'MinecraftSeven', 'Courier New', monospace;
+}
+
+.navLinks li button {
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-sm);
+  margin: 0 !important;
+}
+
+.authButtons {
+  display: flex;
+  align-items: center;
+}
+
+.userSection {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  position: relative;
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-radius: var(--border-radius-sm);
+  padding-right: var(--spacing-sm);
+  padding-left: var(--spacing-sm);
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-sm);
+}
+
+.dropdownArrow {
+  font-size: 12px;
+  margin-left: var(--spacing-xs);
+  color: var(--theme-text-primary);
+  transition: transform 0.3s ease;
+  transform: translateY(2px);
+}
+
+.userSection[data-open="true"] .dropdownArrow {
+  transform:  translateY(1px) scaleY(-1);
+}
+
+.dropdown {
+  position: absolute;
+  top: 120%;
+  right: 0;
+  width: 220px;
+  background-color: transparent;
+  border-radius: var(--border-radius-sm);
+  z-index: 1000;
+  overflow: visible;
+  margin-top: var(--spacing-xs);
+  padding-top: 4px;
+  padding-bottom: 8px;
+  padding-right: 5px;
+  padding-left: 5px;
+  font-family: 'MinecraftSeven', 'Courier New', monospace;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+}
+
+.dropdown::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  border-style: solid;
+  border-width: 8px 8px 10px 8px;
+  border-image: var(--theme-nine-slice-standard);
+  border-image-width: 8px 8px 10px 8px;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  z-index: -1;
+}
+
+.dropdownItem {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: var(--spacing-sm) var(--spacing-md);
+  color: var(--theme-text-primary);
+  background: none;
+  border: none;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  text-decoration: none;
+  position: relative;
+  z-index: 2;
+  font-family: 'MinecraftSeven', 'Courier New', monospace;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+}
+
+.dropdownItem:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--theme-text-hover);
+}
+
+.username {
+  font-size: var(--button-font-size-medium);
+  color: var(--theme-text-primary);
+  overflow: visible;
+  white-space: normal;
+  font-family: 'MinecraftSeven', 'Courier New', monospace;
+}
+
+.avatarContainer {
+  display: block;
+  width: 32px;
+  height: 32px;
+  overflow: hidden;
+  border-radius: var(--border-radius-sm);
+}
+
+.avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  background-color: var(--theme-primary-color);
+  color: white;
+}
+
+.loginButton {
+  background-color: var(--theme-primary-color);
+  color: var(--theme-text-primary);
+  padding: var(--spacing-xs) var(--spacing-lg);
+  border-radius: var(--border-radius-sm);
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+  border: none;
+}
+
+.loginButton:hover {
+  background-color: var(--theme-secondary-color);
+}
+
+.menuButton {
+  display: none;
+}
+
+.hamburgerIcon {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 30px;
+  height: 21px;
+  background-color: transparent;
+}
+
+.hamburgerIcon span {
+  width: 100%;
+  height: 3px;
+  background-color: var(--theme-text-primary);
+  border-radius: 10px;
+  margin: 2px 0;
+}
+
+/* Modal */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal {
+  background-color: var(--theme-primary-color);
+  border-radius: var(--border-radius-md);
+  width: 100%;
+  max-width: 400px;
+  overflow: hidden;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--theme-border);
+}
+
+.modalHeader h3 {
+  font-size: var(--font-size-lg);
+  color: var(--theme-text-primary);
+  font-weight: 600;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  color: var(--theme-text-secondary);
+  font-size: 24px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.closeButton:hover {
+  color: var(--theme-text-primary);
+}
+
+.modalContent {
+  padding: var(--spacing-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.discordButton, .googleButton {
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-sm);
+  font-weight: 500;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: filter 0.2s ease;
+  border: none;
+}
+
+.discordButton {
+  background-color: #5865F2;
+  color: white;
+}
+
+.googleButton {
+  background-color: #4285F4;
+  color: white;
+}
+
+.discordButton:hover, .googleButton:hover {
+  filter: brightness(1.1);
+}
+
+
+.statusSwitcherContainer {
+  padding: var(--spacing-sm);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  width: 100%;
+  background-color: transparent;
+  position: relative;
+  z-index: 2;
+}
+
+.statusSwitcher {
+  width: 100%;
+}
+
+.navbarAvatar {
+  position: relative;
+  top: 1px;
+  margin-right: 0;
+}
+
+.userInfoContent {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding-right: var(--spacing-sm);
+  padding-left: var(--spacing-sm);
+}
+
+@media (min-width: 1201px) {
+  .userInfoButton {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: var(--font-size-sm) !important;
+  }
+
+  .navDivider {
+    margin-left: var(--spacing-sm);
+    margin-right: var(--spacing-sm);
+  }
+
+  .menuButton {
+    display: none !important;
+  }
+}
+
+/* Mobile styles */
+@media (max-width: 1200px) {
+  .navbarContainer {
+    justify-content: space-between;
+  }
+
+  .logoContainer {
+    position: relative;
+    left: -20px !important;
+    gap: 0 !important;
+  }
+
+  .menuButton {
+    display: flex !important;
+    position: absolute;
+    right: 10px;
+    z-index: 1001;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 21px;
+    height: 21px;
+    background-color: transparent;
+    cursor: pointer;
+  }
+  
+  .menuButton span {
+    width: 100%;
+    height: 3px;
+    background-color: var(--theme-text-primary);
+    border-radius: 10px;
+    margin: 2px 0;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  .themeToggleContainer {
+    width: 100%;
+  }
+
+  .navMenu {
+    position: fixed !important;
+    top: 80px !important;
+    right: -300px !important;
+    width: 200px !important;
+    height: auto !important;
+    transition: right 0.3s ease !important;
+    z-index: 1000 !important;
+    box-sizing: border-box !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: 0 0 0 8px !important;
+  }
+
+  .navMenu.active {
+    right: 0 !important;
+  }
+
+  .navMenu > div {
+    flex-direction: column !important;
+    padding: var(--spacing-md) !important;
+    height: 100% !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+  }
+
+  .navLinks {
+    flex-direction: column;
+    width: 100%;
+    align-items: stretch;
+    gap: var(--spacing-sm);
+  }
+
+  .navLinks li {
+    width: 100%;
+  }
+
+  .navLinks button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .authButtons {
+    width: 100%;
+    flex-direction: column;
+    padding: 0;
+    align-items: stretch;
+    gap: var(--spacing-md);
+  }
+
+  .userSection {
+    width: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .userInfo {
+    justify-content: center;
+    width: 100%;
+    padding: var(--spacing-sm);
+  }
+
+  .userInfoButton {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+  
+  .userInfoContent {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding-right: var(--spacing-sm);
+    padding-left: var(--spacing-sm);
+  }
+  
+  .dropdown {
+    position: relative;
+    width: 100%;
+    margin-top: 0;
+    box-shadow: none;
+    background-color: var(--theme-tab-background);
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .dropdownItem {
+    text-align: center;
+    padding: var(--spacing-md);
+  }
+
+  .username {
+    font-size: var(--font-size-md);
+  }
+
+  .avatarContainer {
+    width: 40px;
+    height: 40px;
+  }
+
+  .loginButton {
+    width: 100%;
+    text-align: center;
+    padding: var(--spacing-md);
+  }
+
+  .loginButton:hover {
+    background-color: var(--theme-primary-dark);
+  }
+
+  .navDivider {
+    height: 3px;
+    width: 100%;
+    margin-top: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+  }
+}

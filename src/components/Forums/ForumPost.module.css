@@ -1,0 +1,307 @@
+.postLink {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.forumPost {
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-lg);
+  border-left: 4px solid var(--theme-secondary-color);
+  margin-bottom: var(--spacing-md);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+}
+
+.postContent p {
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+  color: var(--theme-text-secondary);
+}
+
+.forumPost:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.postMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+  font-size: var(--font-size-sm);
+}
+
+.category {
+  background-color: var(--theme-primary-color);
+  color: var(--theme-text-primary);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  font-weight: 500;
+}
+
+.date {
+  color: var(--theme-text-secondary);
+}
+
+.postTitle {
+  font-size: var(--font-size-lg);
+  color: var(--theme-text-primary);
+  margin-bottom: var(--spacing-md);
+  font-weight: 600;
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+}
+
+.pinnedIndicator {
+  color: var(--theme-warning-color);
+  margin-right: var(--spacing-xs);
+}
+
+.postPreview, .contentText {
+  color: var(--theme-text-secondary);
+  font-size: var(--font-size-md);
+  margin-bottom: var(--spacing-lg);
+  line-height: 1.5;
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+}
+
+.postSummary {
+  color: var(--theme-text-secondary);
+  font-size: var(--font-size-md);
+  margin-bottom: var(--spacing-lg);
+  line-height: 1.5;
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+}
+
+.summaryText {
+  color: var(--theme-text-secondary);
+  font-size: var(--font-size-md);
+  line-height: 1.5;
+}
+
+.postFooter {
+  border-top: var(--border-width) solid var(--theme-tab-background);
+  padding-top: var(--spacing-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.authorSkeleton {
+  height: 24px;
+  width: 120px;
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-sm);
+  animation: pulse 1.5s infinite;
+  background-color: var(--theme-tab-background);
+}
+
+.authorInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+}
+
+.authorAvatar {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+  object-fit: contain;
+}
+
+.authorAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.authorName {
+  color: var(--theme-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+
+.adminBadge {
+  display: inline-block;
+  background: var(--theme-error-color);
+  color: var(--theme-text-primary);
+  padding: 2px 6px;
+  margin-left: var(--spacing-xs);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-2xs);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.likesCount {
+  font-size: var(--font-size-sm);
+  color: var(--theme-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 0.6;
+  }
+}
+
+.blogCategory {
+  background-color: var(--theme-primary-color);
+  color: white;
+}
+
+.thumbnailContainer {
+  width: 100%;
+  max-height: 200px;
+  overflow: hidden;
+  border-radius: var(--border-radius-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.thumbnail {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+/* New styles for the enhanced ForumPost component */
+.postActions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+
+.authorActions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.authorActions button {
+  padding: var(--spacing-md);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  border-radius: var(--border-radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.likeButton {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  background: none;
+  border: none;
+  color: var(--theme-text-secondary) !important;
+  cursor: pointer;
+  font-size: var(--font-size-md);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.likeButton:hover {
+  color: var(--theme-error-color) !important;
+  background-color: var(--theme-hover);
+}
+
+.likeButton.liked {
+  color: var(--theme-error-color) !important;
+}
+
+.likeButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.editButton {
+  color: var(--theme-info-color) !important;
+}
+
+.editButton:hover {
+  color: var(--theme-text-secondary) !important;
+}
+
+.deleteButton {
+  color: var(--theme-error-color) !important;
+}
+
+.deleteButton:hover {
+  color: var(--theme-text-secondary) !important;
+}
+
+.readMoreButton {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  background: none;
+  border: none;
+  color: var(--theme-primary-color) !important;
+  cursor: pointer;
+  font-size: var(--font-size-md);
+  transition: all var(--transition-fast);
+}
+
+.readMoreButton:hover {
+  color: var(--theme-primary-color-dark) !important;
+  transform: translateX(2px);
+}
+
+/* Markdown content styles */
+.markdownContent {
+  color: var(--theme-text-primary);
+  line-height: 1.6;
+}
+
+.markdownContent h1,
+.markdownContent h2,
+.markdownContent h3,
+.markdownContent h4,
+.markdownContent h5,
+.markdownContent h6 {
+  margin-top: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+  color: var(--theme-text-primary);
+}
+
+.markdownContent p {
+  margin-bottom: var(--spacing-md);
+}
+
+.markdownContent a {
+  color: var(--theme-link-color);
+  text-decoration: underline;
+}
+
+.markdownContent ul, 
+.markdownContent ol {
+  margin-bottom: var(--spacing-md);
+  margin-left: var(--spacing-md);
+}
+
+.markdownContent blockquote {
+  border-left: 4px solid var(--theme-secondary-color);
+  padding-left: var(--spacing-md);
+  color: var(--theme-text-secondary);
+  font-style: italic;
+  margin: var(--spacing-md) 0;
+} 

@@ -1,0 +1,92 @@
+.staffSection {
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-xl);
+  align-items: center;
+  text-align: center;
+  font-family: var(--font-MinecraftSeven);
+  display: flex !important;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.sectionHeader {
+  text-align: center;
+  margin-bottom: var(--spacing-xl);
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-xl);
+  width: 100%;
+}
+
+.sectionTitle {
+  font-size: var(--font-size-xxl);
+  font-weight: 700;
+  color: var(--theme-text-primary);
+  margin-bottom: var(--spacing-sm);
+  font-family: var(--font-MinecraftTen);
+}
+
+.sectionDescription {
+  font-size: var(--font-size-md);
+  color: var(--theme-text-secondary);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.staffGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-sm);
+}
+
+.staffCard {
+  gap: var(--spacing-md);
+  transition: transform var(--transition-fast);
+}
+
+.staffCard:hover {
+  transform: translateY(-3px);
+}
+
+.staffImageContainer {
+  flex-shrink: 0;
+}
+
+.staffImage {
+  border-radius: var(--border-radius-md);
+  width: 20%;
+  height: 20%;
+  padding: 10px;
+}
+
+.staffInfo {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.staffName {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--theme-text-primary);
+  margin-bottom: var(--spacing-xs);
+  font-family: var(--font-MinecraftTen);
+}
+
+.staffRole {
+  font-size: var(--font-size-sm);
+  color: var(--theme-secondary-color);
+  margin-bottom: var(--spacing-sm);
+}
+
+.staffDescription {
+  font-size: var(--font-size-sm);
+  color: var(--theme-text-secondary);
+  line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .staffGrid {
+    grid-template-columns: 1fr;
+  }
+} 

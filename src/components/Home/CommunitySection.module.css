@@ -1,0 +1,124 @@
+.communitySection {
+  padding: var(--spacing-xl);
+  border-radius: var(--border-radius-lg);
+  text-align: center;
+  display: flex !important;
+  flex-direction: column ;
+  gap: var(--spacing-sm);
+  font-family: var(--font-MinecraftSeven);
+}
+
+.sectionContent {
+  display: flex !important;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.sectionHeader {
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+  font-family: var(--font-MinecraftTen);
+}
+
+.sectionTitle {
+  font-size: var(--font-size-xxl);
+  font-weight: 700;
+  color: var(--theme-text-primary);
+  margin-bottom: var(--spacing-md);
+}
+
+.sectionDescription {
+  font-size: var(--font-size-md);
+  color: var(--theme-text-secondary);
+  line-height: 1.6;
+}
+
+.socialLinks {
+  display: flex !important;
+  justify-content: space-between;
+  gap: var(--spacing-lg);
+}
+
+.socialLink {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.socialButton {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  transition: transform var(--transition-fast);
+  width: 100%  !important;
+  height: 100px !important;
+  margin: 0 !important;
+}
+
+.socialButton:hover {
+  transform: translateY(-5px);
+}
+
+.socialIcon {
+  font-size: 2rem;
+}
+
+.socialText {
+  font-weight: 600;
+}
+
+.serverInfo {
+  display: flex !important;
+  flex-direction: row;
+  justify-content: space-evenly;
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+  gap: var(--spacing-md);
+}
+
+.serverAddress {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+}
+
+.serverVersion {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+}
+
+.serverLabel {
+  color: var(--theme-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.serverValue {
+  color: var(--theme-text-primary);
+  font-weight: 600;
+  font-size: var(--font-size-md);
+}
+
+@media (max-width: 768px) {
+  .socialLinks {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+  
+  .serverAddress {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+  
+  .serverVersion {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+} 

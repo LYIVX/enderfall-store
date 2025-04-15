@@ -1,0 +1,333 @@
+.settingsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-lg);
+}
+
+.settingsIcon {
+  font-size: var(--font-size-xl);
+  color: var(--theme-primary-color);
+}
+
+.settingsTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--theme-text-primary);
+}
+
+.settingsContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.settingsGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.groupTitle {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--theme-text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.settingOption {
+  margin-bottom: var(--spacing-sm);
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  color: var(--theme-text-secondary);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.checkbox {
+  accent-color: var(--theme-primary-color);
+}
+
+.accountAction {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md);
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-sm);
+  margin-bottom: var(--spacing-sm);
+}
+
+.actionInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.actionIcon {
+  font-size: var(--font-size-xl);
+  color: var(--theme-text-secondary);
+}
+
+.actionTitle {
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  color: var(--theme-text-primary);
+}
+
+.actionDescription {
+  font-size: var(--font-size-sm);
+  color: var(--theme-text-secondary);
+}
+
+.dangerZone {
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--theme-border);
+}
+
+.dangerTitle {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--theme-error-color);
+  margin-bottom: var(--spacing-md);
+}
+
+.settingsButtons {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--spacing-md);
+}
+
+/* Modal Styles */
+.modalContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+}
+
+.modalButtons {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+}
+
+.error {
+  color: var(--theme-error-color);
+  background-color: var(--error-bg);
+  padding: var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-sm);
+}
+
+.success {
+  color: var(--theme-success-color);
+  background-color: var(--success-bg);
+  padding: var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-sm);
+}
+
+.passwordContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.passwordToggle {
+  position: absolute;
+  right: var(--spacing-md);
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--theme-text-primary);
+  cursor: pointer;
+  font-size: var(--font-size-md);
+  padding: var(--spacing-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.passwordToggle:hover {
+  color: var(--theme-text-primary-hover);
+}
+
+.passwordStrength {
+  background-color: var(--theme-tab-background);
+  margin-top: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--theme-text-primary);
+  padding: var(--spacing-xs);
+  border-radius: var(--border-radius-sm);
+}
+
+.passwordStrengthMeter {
+  height: 4px;
+  background-color: var(--theme-tab-background);
+  border-radius: 2px;
+  margin-top: var(--spacing-xs);
+  overflow: hidden;
+}
+
+.passwordStrengthIndicator {
+  height: 100%;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.weak { 
+  background-color: var(--theme-error-color);
+  width: 25%;
+}
+
+.fair { 
+  background-color: var(--theme-warning-color);
+  width: 50%;
+}
+
+.good { 
+  background-color: var(--theme-success-color);
+  width: 75%;
+}
+
+.strong { 
+  background-color: var(--theme-success-color);
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .accountAction {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+  }
+  
+  .modalButtons {
+    flex-direction: column;
+  }
+  
+  .modalButtons button {
+    width: 100%;
+  }
+}
+
+.avatarSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md);
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+}
+
+.avatarPreview, .actionIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--border-radius-md);
+  background-color: var(--theme-tab-background);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--theme-text-secondary);
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.avatarPreview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.avatarPreview svg {
+  opacity: 0.6;
+}
+
+.avatarUpload {
+  position: relative;
+}
+
+.uploadInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.uploadButton svg {
+  margin-right: var(--spacing-xs);
+}
+
+.confirmButtons {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.statusMessage {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  border-radius: var(--border-radius-sm);
+  background-color: var(--theme-tab-background);
+}
+
+.statusMessage svg {
+  font-size: 1rem;
+}
+
+.previousAvatars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+
+}
+
+.previousAvatarItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+  width: 80px;
+  background-color: var(--theme-tab-background);
+  padding: var(--spacing-sm);
+  border-radius: var(--border-radius-md);
+}
+
+.previousAvatarImage {
+  width: 60px;
+  height: 60px;
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+  background-color: var(--theme-tab-background);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.previousAvatarImage img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.previousAvatarActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+} 

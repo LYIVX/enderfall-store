@@ -1,0 +1,135 @@
+.container {
+  padding: var(--spacing-lg);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.title {
+  font-size: var(--font-size-xxl);
+  margin-bottom: var(--spacing-lg);
+  color: var(--theme-text-primary);
+  text-align: center;
+}
+
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+/* Stats Section */
+.statsContainer {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+}
+
+.statCard {
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.statCard:hover {
+  transform: translateY(-5px);
+}
+
+.statValue {
+  font-size: var(--font-size-xxl);
+  font-weight: bold;
+  color: var(--theme-primary-color);
+  margin-bottom: var(--spacing-xs);
+}
+
+.statLabel {
+  font-size: var(--font-size-sm);
+  color: var(--theme-text-secondary);
+}
+
+/* Table Section */
+.tableContainer {
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-md);
+  overflow-x: auto;
+}
+
+.statusTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.statusTable th,
+.statusTable td {
+  padding: var(--spacing-md);
+  text-align: left;
+  border-bottom: 1px solid var(--theme-border-color);
+}
+
+.statusTable th {
+  font-weight: bold;
+  color: var(--theme-text-secondary);
+  background-color: var(--theme-background);
+}
+
+.statusTable tr:hover {
+  background-color: var(--theme-background);
+}
+
+.userCell {
+  min-width: 200px;
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.username {
+  font-weight: 500;
+  color: var(--theme-text-primary);
+}
+
+/* Status Badges */
+.statusBadge {
+  display: inline-block;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.online {
+  background-color: rgba(76, 175, 80, 0.2);
+  color: #4CAF50;
+}
+
+.offline {
+  background-color: rgba(158, 158, 158, 0.2);
+  color: #9E9E9E;
+}
+
+.do_not_disturb {
+  background-color: rgba(244, 67, 54, 0.2);
+  color: #F44336;
+}
+
+/* Countdown Timer */
+.countdown {
+  font-family: monospace;
+  font-size: var(--font-size-md);
+  color: var(--theme-text-primary);
+  background-color: var(--theme-background);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  display: inline-block;
+  min-width: 60px;
+  text-align: center;
+} 

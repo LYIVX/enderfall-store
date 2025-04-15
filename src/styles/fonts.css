@@ -1,0 +1,100 @@
+@font-face {
+  font-family: 'MinecraftFive';
+  src: url('/fonts/MinecraftFive-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'MinecraftFive';
+  src: url('/fonts/MinecraftFive-Bold.ttf') format('truetype');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Minecraft Seven */
+@font-face {
+  font-family: 'MinecraftSeven';
+  src: url('/fonts/MinecraftSeven.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'MinecraftSevenV2';
+  src: url('/fonts/Minecraft-Seven_v2.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Minecraft Ten */
+@font-face {
+  font-family: 'MinecraftTen';
+  src: url('/fonts/MinecraftTen.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'MinecraftTenV2';
+  src: url('/fonts/Minecraft-Tenv2.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Helper classes for easy font application */
+.minecraft-five {
+  font-family: 'MinecraftFive', 'Courier New', monospace;
+  letter-spacing: 1px;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: grayscale;
+  font-smooth: never;
+  text-rendering: geometricPrecision;
+}
+
+.minecraft-seven {
+  font-family: 'MinecraftSeven', 'Courier New', monospace;
+  letter-spacing: 1px;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: grayscale;
+  font-smooth: never;
+  text-rendering: geometricPrecision;
+}
+
+.minecraft-ten {
+  font-family: 'MinecraftTen', 'Courier New', monospace;
+  letter-spacing: 1px;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: grayscale;
+  font-smooth: never;
+  text-rendering: geometricPrecision;
+}
+
+/* Legacy class for backwards compatibility */
+.minecraft-font {
+  font-family: 'MinecraftFive', 'Courier New', monospace;
+  letter-spacing: 1px;
+  text-transform: none;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: grayscale;
+  font-smooth: never;
+  text-rendering: geometricPrecision;
+} 

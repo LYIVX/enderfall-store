@@ -1,0 +1,79 @@
+.featuresSection {
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-xl);
+  font-family: var(--font-MinecraftSeven);
+  display: flex !important;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.sectionHeader {
+  text-align: center;
+  margin-bottom: var(--spacing-xl);
+  background-color: var(--theme-tab-background);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-xl);
+}
+
+.sectionTitle {
+  font-size: var(--font-size-xxl);
+  font-weight: 700;
+  color: var(--theme-text-primary);
+  margin-bottom: var(--spacing-sm);
+  text-align: center;
+  font-family: var(--font-MinecraftTen);
+}
+
+.sectionDescription {
+  font-size: var(--font-size-md);
+  color: var(--theme-text-secondary);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.featuresGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-sm);
+}
+
+.featureBox {
+  height: 100%;
+  transition: transform var(--transition-fast);
+  text-align: center;
+  align-items: center;
+}
+
+.featureBox:hover {
+  transform: translateY(-5px);
+}
+
+.featureIcon {
+  font-size: 2.5rem;
+  margin-bottom: var(--spacing-md);
+}
+
+.featureTitle {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--theme-text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.featureDescription {
+  font-size: var(--font-size-sm);
+  color: var(--theme-text-secondary);
+  line-height: 1.5;
+}
+
+@media (max-width: 1024px) {
+  .featuresGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .featuresGrid {
+    grid-template-columns: 1fr;
+  }
+} 

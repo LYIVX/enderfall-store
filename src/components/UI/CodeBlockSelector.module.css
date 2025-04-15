@@ -1,0 +1,102 @@
+.codeBlockSelectorContainer {
+  position: fixed;
+  z-index: 1100; /* Higher than the modal z-index */
+  background: linear-gradient(135deg, var(--theme-bg-primary) 0%, var(--theme-bg-secondary) 100%);
+  border-radius: var(--border-radius-sm);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  padding: var(--spacing-md);
+  width: 280px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.codeBlockSelectorHeader {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--theme-text-primary);
+  margin-bottom: var(--spacing-sm);
+  text-align: center;
+  border-radius: var(--border-radius-sm);
+  padding: var(--spacing-xs);
+  background-color: var(--theme-tab-background);
+}
+
+.quickSelectContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-sm);
+}
+
+.quickSelectButton {
+  padding: var(--spacing-xs) var(--spacing-sm) !important;
+  min-width: auto !important;
+  font-size: var(--font-size-xs) !important;
+}
+
+.searchContainer {
+  margin-bottom: var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
+  padding: var(--spacing-xs);
+  background-color: var(--theme-tab-background);
+  padding-left: var(--spacing-sm);
+}
+
+.searchInput {
+    width: 100%;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--theme-primary-color);
+}
+
+.languageList {
+  max-height: 200px;
+  overflow-y: auto;
+  border-radius: var(--border-radius-sm);
+  background-color: var(--theme-tab-background);
+  margin-bottom: var(--spacing-sm);
+}
+
+.languageItem {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  color: var(--theme-text-primary);
+  transition: background-color 0.2s ease;
+}
+
+.languageItem.popular {
+  font-weight: 500;
+  background-color: rgba(var(--theme-primary-rgb), 0.1);
+}
+
+.languageItem:hover {
+  background-color: var(--theme-secondary-light);
+}
+
+.languageItem:not(:last-child) {
+  border-bottom: 1px solid var(--theme-border);
+}
+
+.noResults {
+  padding: var(--spacing-md);
+  text-align: center;
+  color: var(--theme-text-primary);
+  font-style: italic;
+  font-size: var(--font-size-sm);
+}
+
+.codeBlockSelectorFooter {
+  display: flex;
+  justify-content: center;
+}
+
+@media (max-width: 768px) {
+  .codeBlockSelectorContainer {
+    width: 90%;
+    max-width: 240px;
+  }
+} 

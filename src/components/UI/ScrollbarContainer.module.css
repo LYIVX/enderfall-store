@@ -1,0 +1,60 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: visible;
+  padding: 4px;
+  border-style: solid;
+  border-width: 8px 8px 10px 8px;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: never;
+  font-smooth: never;
+  text-rendering: optimizeSpeed;
+}
+
+/* Vertical background (default scrollbar track) */
+.background {
+  border-image: url('/images/scrollbars/background.png') 3 3 5 3 fill repeat;
+  border-image-width: 8px 8px 10px 8px;
+}
+
+/* Vertical handle */
+.handle {
+  border-image: url('/images/scrollbars/handle.png') 3 3 5 3 fill repeat;
+  border-image-width: 8px 8px 10px 8px;
+}
+
+/* Horizontal background (scrollbar track) */
+.horizontal-background {
+  border-image: url('/images/scrollbars/horizontal_background.png') 3 3 5 3 fill repeat;
+  border-image-width: 8px 8px 10px 8px;
+}
+
+/* Horizontal handle */
+.horizontal-handle {
+  border-image: url('/images/scrollbars/horizontal_handle.png') 3 3 5 3 fill repeat;
+  border-image-width: 8px 8px 10px 8px;
+}
+
+/* Sizes */
+.small {
+  min-height: 24px;
+}
+
+.medium {
+  min-height: 32px;
+}
+
+.large {
+  min-height: 40px;
+}
+
+/* Full width option */
+.fullWidth {
+  width: 100%;
+} 

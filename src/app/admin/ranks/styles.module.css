@@ -1,0 +1,87 @@
+/* Add these classes for the rank draggable lists */
+.ranksListContainer {
+  width: 100%;
+  margin-top: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.ranksCategoryList {
+  margin-bottom: 1.5rem;
+}
+
+.ranksCategoryList h3 {
+  font-size: 1.2rem;
+  margin-bottom: 0.75rem;
+  color: var(--theme-primary-color);
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.sectionSubtitle {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.noContent {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-secondary);
+  font-style: italic;
+  background-color: var(--background-secondary);
+  border-radius: 0.5rem;
+}
+
+.categoriesList {
+  margin-top: 1rem;
+}
+
+.featuredRanksList {
+  height: 100%;
+  min-height: 400px;
+}
+
+.featuredRanksManager {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.categoryListHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.headerActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.managerBox {
+  padding: 1rem;
+  background-color: var(--background-secondary);
+  border-radius: 0.5rem;
+  flex: 1;
+}
+
+.featuredRanksManager1 {
+  min-height: 600px;
+  display: flex;
+  flex-direction: column;
+}
+
+.actionsPanel {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+} 

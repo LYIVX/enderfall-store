@@ -1,0 +1,36 @@
+.themeToggle {
+  background: none;
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-lg);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  background-color: var(--theme-tab-background);
+  width: 38px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+
+}
+
+.themeToggle svg {
+  padding-top: 4px !important;
+  padding-bottom: 2px !important;
+  height: 30px;
+  width: 30px;
+}
+
+.sunIcon {
+  color: var(--theme-warning-color);
+}
+
+.moonIcon {
+  color: var(--theme-primary-color);
+} 
+
+@media (max-width: 1200px) {
+  .themeToggle {
+    width: 100% !important;
+  }    
+}

@@ -1,0 +1,111 @@
+.friendItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background-color: var(--theme-tab-background);
+  border-radius: var(--spacing-sm);
+  padding: var(--spacing-md);
+  margin-bottom: 0.5rem;
+  transition: background-color 0.2s;
+  transition: ease-in-out;
+}
+
+.friendItem:hover {
+  transform: scale(1.01) ease;
+  transition: transform 0.2s ease;
+}
+
+.friendProfile {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  cursor: pointer;
+  flex: 1;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--spacing-sm);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.avatarImage {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.defaultAvatar {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--theme-tab-background);
+  color: var(--theme-text-primary);
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+}
+
+.username {
+  font-weight: bold;
+  color: var(--theme-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.adminBadge {
+  font-size: 0.6rem;
+  padding: 2px 4px;
+  background-color: var(--accent-1);
+  color: var(--theme-text-primary);
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.minecraftName {
+  font-size: 0.8rem;
+  color: var(--theme-text-secondary);
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.actionButton {
+  display: flex;
+  align-items: center;
+  flex-direction: row !important;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) !important;
+  margin: 0 !important;
+  transition: all 0.2s;
+}
+
+.actionButton span {
+  font-size: 0.8rem;
+}
+
+@media (max-width: 576px) {
+  .friendItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+} 
