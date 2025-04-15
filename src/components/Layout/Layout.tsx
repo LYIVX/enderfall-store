@@ -8,11 +8,19 @@ interface LayoutProps {
 }
 
 const Layout = ({ children }: LayoutProps) => {
+  const navLinks = [
+    { label: 'Home', href: '/' },
+    { label: 'Shop', href: '/shop' },
+    { label: 'Social', href: '/social' },
+    { label: 'Blog', href: '/blog' },
+    { label: 'About', href: '/about' }
+  ];
+
   return (
     <div className={styles.layout}>
-      <Navbar />
+      <Navbar navLinks={navLinks} />
       <main className={styles.main}>{children}</main>
-      <Footer />
+      <Footer navLinks={navLinks} />
     </div>
   );
 };
