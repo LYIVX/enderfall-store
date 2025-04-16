@@ -34,6 +34,7 @@ import AvatarWithStatus from '@/components/UI/AvatarWithStatus';
 import ForumPost from '@/components/Forums/ForumPost';
 import NineSliceContainer from '@/components/UI/NineSliceContainer';
 import CollapsibleSidebar from '@/components/UI/CollapsibleSidebar';
+import AuthModal from '@/components/Auth/LoginModal';
 
 // Add debounce function at the top of the component
 const debounce = (func: Function, delay: number) => {
@@ -126,6 +127,10 @@ export default function SocialPage() {
   const [editingBlog, setEditingBlog] = useState<any | null>(null);
   const [showCreateBlog, setShowCreateBlog] = useState(false);
   
+  // Auth modal state
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
+  
   // Content tabs definition
   const contentTabs: Tab[] = [
     { id: 'posts', label: 'Social Posts', icon: <FaStream /> },
@@ -182,8 +187,6 @@ export default function SocialPage() {
   
   // Add functions to fetch blogs and forums
   const fetchBlogs = async () => {
-    if (!user) return;
-    
     setLoadingBlogs(true);
     try {
       // Fetch published blog posts
@@ -246,7 +249,7 @@ export default function SocialPage() {
         });
       }
       
-      // Filter by friends only if enabled
+      // Filter by friends only if enabled and user is logged in
       if (showBlogsFriendsOnly && user) {
         // First, get all friend IDs
         const { data: friendshipsData } = await supabase
@@ -276,8 +279,6 @@ export default function SocialPage() {
   };
   
   const fetchForums = async () => {
-    if (!user) return;
-    
     setLoadingForums(true);
     try {
       // Fetch forum posts
@@ -342,9 +343,6 @@ export default function SocialPage() {
             acc[profile.id] = profile;
             return acc;
           }, {} as Record<string, any>);
-          
-          // Log author profiles for debugging
-          console.log('Author profiles:', authorProfiles);
         }
       }
       
@@ -353,9 +351,6 @@ export default function SocialPage() {
         ...post,
         author: authorProfiles[post.user_id] || null
       })) || [];
-      
-      // Log forums with authors for debugging
-      console.log('Forums with authors:', postsWithAuthors);
       
       // Apply author-based sorting if needed
       let sortedData = [...postsWithAuthors];
@@ -373,7 +368,7 @@ export default function SocialPage() {
         });
       }
       
-      // Filter by friends only if enabled
+      // Filter by friends only if enabled and user is logged in
       if (showForumsFriendsOnly && user) {
         // First, get all friend IDs
         const { data: friendshipsData } = await supabase
@@ -501,20 +496,19 @@ export default function SocialPage() {
         supabase.removeChannel(messagesSubscription);
       };
     } else {
+      // Initialize state for not logged in users
       setLoading(false);
     }
   }, [user, debouncedRefreshConversations]);
 
   // Load blogs and forums when the content tab changes
   useEffect(() => {
-    if (user) {
-      if (activeContentTab === 'blogs') {
-        fetchBlogs();
-      } else if (activeContentTab === 'forums') {
-        fetchForums();
-      }
+    if (activeContentTab === 'blogs') {
+      fetchBlogs();
+    } else if (activeContentTab === 'forums') {
+      fetchForums();
     }
-  }, [user, activeContentTab]);
+  }, [activeContentTab]);
   
   const fetchSocialData = async (userId: string) => {
     setLoading(true);
@@ -814,9 +808,6 @@ export default function SocialPage() {
   
   // Create a type-safe component for each tab content
   const renderFeedContent = () => {
-    // Safety check
-    if (!user) return null;
-    
     return (
       <NineSliceContainer className={styles.feedContent} variant='blue'>
         <Tabs
@@ -830,42 +821,54 @@ export default function SocialPage() {
           <>
             <NineSliceContainer className={styles.postsHeader}>
               <h2 className={styles.sectionTitle}>Social Posts</h2>
-              <div className={styles.postsHeaderButtons}>
-              <Button 
-                variant={showFriendsOnly ? 'primary' : 'secondary'}
-                nineSlice={true}
-                onClick={handleToggleFriendsOnly}
-                size="medium"
-                  className={styles.friendsFilterButton}
-                >
-                  {showFriendsOnly ? 'Friends Posts Only' : 'Showing All Posts'}
-                </Button>
-                <Button 
-                  variant="primary"
-                  size="medium"
-                  nineSlice={true}
-                  onClick={toggleCreatePost}
-                  className={styles.createPostButton}
-                >
-                  {showCreatePost ? 'Hide Post Form' : 'Create Post'}
-              </Button>
-              </div>
+              {user ? (
+                <div className={styles.postsHeaderButtons}>
+                  <Button 
+                    variant={showFriendsOnly ? 'primary' : 'secondary'}
+                    nineSlice={true}
+                    onClick={handleToggleFriendsOnly}
+                    size="medium"
+                    className={styles.friendsFilterButton}
+                  >
+                    {showFriendsOnly ? 'Friends Posts Only' : 'Showing All Posts'}
+                  </Button>
+                  <Button 
+                    variant="primary"
+                    size="medium"
+                    nineSlice={true}
+                    onClick={toggleCreatePost}
+                    className={styles.createPostButton}
+                  >
+                    {showCreatePost ? 'Hide Post Form' : 'Create Post'}
+                  </Button>
+                </div>
+              ) : null}
             </NineSliceContainer>
             
-            {showCreatePost && <CreatePost onPostCreated={handlePostCreated} />}
-            
-            {posts.length === 0 ? (
-              <NineSliceContainer className={styles.emptyState}>
-                <p>No posts to show. {showFriendsOnly ? 'Add some friends or create your first post!' : 'Be the first to create a post!'}</p>
-              </NineSliceContainer>
+            {user ? (
+              <>
+                {showCreatePost && <CreatePost onPostCreated={handlePostCreated} />}
+                
+                {posts.length === 0 ? (
+                  <NineSliceContainer className={styles.emptyState}>
+                    <p>No posts to show. {showFriendsOnly ? 'Add some friends or create your first post!' : 'Be the first to create a post!'}</p>
+                  </NineSliceContainer>
+                ) : (
+                  posts.map(post => (
+                    <SocialPost 
+                      key={post.id} 
+                      post={post} 
+                      onDelete={handlePostDeleted} 
+                    />
+                  ))
+                )}
+              </>
             ) : (
-              posts.map(post => (
-                <SocialPost 
-                  key={post.id} 
-                  post={post} 
-                  onDelete={handlePostDeleted} 
-                />
-              ))
+              <NineSliceContainer className={styles.authPrompt}>
+                <h2>Join the Community</h2>
+                <p>Sign in or create an account to connect with other players, share posts, and more!</p>
+                <Button variant="primary" nineSlice={true} onClick={openLoginModal}>Sign In</Button>
+              </NineSliceContainer>
             )}
           </>
         )}
@@ -1015,24 +1018,38 @@ export default function SocialPage() {
                   <NineSliceContainer className={styles.blogsHeader}>
                     <h2 className={styles.sectionTitle}>Blogs</h2>
                     <div className={styles.blogsHeaderButtons}>
-                      <Button 
-                        variant={showBlogsFriendsOnly ? 'primary' : 'secondary'}
-                        onClick={handleToggleBlogsFriendsOnly}
-                        size="medium"  
-                        nineSlice={true}
-                        className={styles.friendsFilterButton}
-                      >
-                        {showBlogsFriendsOnly ? 'Friends Posts Only' : 'Showing All Posts'}
-                      </Button>
-                      <Button 
-                        variant="primary"
-                        size="medium"
-                        nineSlice={true}
-                        onClick={toggleCreateBlog}
-                        className={styles.createBlogButton}
-                      >
-                        Create Blog
-                      </Button>
+                      {user ? (
+                        <>
+                          <Button 
+                            variant={showBlogsFriendsOnly ? 'primary' : 'secondary'}
+                            onClick={handleToggleBlogsFriendsOnly}
+                            size="medium"  
+                            nineSlice={true}
+                            className={styles.friendsFilterButton}
+                          >
+                            {showBlogsFriendsOnly ? 'Friends Posts Only' : 'Showing All Posts'}
+                          </Button>
+                          <Button 
+                            variant="primary"
+                            size="medium"
+                            nineSlice={true}
+                            onClick={toggleCreateBlog}
+                            className={styles.createBlogButton}
+                          >
+                            Create Blog
+                          </Button>
+                        </>
+                      ) : (
+                        <Button 
+                          variant="primary"
+                          size="medium"
+                          nineSlice={true}
+                          onClick={openLoginModal}
+                          className={styles.createBlogButton}
+                        >
+                          Sign In to Create
+                        </Button>
+                      )}
                     </div>
                   </NineSliceContainer>
                 )}
@@ -1487,22 +1504,36 @@ export default function SocialPage() {
                   <NineSliceContainer className={styles.forumsHeader}>
                     <h2 className={styles.sectionTitle}>Forums</h2>
                     <div className={styles.forumsHeaderButtons}>
-                      <Button 
-                        variant={showForumsFriendsOnly ? 'primary' : 'secondary'}
-                        onClick={handleToggleForumsFriendsOnly}
-                        size="medium"
-                        className={styles.friendsFilterButton}
-                      >
-                        {showForumsFriendsOnly ? 'Friends Posts Only' : 'Showing All Posts'}
-                      </Button>
-                      <Button 
-                        variant="primary"
-                        size="medium"
-                        onClick={toggleCreateForum}
-                        className={styles.createForumButton}
-                      >
-                        Create Forum
-                      </Button>
+                      {user ? (
+                        <>
+                          <Button 
+                            variant={showForumsFriendsOnly ? 'primary' : 'secondary'}
+                            onClick={handleToggleForumsFriendsOnly}
+                            size="medium"
+                            className={styles.friendsFilterButton}
+                          >
+                            {showForumsFriendsOnly ? 'Friends Posts Only' : 'Showing All Posts'}
+                          </Button>
+                          <Button 
+                            variant="primary"
+                            size="medium"
+                            onClick={toggleCreateForum}
+                            className={styles.createForumButton}
+                          >
+                            Create Forum
+                          </Button>
+                        </>
+                      ) : (
+                        <Button 
+                          variant="primary"
+                          size="medium"
+                          nineSlice={true}
+                          onClick={openLoginModal}
+                          className={styles.createForumButton}
+                        >
+                          Sign In to Create
+                        </Button>
+                      )}
                     </div>
                   </NineSliceContainer>
                 )}
@@ -1722,38 +1753,46 @@ export default function SocialPage() {
   };
         
   const renderFriendsContent = () => (
-          <NineSliceContainer variant='blue' className={styles.friendsContent}>
-            <NineSliceContainer className={styles.friendsHeader}>
-              <h2 className={styles.sectionTitle}>Your Friends</h2>
-            </NineSliceContainer>
-            
-            {friendships.length === 0 ? (
-              <NineSliceContainer className={styles.emptyState}>
-                <p>You don't have any friends yet. Find people to connect with!</p>
-              </NineSliceContainer>
-            ) : (
-              friendships.map(friendship => (
-                <FriendItem
-                  key={friendship.id}
-                  friendship={friendship}
-                  currentUserId={user?.id || ''}
-                  type="friend"
-                  onRemove={handleRemoveFriend}
-                />
-              ))
-            )}
+    <NineSliceContainer variant='blue' className={styles.friendsContent}>
+      <NineSliceContainer className={styles.friendsHeader}>
+        <h2 className={styles.sectionTitle}>Your Friends</h2>
+      </NineSliceContainer>
+      
+      {user ? (
+        friendships.length === 0 ? (
+          <NineSliceContainer className={styles.emptyState}>
+            <p>You don't have any friends yet. Find people to connect with!</p>
           </NineSliceContainer>
-        );
+        ) : (
+          friendships.map(friendship => (
+            <FriendItem
+              key={friendship.id}
+              friendship={friendship}
+              currentUserId={user?.id || ''}
+              type="friend"
+              onRemove={handleRemoveFriend}
+            />
+          ))
+        )
+      ) : (
+        <div className={styles.authPrompt}>
+          <h2>Connect with Friends</h2>
+          <p>Sign in to view and manage your friendships!</p>
+          <Button variant="primary" nineSlice={true} onClick={openLoginModal}>Sign In</Button>
+        </div>
+      )}
+    </NineSliceContainer>
+  );
         
   const renderRequestsContent = () => {
-    // Safety check
-    if (!user) return null;
-    
-        return (
-          <NineSliceContainer variant='blue' className={styles.requestsContent}>
-            <NineSliceContainer className={styles.requestsHeader}>
-              <h2 className={styles.sectionTitle}>Friend Requests</h2>
-            </NineSliceContainer>
+    return (
+      <NineSliceContainer variant='blue' className={styles.requestsContent}>
+        <NineSliceContainer className={styles.requestsHeader}>
+          <h2 className={styles.sectionTitle}>Friend Requests</h2>
+        </NineSliceContainer>
+        
+        {user ? (
+          <>
             <UserSearch 
               currentUserId={user.id}
               onSendRequest={handleSendFriendRequest}
@@ -1799,44 +1838,59 @@ export default function SocialPage() {
                 <p>You don't have any friend requests at the moment.</p>
               </NineSliceContainer>
             )}
-          </NineSliceContainer>
-        );
+          </>
+        ) : (
+          <div className={styles.authPrompt}>
+            <h2>Manage Friend Requests</h2>
+            <p>Sign in to send, accept, or reject friend requests!</p>
+            <Button variant="primary" nineSlice={true} onClick={openLoginModal}>Sign In</Button>
+          </div>
+        )}
+      </NineSliceContainer>
+    );
   };
         
   const renderConversationsContent = () => {
-    // Safety check
-    if (!user) return null;
-    
-        return (
-          <NineSliceContainer variant='blue' className={styles.conversationsContent}>
-            <NineSliceContainer className={styles.conversationsHeader}>
-              <h2 className={styles.sectionTitle}>Your Conversations</h2>
-              <Button
-                variant="secondary"
-                onClick={refreshConversations}
-                className={styles.refreshButton}
-                disabled={refreshingConversations}
-                size="medium"
-              >
-                {refreshingConversations ? 'Refreshing...' : (<><FaSync /> Refresh</>)}
-              </Button>
+    return (
+      <NineSliceContainer variant='blue' className={styles.conversationsContent}>
+        <NineSliceContainer className={styles.conversationsHeader}>
+          <h2 className={styles.sectionTitle}>Your Conversations</h2>
+          {user && (
+            <Button
+              variant="secondary"
+              onClick={refreshConversations}
+              className={styles.refreshButton}
+              disabled={refreshingConversations}
+              size="medium"
+            >
+              {refreshingConversations ? 'Refreshing...' : (<><FaSync /> Refresh</>)}
+            </Button>
+          )}
+        </NineSliceContainer>
+        
+        {user ? (
+          conversations.length === 0 ? (
+            <NineSliceContainer className={styles.emptyState}>
+              <p>You don't have any conversations yet. Start chatting with friends!</p>
             </NineSliceContainer>
-            
-            {conversations.length === 0 ? (
-              <NineSliceContainer className={styles.emptyState}>
-                <p>You don't have any conversations yet. Start chatting with friends!</p>
-              </NineSliceContainer>
-            ) : (
-              conversations.map(conversation => (
-                <ConversationItem
-                  key={conversation.id}
-                  conversation={conversation}
-                  currentUserId={user.id}
-                />
-              ))
-            )}
-          </NineSliceContainer>
-        );
+          ) : (
+            conversations.map(conversation => (
+              <ConversationItem
+                key={conversation.id}
+                conversation={conversation}
+                currentUserId={user.id}
+              />
+            ))
+          )
+        ) : (
+          <div className={styles.authPrompt}>
+            <h2>Start Conversations</h2>
+            <p>Sign in to chat with other members of the community!</p>
+            <Button variant="primary" nineSlice={true} onClick={openLoginModal}>Sign In</Button>
+          </div>
+        )}
+      </NineSliceContainer>
+    );
   };
   
   // Handle viewing a forum post
@@ -2104,16 +2158,6 @@ export default function SocialPage() {
   };
   
   const renderContent = () => {
-    if (!user) {
-      return (
-        <div className={styles.authPrompt}>
-          <h2>Join the Community</h2>
-          <p>Sign in or create an account to connect with other players, share posts, and more!</p>
-          <Button onClick={() => router.push('/login')}>Sign In</Button>
-        </div>
-      );
-    }
-    
     if (loading) {
       return <div className={styles.loading}>Loading...</div>;
     }
@@ -2127,13 +2171,24 @@ export default function SocialPage() {
     return null;
   };
   
+  // At the bottom of the component, just before the final return statement
+  const openLoginModal = () => {
+    setShowAuthModal(true);
+  };
+
   return (
     <div className={styles.socialPage}>
+      {showAuthModal && (
+        <AuthModal 
+          isOpen={showAuthModal}
+          onClose={() => setShowAuthModal(false)}
+        />
+      )}
       <div className={styles.socialContainer}>
         <CollapsibleSidebar className={styles.sidebar}>
-          {user && (
+          {user ? (
             <>
-              <NineSliceContainer  className={styles.userProfile}>
+              <NineSliceContainer className={styles.userProfile}>
                 <Link href={`/profile/${user.id}`} className={styles.profileLink}>
                   <div className={styles.profileInfo}>
                     <AvatarWithStatus
@@ -2180,12 +2235,12 @@ export default function SocialPage() {
                     <Button
                       key={friendship.id}
                       variant='standard'
-                      onClick={() => router.push(`/profile/${friendship.friend.id}`)}
+                      onClick={() => router.push(`/profile/${friendship.friend_id}`)}
                       className={styles.recentFriendItem}
                     >
                       <div className={styles.miniAvatar}>
                         <AvatarWithStatus
-                          userId={friendship.friend.id}
+                          userId={friendship.friend_id}
                           avatarUrl={friendship.friend.avatar_url}
                           username={friendship.friend.username || 'User'}
                           size="small"
@@ -2214,6 +2269,23 @@ export default function SocialPage() {
                 )}
               </NineSliceContainer>
             </>
+          ) : (
+            // Login prompt for not logged in users
+            <NineSliceContainer className={styles.authSidebar}>
+              <div className={styles.loginPromptSidebar}>
+                <h3>Join Enderfall</h3>
+                <p>Sign in to connect with friends, participate in discussions, and stay updated with the community.</p>
+                <Button 
+                  variant="primary" 
+                  nineSlice={true}
+                  size="medium" 
+                  className={styles.loginButton}
+                  onClick={() => setShowAuthModal(true)}
+                >
+                  Sign In
+                </Button>
+              </div>
+            </NineSliceContainer>
           )}
         </CollapsibleSidebar>
         
@@ -2223,4 +2295,4 @@ export default function SocialPage() {
       </div>
     </div>
   );
-} 
+}

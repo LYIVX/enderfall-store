@@ -235,11 +235,20 @@
 }
 
 .authPrompt {
+  display: flex;
+  flex-direction: column;
   background-color: var(--theme-tab-background);
   border-radius: 10px;
   padding: 2rem;
   text-align: center;
   margin: 2rem 0;
+}
+
+.loginPromptSidebar{
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
+  text-align: center;
 }
 
 .authPrompt h2 {
@@ -248,7 +257,7 @@
 }
 
 .authPrompt p {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
   color: var(--theme-text-secondary);
 }
 
