@@ -307,7 +307,6 @@
   border-radius: var(--spacing-md);
   margin-right: var(--spacing-sm);
   margin-left: auto;
-  border-left: none;
 }
 
 .ownMessageIndicator {
