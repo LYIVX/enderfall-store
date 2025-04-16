@@ -17,7 +17,8 @@ import Button from '@/components/UI/Button';
 import styles from './page.module.css';
 import { 
   FaEnvelope, FaUserFriends, FaUserPlus, FaBell, FaSync, FaNewspaper, 
-  FaComments, FaHeart, FaComment, FaEdit, FaTrash, FaArchive, FaHome, FaStream, FaArrowLeft 
+  FaComments, FaHeart, FaComment, FaEdit, FaTrash, FaArchive, FaHome, FaStream, FaArrowLeft, 
+  FaPaperPlane
 } from 'react-icons/fa';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -872,12 +873,12 @@ export default function SocialPage() {
         {activeContentTab === 'blogs' && (
           <div className={styles.blogsContent}>
             {editingBlog ? (
-              <div className={styles.editForumWrapper}>
+              <NineSliceContainer className={styles.editForumWrapper}>
                 <div className={styles.editForumHeader}>
                   <h2 className={styles.sectionTitle}>Edit Blog Post</h2>
                   <Button
                     variant="secondary"
-                    size="small"
+                    size="medium"
                     onClick={handleCancelEditBlog}
                     className={styles.backButton}
                   >
@@ -889,7 +890,7 @@ export default function SocialPage() {
                   isOpen={true}
                   onClose={handleBlogEdited}
                 />
-              </div>
+              </NineSliceContainer>
             ) : selectedBlog ? (
               /* Blog Detail View */
               <div className={styles.forumDetailContainer}>
@@ -897,7 +898,7 @@ export default function SocialPage() {
                   <h2 className={styles.sectionTitle}>{selectedBlog.title}</h2>
                   <Button
                     variant="secondary"
-                    size="small"
+                    size="medium"
                     onClick={handleBackToBlogs}
                     className={styles.backButton}
                   >
@@ -962,7 +963,7 @@ export default function SocialPage() {
                         <div className={styles.postActions}>
                           <Button
                             variant="edit"
-                            size="small"
+                            size="medium"
                             className={`${styles.actionButton}`}
                             onClick={(e) => {
                               e.stopPropagation();
@@ -1037,12 +1038,12 @@ export default function SocialPage() {
                 )}
                 
                 {showCreateBlog ? (
-                  <div className={styles.createForumWrapper}>
+                  <NineSliceContainer className={styles.createForumWrapper}>
                     <div className={styles.createForumHeader}>
                       <h2 className={styles.sectionTitle}>Create New Blog Post</h2>
                       <Button
                         variant="secondary"
-                        size="small"
+                        size="medium"
                         onClick={() => setShowCreateBlog(false)}
                         className={styles.backButton}
                       >
@@ -1053,7 +1054,7 @@ export default function SocialPage() {
                       isOpen={true}
                       onClose={handleBlogCreated}
                     />
-                  </div>
+                  </NineSliceContainer>
                 ) : (
                   <>
                     <NineSliceContainer className={styles.toolbarContainer}>
@@ -1111,7 +1112,7 @@ export default function SocialPage() {
                     ) : (
                       <div className={styles.blogsList}>
                         {blogs.map(blog => (
-                          <div 
+                          <NineSliceContainer 
                             key={blog.id} 
                             className={styles.blogPost}
                           >
@@ -1127,10 +1128,10 @@ export default function SocialPage() {
                                 </div>
                               </div>
                               
-                              <h3 className={styles.postTitle}>
+                              <NineSliceContainer className={styles.postTitle}>
                                 {blog.is_pinned && <span className={styles.pinnedIndicator}>📌 </span>}
                                 {blog.title}
-                              </h3>
+                              </NineSliceContainer>
                               
                               {blog.thumbnail_url && (
                                 <div className={styles.thumbnailContainer}>
@@ -1143,18 +1144,18 @@ export default function SocialPage() {
                               )}
                               
                               {blog.summary && (
-                                <div className={styles.postSummary}>{blog.summary}</div>
+                                <NineSliceContainer className={styles.postSummary}>{blog.summary}</NineSliceContainer>
                               )}
                               
                               {blog.content && (
-                                <div className={styles.postFullContent}>
+                                <NineSliceContainer className={styles.postFullContent}>
                                   <ReactMarkdown
                                     remarkPlugins={[remarkGfm]}
                                     rehypePlugins={[rehypeRaw]}
                                   >
                                     {blog.content}
                                   </ReactMarkdown>
-                                </div>
+                                </NineSliceContainer>
                               )}
                               
                               <div className={styles.postFooter}>
@@ -1226,7 +1227,7 @@ export default function SocialPage() {
                                 </div>
                               </div>
                             </div>
-                          </div>
+                          </NineSliceContainer>
                         ))}
                       </div>
                     )}
@@ -1240,12 +1241,12 @@ export default function SocialPage() {
         {activeContentTab === 'forums' && (
           <div className={styles.forumsContent}>
             {editingForum ? (
-              <div className={styles.editForumWrapper}>
+              <NineSliceContainer className={styles.editForumWrapper}>
                 <div className={styles.editForumHeader}>
                   <h2 className={styles.sectionTitle}>Edit Forum Post</h2>
                   <Button
                     variant="secondary"
-                    size="small"
+                    size="medium"
                     onClick={handleCancelEditForum}
                     className={styles.backButton}
                   >
@@ -1257,15 +1258,16 @@ export default function SocialPage() {
                   isOpen={true}
                   onClose={handleForumEdited}
                 />
-              </div>
+              </NineSliceContainer>
             ) : selectedForum ? (
               /* Forum Detail View */
+              <NineSliceContainer className={styles.editForumWrapper}>
               <div className={styles.forumDetailContainer}>
                 <div className={styles.forumDetailHeader}>
                   <h2 className={styles.sectionTitle}>Forum Post</h2>
                   <Button
                     variant="secondary"
-                    size="small"
+                    size="medium"
                     onClick={handleBackToForums}
                     className={styles.backButton}
                   >
@@ -1273,11 +1275,12 @@ export default function SocialPage() {
                   </Button>
                 </div>
                 
-                <div className={styles.forumDetail}>
-                  <h1 className={styles.forumDetailTitle}>{selectedForum.title}</h1>
-                  
+                
+                <NineSliceContainer className={styles.forumDetail}>
+                  <NineSliceContainer className={styles.forumDetailTitle}>{selectedForum.title}
+                  <div className={styles.category}>{selectedForum.category || 'Discussion'}</div>
+                  </NineSliceContainer>
                   <div className={styles.forumDetailMeta}>
-                    <div className={styles.category}>{selectedForum.category || 'Discussion'}</div>
                     <div className={styles.date}>
                       {new Date(selectedForum.created_at).toLocaleDateString('en-GB', {
                         day: 'numeric',
@@ -1287,7 +1290,7 @@ export default function SocialPage() {
                     </div>
                   </div>
                   
-                  <div className={styles.forumDetailAuthor}>
+                  <NineSliceContainer className={styles.forumDetailAuthor}>
                     <AvatarWithStatus
                       userId={selectedForum.author?.id || selectedForum.user_id}
                       avatarUrl={selectedForum.author?.avatar_url}
@@ -1305,7 +1308,7 @@ export default function SocialPage() {
                         {selectedForum.author?.minecraft_username ? `Minecraft: ${selectedForum.author.minecraft_username}` : ''}
                       </span>
                     </div>
-                  </div>
+                  </NineSliceContainer>
                   
                   {selectedForum.summary && (
                     <div className={styles.postSummary}>
@@ -1313,7 +1316,7 @@ export default function SocialPage() {
                     </div>
                   )}
                   
-                  <div className={styles.forumDetailContent}>
+                  <NineSliceContainer className={styles.forumDetailContent}>
                     {selectedForum.is_markdown ? (
                       <div className={styles.markdownContent}>
                         <ReactMarkdown>
@@ -1327,15 +1330,14 @@ export default function SocialPage() {
                         ))}
                       </div>
                     )}
-                  </div>
+                  </NineSliceContainer>
                   
-                  <div className={styles.forumDetailFooter}>
+                  <NineSliceContainer className={styles.forumDetailFooter}>
                     <div className={styles.postActions}>
                       {/* Like button */}
                       <Button 
-                        variant="ghost"
+                        variant="danger"
                         size="small"
-                        className={`${styles.footerButton} ${userHasLikedForum ? styles.liked : ''}`}
                         onClick={handleToggleForumLike}
                         disabled={!user}
                       >
@@ -1345,9 +1347,8 @@ export default function SocialPage() {
                       
                       {/* Comments toggle button */}
                       <Button 
-                        variant="ghost"
+                        variant="info"
                         size="small"
-                        className={`${styles.footerButton} ${styles.commentsButton} ${showForumComments ? styles.active : ''}`}
                         onClick={handleToggleForumComments}
                       >
                         <FaComment />
@@ -1401,23 +1402,19 @@ export default function SocialPage() {
                         </div>
                       )
                     )}
-                  </div>
+                  </NineSliceContainer>
                   
                   {/* Comments Section */}
                   {showForumComments && (
                     <div className={styles.commentsSection}>
-                      <h3 className={styles.commentsTitle}>
-                        <FaComment /> Comments ({forumComments.length})
-                      </h3>
-                      
-                      {forumComments.length === 0 ? (
-                        <div className={styles.noComments}>
-                          No comments yet. Be the first to comment!
-                        </div>
-                      ) : (
-                        <div className={styles.commentsList}>
-                          {forumComments.map((comment) => (
-                            <div key={comment.id} className={styles.comment}>
+                      <NineSliceContainer variant='blue' className={styles.commentsList}>
+                        {forumComments.length === 0 ? (
+                          <div className={styles.noComments}>
+                            No comments yet. Be the first to comment!
+                          </div>
+                        ) : (
+                          forumComments.map((comment) => (
+                            <NineSliceContainer key={comment.id} className={styles.comment}>
                               <div className={styles.commentHeader}>
                                 <div className={styles.commentAuthor} onClick={() => comment.author?.id && router.push(`/profile/${comment.author.id}`)}>
                                   <div className={styles.commentAvatar}>
@@ -1425,89 +1422,75 @@ export default function SocialPage() {
                                       userId={comment.author?.id || comment.user_id}
                                       avatarUrl={comment.author?.avatar_url}
                                       username={comment.author?.username || 'User'}
-                                      size="medium"
+                                      size="small"
                                     />
                                   </div>
-                                  <div className={styles.commentAuthorDetails}>
-                                    <span className={styles.commentAuthorName}>
-                                      {comment.author?.username || 'Unknown User'}
-                                      {comment.author?.is_admin && (
-                                        <span className={styles.commentAdminBadge}>ADMIN</span>
-                                      )}
-                                    </span>
-                                    <span className={styles.commentTime}>
-                                      {new Date(comment.created_at).toLocaleDateString('en-GB', {
-                                        day: 'numeric',
-                                        month: 'short',
-                                        year: 'numeric',
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                      })}
-                                    </span>
-                                  </div>
+                                  <span className={styles.commentAuthorName}>
+                                    {comment.author?.username || 'Unknown User'}
+                                    {comment.author?.is_admin && (
+                                      <span className={styles.commentAdminBadge}>ADMIN</span>
+                                    )}
+                                  </span>
                                 </div>
-                                
-                                {user && (comment.user_id === user.id || currentUserIsAdmin) && (
-                                  <div className={styles.commentControls}>
+                                <div className={styles.commentControls}>
+                                  {user && (comment.user_id === user.id || currentUserIsAdmin) && (
                                     <Button
-                                      variant="ghost"
+                                      variant="delete"
                                       size="small"
-                                      className={styles.deleteCommentButton}
                                       onClick={() => handleDeleteForumComment(comment.id)}
                                     >
-                                      <FaTrash />
                                     </Button>
-                                  </div>
-                                )}
+                                  )}
+                                </div>
                               </div>
-                              
                               <div className={styles.commentContent}>
                                 {comment.content}
                               </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      
-                      {user ? (
-                        <div className={styles.commentForm}>
-                          <div className={styles.commentInput}>
+                            </NineSliceContainer>
+                          ))
+                        )}
+                      </NineSliceContainer>
+                          
+                        {user ? (
+                          <form className={styles.commentForm} onSubmit={handleSubmitForumComment}>
                             <Input
                               label=""
                               type="text"
                               value={forumCommentContent}
                               onChange={(e) => setForumCommentContent(e.target.value)}
                               placeholder="Write a comment..."
+                              className={styles.commentInput}
                             />
+                            <Button
+                              variant="primary"
+                              size="small"
+                              className={styles.commentSubmit}
+                              disabled={!forumCommentContent.trim() || isForumCommentLoading}
+                              type="submit"
+                            >
+                              <FaPaperPlane />
+                            </Button>
+                          </form>
+                        ) : (
+                          <div className={styles.loginPrompt}>
+                            <p>Please <Link href="/login">sign in</Link> to leave a comment.</p>
                           </div>
-                          <Button
-                            variant="primary"
-                            className={styles.commentSubmit}
-                            onClick={handleSubmitForumComment}
-                            disabled={!forumCommentContent.trim() || isForumCommentLoading}
-                          >
-                            {isForumCommentLoading ? 'Posting...' : 'Post Comment'}
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className={styles.loginPrompt}>
-                          <p>Please <Link href="/login">sign in</Link> to leave a comment.</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                        )}
+                      </div>
+                    )}
+                  </NineSliceContainer>
                 </div>
-              </div>
+              </NineSliceContainer>
             ) : (
               <>
                 {!showCreateForum && (
-                  <div className={styles.forumsHeader}>
+                  <NineSliceContainer className={styles.forumsHeader}>
                     <h2 className={styles.sectionTitle}>Forums</h2>
                     <div className={styles.forumsHeaderButtons}>
                       <Button 
                         variant={showForumsFriendsOnly ? 'primary' : 'secondary'}
                         onClick={handleToggleForumsFriendsOnly}
-                        size="small"
+                        size="medium"
                         className={styles.friendsFilterButton}
                       >
                         {showForumsFriendsOnly ? 'Friends Posts Only' : 'Showing All Posts'}
@@ -1521,16 +1504,16 @@ export default function SocialPage() {
                         Create Forum
                       </Button>
                     </div>
-                  </div>
+                  </NineSliceContainer>
                 )}
                 
                 {showCreateForum ? (
-                  <div className={styles.createForumWrapper}>
+                  <NineSliceContainer className={styles.createForumWrapper}>
                     <div className={styles.createForumHeader}>
                       <h2 className={styles.sectionTitle}>Create New Forum Post</h2>
                       <Button
                         variant="secondary"
-                        size="small"
+                        size="medium"
                         onClick={() => setShowCreateForum(false)}
                         className={styles.backButton}
                       >
@@ -1541,10 +1524,10 @@ export default function SocialPage() {
                       isOpen={true}
                       onClose={handleForumCreated}
                     />
-                  </div>
+                  </NineSliceContainer>
                 ) : (
                   <>
-                    <div className={styles.toolbarContainer}>
+                    <NineSliceContainer className={styles.toolbarContainer}>
                       <div className={styles.categoryFilter}>
                         <Dropdown
                           label="Category"
@@ -1577,11 +1560,11 @@ export default function SocialPage() {
                           onChange={(e) => setForumSearchQuery(e.target.value)}
                           layout="horizontal"
                         />
-                        <Button variant="secondary" size="small" onClick={handleForumSearch} className={styles.searchButton}>
+                        <Button variant="secondary" size="medium" onClick={handleForumSearch} className={styles.searchButton}>
                           Search
                         </Button>
                       </div>
-                    </div>
+                    </NineSliceContainer>
                     
                     {loadingForums ? (
                       <div className={styles.loadingState}>Loading forums...</div>
@@ -1592,18 +1575,139 @@ export default function SocialPage() {
                     ) : (
                       <div className={styles.forumsList}>
                         {forums.map(forum => (
-                          <div 
+                          <NineSliceContainer 
                             key={forum.id} 
-                            onClick={() => handleViewForum(forum)}
-                            style={{ cursor: 'pointer' }}
+                            className={styles.blogPost}
                           >
-                            <ForumPost 
-                              post={forum} 
-                              onDelete={(postId) => {
-                                setForums(forums.filter(f => f.id !== postId));
-                              }}
-                            />
-                          </div>
+                            <div className={styles.postContent}>
+                              <div className={styles.postMeta}>
+                                <div className={styles.category}>{forum.category || 'Discussion'}</div>
+                                <div className={styles.date}>
+                                  {new Date(forum.created_at).toLocaleDateString('en-GB', {
+                                    day: 'numeric',
+                                    month: 'short',
+                                    year: 'numeric',
+                                  })}
+                                </div>
+                              </div>
+                              
+                              <NineSliceContainer className={styles.postTitle}>
+                                {forum.pinned && <span className={styles.pinnedIndicator}>📌 </span>}
+                                {forum.title}
+                              </NineSliceContainer>
+                              
+                              {forum.summary && (
+                                <NineSliceContainer className={styles.postSummary}>{forum.summary}</NineSliceContainer>
+                              )}
+                              
+                              <NineSliceContainer className={styles.postFullContent}>
+                                {forum.is_markdown ? (
+                                  <ReactMarkdown>
+                                    {forum.content}
+                                  </ReactMarkdown>
+                                ) : (
+                                  <div className={styles.contentText}>
+                                    {forum.content.split('\n').map((line: string, index: number) => (
+                                      <p key={index}>{line}</p>
+                                    ))}
+                                  </div>
+                                )}
+                              </NineSliceContainer>
+                              
+                              <div className={styles.postFooter}>
+                                <div className={styles.authorInfo}>
+                                  <div className={styles.authorAvatar}>
+                                    <AvatarWithStatus
+                                      userId={forum.author?.id || forum.user_id}
+                                      avatarUrl={forum.author?.avatar_url}
+                                      username={forum.author?.username || 'User'}
+                                      size="small"
+                                    />
+                                  </div>
+                                  <span className={styles.authorName}>
+                                    {forum.author?.username || 'Unknown User'}
+                                    {forum.author?.is_admin && (
+                                      <span className={styles.adminBadge}>ADMIN</span>
+                                    )}
+                                  </span>
+                                </div>
+                                
+                                <div className={styles.postControls}>
+                                  <Button 
+                                    variant="danger"
+                                    size="small"
+                                    onClick={() => {
+                                      if (user) {
+                                        handleViewForum(forum);
+                                        handleToggleForumLike();
+                                      }
+                                    }}
+                                    disabled={!user}
+                                  >
+                                    <FaHeart />
+                                    <span>{forum.likes || 0} {(forum.likes || 0) === 1 ? 'Like' : 'Likes'}</span>
+                                  </Button>
+                                  
+                                  <Button 
+                                    variant="info"
+                                    size="small"
+                                    onClick={() => {
+                                      handleViewForum(forum);
+                                      setShowForumComments(true);
+                                    }}
+                                  >
+                                    <FaComment />
+                                    <span>Comments</span>
+                                  </Button>
+                                  
+                                  {user && (
+                                    (forum?.user_id === user.id || currentUserIsAdmin) && (
+                                      <div className={styles.postActions}>
+                                        <Button
+                                          variant="edit"
+                                          size="small"
+                                          className={`${styles.actionButton} ${styles.editButton}`}
+                                          onClick={() => handleEditForum(forum)}
+                                        >
+                                        </Button>
+                                        <Button
+                                          variant="delete"
+                                          size="small"
+                                          className={`${styles.actionButton} ${styles.deleteButton}`}
+                                          onClick={async () => {
+                                            if (!confirm('Are you sure you want to delete this forum post? This action cannot be undone.')) {
+                                              return;
+                                            }
+                                            
+                                            try {
+                                              const { error } = await supabase
+                                                .from('forum_posts')
+                                                .delete()
+                                                .eq('id', forum.id);
+                                                
+                                              if (error) {
+                                                console.error('Error deleting forum post:', error);
+                                                alert(`Failed to delete forum post: ${error.message}`);
+                                                return;
+                                              }
+                                              
+                                              // Remove from the UI
+                                              setForums(forums.filter(f => f.id !== forum.id));
+                                              alert('Forum post deleted successfully');
+                                            } catch (error: any) {
+                                              console.error('Error deleting forum post:', error);
+                                              alert(`An unexpected error occurred: ${error?.message || 'Unknown error'}`);
+                                            }
+                                          }}
+                                        >
+                                        </Button>
+                                      </div>
+                                    )
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </NineSliceContainer>
                         ))}
                       </div>
                     )}

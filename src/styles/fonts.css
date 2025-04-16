@@ -74,8 +74,8 @@
 }
 
 .minecraft-ten {
-  font-family: 'MinecraftTen', 'Courier New', monospace;
-  letter-spacing: 1px;
+  font-family: 'MnecraftTen', 'Courier New', monospace;
+  letter-spacing: 1px !important;
   image-rendering: pixelated;
   image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;

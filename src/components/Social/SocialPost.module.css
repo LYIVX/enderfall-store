@@ -2,14 +2,15 @@
   background-color: var(--theme-tab-background);
   border-radius: var(--spacing-sm);
   padding: var(--spacing-md);
-  margin-bottom: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
 }
 
 .postHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
   background-color: var(--theme-tab-background);
   border-radius: var(--spacing-sm);
   padding: var(--spacing-sm);
@@ -63,14 +64,20 @@
 
 .postActions {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--spacing-sm);
 }
 
 .actionButton {
-  padding: 0.4rem;
-  font-weight: 500;
-  padding: var(--spacing-md);
+  margin: 0 !important;
 }
+
+
+.footerButton {
+  display: flex;
+  flex-direction: row !important;
+  margin: 0 !important;
+}
+
 
 .deleteButton {
   color: var(--theme-error-color) !important;
@@ -122,44 +129,25 @@
 .postFooter {
   display: flex;
   justify-content: flex-start;
-  gap: 1rem;
+  gap: var(--spacing-sm);
   padding-top: 0.75rem;
-  border-top: 1px solid var(--theme-border);
-}
-
-.footerButton {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-  color: var(--theme-text-secondary);
-}
-
-.footerButton:hover, .footerButton.active {
-  color: var(--theme-info-color);
-}
-
-.liked {
-  color: var(--theme-error-color);
-}
-
-.liked:hover {
-  color: var(--theme-error-color);
 }
 
 .commentsSection {
-  margin-top: 1rem;
+  margin-top: var(--spacing-sm);
   padding-top: 1rem;
-  border-top: 1px solid var(--theme-border);
+  border-top: 3px solid var(--theme-primary-color);
 }
 
 .commentsList {
-  margin-bottom: 1rem;
   max-height: 300px;
   overflow-y: auto;
   background-color: var(--theme-tab-background);
   border-radius: var(--spacing-sm);
   padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
 }
 
 .noComments {
@@ -173,7 +161,6 @@
 .comment {
   padding: 0.75rem;
   background-color: var(--theme-tab-background);
-  border-radius: 8px;
   margin-bottom: 0.75rem;
   border-radius: var(--spacing-sm);
   padding: var(--spacing-md);
@@ -239,7 +226,12 @@
 }
 
 .commentSubmit {
-  align-self: flex-end;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 52px !important;
+  height: 52px !important;
+  transition: all 0.3s ease;
 }
 
 @media (max-width: 576px) {

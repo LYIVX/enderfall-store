@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { FaHeart, FaComment, FaTrash, FaEdit } from 'react-icons/fa';
+import { FaHeart, FaComment, FaTrash, FaEdit, FaPaperPlane } from 'react-icons/fa';
 import { SocialPost as SocialPostType, Profile, hasUserLikedSocialPost, likeSocialPost, supabase, getSocialPostComments, createSocialPostComment } from '@/lib/supabase';
 import { useAuth } from '@/components/Auth/AuthContext';
 import ReactMarkdown from 'react-markdown';
@@ -11,6 +11,7 @@ import Input from '@/components/UI/Input';
 import styles from './SocialPost.module.css';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AvatarWithStatus from '@/components/UI/AvatarWithStatus';
+import { NineSliceContainer } from '../UI';
 
 interface SocialPostProps {
   post: SocialPostType;
@@ -178,8 +179,8 @@ const SocialPost = ({ post, onDelete }: SocialPostProps) => {
   };
 
   return (
-    <div ref={postRef} className={styles.socialPost}>
-      <div className={styles.postHeader}>
+    <NineSliceContainer ref={postRef} className={styles.socialPost}>
+      <NineSliceContainer className={styles.postHeader}>
         <div className={styles.authorInfo} onClick={handleViewProfile}>
           {post.author && (
             <div className={styles.authorAvatar}>
@@ -205,26 +206,24 @@ const SocialPost = ({ post, onDelete }: SocialPostProps) => {
         {isAuthor && (
           <div className={styles.postActions}>
             <Button
-              variant="ghost"
+              variant="edit"
               size="small"
-              className={`${styles.actionButton} ${styles.editButton}`}
+              className={styles.actionButton}
               onClick={() => router.push(`/social/edit/${post.id}`)}
             >
-              <FaEdit />
             </Button>
             <Button
-              variant="ghost"
+              variant="delete"
               size="small"
-              className={`${styles.actionButton} ${styles.deleteButton}`}
+              className={styles.actionButton}
               onClick={handleDelete}
             >
-              <FaTrash />
             </Button>
           </div>
         )}
-      </div>
+      </NineSliceContainer>
 
-      <div className={styles.postContent}>
+      <NineSliceContainer className={styles.postContent}>
         {post.is_markdown ? (
           <ReactMarkdown>
             {post.content}
@@ -242,11 +241,11 @@ const SocialPost = ({ post, onDelete }: SocialPostProps) => {
             />
           </div>
         )}
-      </div>
+      </NineSliceContainer>
       
-      <div className={styles.postFooter}>
+      <NineSliceContainer className={styles.postFooter}>
         <Button 
-          variant="ghost"
+          variant="danger"
           size="small"
           className={`${styles.footerButton} ${liked ? styles.liked : ''}`}
           onClick={handleLikeToggle}
@@ -257,7 +256,7 @@ const SocialPost = ({ post, onDelete }: SocialPostProps) => {
         </Button>
         
         <Button 
-          variant="ghost"
+          variant="info"
           size="small"
           className={`${styles.footerButton} ${showComments ? styles.active : ''}`}
           onClick={handleShowComments}
@@ -266,16 +265,16 @@ const SocialPost = ({ post, onDelete }: SocialPostProps) => {
           <FaComment />
           <span>Comments</span>
         </Button>
-      </div>
+      </NineSliceContainer>
       
       {showComments && (
         <div className={styles.commentsSection}>
-          <div className={styles.commentsList}>
+          <NineSliceContainer variant='blue' className={styles.commentsList}>
             {comments.length === 0 ? (
               <div className={styles.noComments}>No comments yet. Be the first to comment!</div>
             ) : (
               comments.map(comment => (
-                <div key={comment.id} className={styles.comment}>
+                <NineSliceContainer key={comment.id} className={styles.comment}>
                   <div className={styles.commentHeader}>
                     <div className={styles.commentAuthor} onClick={() => router.push(`/profile/${comment.author?.id}`)}>
                       {comment.author && (
@@ -298,10 +297,10 @@ const SocialPost = ({ post, onDelete }: SocialPostProps) => {
                     <span className={styles.commentTime}>{formatDate(comment.created_at)}</span>
                   </div>
                   <div className={styles.commentContent}>{comment.content}</div>
-                </div>
+                </NineSliceContainer>
               ))
             )}
-          </div>
+          </NineSliceContainer>
           
           {user && (
             <form className={styles.commentForm} onSubmit={handleSubmitComment}>
@@ -319,13 +318,13 @@ const SocialPost = ({ post, onDelete }: SocialPostProps) => {
                 disabled={!commentContent.trim() || isCommentLoading}
                 className={styles.commentSubmit}
               >
-                Post
+                <FaPaperPlane />
               </Button>
             </form>
           )}
         </div>
       )}
-    </div>
+    </NineSliceContainer>
   );
 };
 

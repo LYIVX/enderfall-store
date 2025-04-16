@@ -2,6 +2,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
+  position: relative;
 }
 
 .dropdownWrapper.horizontal {
@@ -21,6 +22,124 @@
   color: var(--theme-text-primary);
 }
 
+/* Custom Dropdown Styling */
+.customDropdown {
+  position: relative;
+  width: 100%;
+}
+
+.dropdownButton {
+  margin: 0 !important;
+  width: 100%;
+  text-align: left;
+  display: flex;
+  flex-direction: row !important;
+  justify-content: space-between;
+}
+
+.buttonContent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: var(--spacing-sm);
+  padding-left: var(--spacing-sm);
+  width: 100%;
+}
+
+.selectedValue {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  line-height: 1;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5) !important;
+  font-family: 'MinecraftSeven', 'Courier New', monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dropdownArrow {
+  font-size: 12px;
+  transition: transform 0.3s ease;
+  color: var(--theme-text-primary);
+  transform: translateY(2px);
+}
+
+.dropdownWrapper[data-open="true"] .dropdownArrow {
+  transform: translateY(1px) scaleY(-1);
+}
+
+.dropdownMenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+  margin-top: var(--spacing-xs);
+  padding-top: 4px;
+  padding-bottom: 8px;
+  padding-right: 5px;
+  padding-left: 5px;
+  font-family: 'MinecraftSeven', 'Courier New', monospace;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+  border-radius: var(--border-radius-sm);
+  overflow: visible;
+}
+
+.dropdownMenu::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  border-style: solid;
+  border-width: 8px 8px 10px 8px;
+  border-image: var(--theme-nine-slice-standard);
+  border-image-width: 8px 8px 10px 8px;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  z-index: -1;
+}
+
+.dropdownItem {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: var(--spacing-sm) var(--spacing-md);
+  color: var(--theme-text-primary);
+  background: none;
+  border: none;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  text-decoration: none;
+  position: relative;
+  z-index: 2;
+  font-family: 'MinecraftSeven', 'Courier New', monospace;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
+}
+
+.dropdownItem:hover, .dropdownItem.active {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--theme-text-hover);
+}
+
+/* Hide the native dropdown */
+.hiddenSelect {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Legacy dropdown style */
 .dropdown {
   padding: var(--spacing-sm);
   border: 1px solid var(--theme-border);
@@ -56,7 +175,7 @@
 }
 
 /* Disabled state */
-.dropdown:disabled {
+.dropdown:disabled, .dropdownButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }

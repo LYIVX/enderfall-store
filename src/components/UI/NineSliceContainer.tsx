@@ -1,9 +1,9 @@
 "use client";
 
-import { HTMLAttributes, ReactNode } from 'react';
+import { HTMLAttributes, ReactNode, forwardRef, Ref } from 'react';
 import styles from './NineSliceContainer.module.css';
 
-interface NineSliceContainerProps extends HTMLAttributes<HTMLDivElement> {
+export interface NineSliceContainerProps extends HTMLAttributes<HTMLDivElement> {
   children?: ReactNode;
   variant?: 'primary' | 'secondary' | 'ghost' | 'ghost-blur' | 'danger' | 'info' | 'warning' | 'success' | 'standard' | 'container' | 'panel' | 'blue' | 'gold';
   size?: 'small' | 'medium' | 'large';
@@ -12,7 +12,7 @@ interface NineSliceContainerProps extends HTMLAttributes<HTMLDivElement> {
   active?: boolean;
 }
 
-const NineSliceContainer = ({
+const NineSliceContainer = forwardRef(({
   children,
   variant = 'standard',
   size = 'medium',
@@ -20,7 +20,7 @@ const NineSliceContainer = ({
   className = '',
   active = false,
   ...props
-}: NineSliceContainerProps) => {
+}: NineSliceContainerProps, ref: Ref<HTMLDivElement>) => {
   const containerClasses = [
     styles.container,
     styles[variant],
@@ -32,6 +32,7 @@ const NineSliceContainer = ({
 
   return (
     <div 
+      ref={ref}
       className={containerClasses} 
       data-variant={variant}
       data-active={active ? "true" : "false"}
@@ -40,6 +41,8 @@ const NineSliceContainer = ({
       {children}
     </div>
   );
-};
+});
+
+NineSliceContainer.displayName = 'NineSliceContainer';
 
 export default NineSliceContainer; 

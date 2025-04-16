@@ -15,6 +15,7 @@ interface ForumPostProps {
   post: ForumPostType & { is_blog?: boolean, thumbnail_url?: string | null };
   showFullContent?: boolean;
   onDelete?: (postId: string) => void;
+  onEdit?: (post: ForumPostType & { is_blog?: boolean, thumbnail_url?: string | null }) => void;
 }
 
 // Convert a string to a URL-friendly slug
@@ -44,7 +45,7 @@ const fetchAuthorInfo = async (userId: string): Promise<Profile | null> => {
   }
 };
 
-const ForumPost = ({ post, showFullContent = false, onDelete }: ForumPostProps) => {
+const ForumPost = ({ post, showFullContent = false, onDelete, onEdit }: ForumPostProps) => {
   const [author, setAuthor] = useState<Profile | null>(null);
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(post.likes || 0);
@@ -126,7 +127,14 @@ const ForumPost = ({ post, showFullContent = false, onDelete }: ForumPostProps) 
   
   const handleEdit = (e: React.MouseEvent) => {
     e.preventDefault(); // Prevent the Link from navigating
-    window.location.href = `/social/forums/edit/${post.id}`;
+    e.stopPropagation(); // Stop event propagation
+    
+    if (onEdit) {
+      onEdit(post);
+    } else {
+      // Fall back to the URL navigation if no callback is provided
+      window.location.href = `/social/forums/edit/${post.id}`;
+    }
   };
   
   const handleDelete = async (e: React.MouseEvent) => {

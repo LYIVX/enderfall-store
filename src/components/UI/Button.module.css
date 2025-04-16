@@ -448,19 +448,16 @@
 /* Sizes */
 .small {
   height: 30px;
-  padding: 0 var(--spacing-md);
   font-size: var(--button-font-size-small);
 }
 
 .medium {
   height: 38px;
-  padding: 0 var(--spacing-lg);
   font-size: var(--button-font-size-medium);
 }
 
 .large {
   height: 46px;
-  padding: 0 var(--spacing-xl);
   font-size: var(--button-font-size-large);
 }
 
@@ -478,10 +475,9 @@
 /* Size modifications for nine-slice buttons */
 .nineSliceBase.small {
   height: 30px;
-  padding: 0 var(--spacing-md);
   font-size: var(--button-font-size-small);
-  padding-top: 3px !important;
-  padding-bottom: 6px !important;
+  display: flex;
+  flex-direction: row;
 }
 
 .nineSliceBase.small::before {
@@ -491,10 +487,9 @@
 
 .nineSliceBase.medium {
   height: 38px;
-  padding: 0 var(--spacing-lg);
   font-size: var(--button-font-size-medium);
-  padding-top: 4px !important;
-  padding-bottom: 8px !important;
+  display: flex;
+  flex-direction: row;
 }
 
 .nineSliceBase.medium::before {
@@ -504,10 +499,9 @@
 
 .nineSliceBase.large {
   height: 46px;
-  padding: 0 var(--spacing-xl);
   font-size: var(--button-font-size-large);
-  padding-top: 5px !important;
-  padding-bottom: 12px !important;
+  display: flex;
+  flex-direction: row;
 }
 
 .nineSliceBase.large::before {

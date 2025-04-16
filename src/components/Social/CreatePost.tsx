@@ -4,10 +4,11 @@ import { useState, useRef } from 'react';
 import Image from 'next/image';
 import { supabase, createSocialPost } from '@/lib/supabase';
 import { useAuth } from '@/components/Auth/AuthContext';
-import { FaImage, FaTimes, FaUpload } from 'react-icons/fa';
+import { FaImage, FaPaperPlane, FaTimes, FaUpload } from 'react-icons/fa';
 import Button from '@/components/UI/Button';
 import TextArea from '@/components/UI/TextArea';
 import styles from './CreatePost.module.css';
+import { NineSliceContainer } from '../UI';
 
 interface CreatePostProps {
   onPostCreated?: () => void;
@@ -128,11 +129,14 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
   };
   
   return (
-    <div className={styles.createPost}>
+    <NineSliceContainer className={styles.createPost}>
       <form onSubmit={handleSubmit}>
+        <NineSliceContainer className={styles.createPostHeader}>
+          <h3>Create Post</h3>
+        </NineSliceContainer>
         <div className={styles.textareaWrapper}>
           <TextArea
-            label="Create Post"
+            label=""
             placeholder="What's on your mind?"
             value={content}
             onChange={(e) => setContent(e.target.value)}
@@ -152,13 +156,14 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
           <div className={styles.imagePreview}>
             <div className={styles.imageContainer}>
               <img src={imagePreview} alt="Preview" className={styles.previewImage} />
-              <button 
+              <Button 
                 type="button" 
+                variant="delete"
+                size="small"
                 className={styles.removeImageButton}
                 onClick={handleClearImage}
               >
-                <FaTimes />
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -177,7 +182,7 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
           <Button
             type="button"
             variant="secondary"
-            size="small"
+            size="medium"
             className={styles.uploadButton}
             onClick={() => fileInputRef.current?.click()}
             disabled={isLoading}
@@ -190,9 +195,6 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
               <span className={styles.fileName}>{imageFile.name}</span>
             )}
           </div>
-        </div>
-        
-        <div className={styles.submitRow}>
           <Button
             type="submit"
             variant="primary"
@@ -200,11 +202,11 @@ const CreatePost = ({ onPostCreated }: CreatePostProps) => {
             disabled={!content.trim() || isLoading}
             className={styles.submitButton}
           >
-            {isLoading ? 'Posting...' : 'Post'}
+            {isLoading ? 'Posting...' : <FaPaperPlane /> }
           </Button>
         </div>
       </form>
-    </div>
+    </NineSliceContainer>
   );
 };
 

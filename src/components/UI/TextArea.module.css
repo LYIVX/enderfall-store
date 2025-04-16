@@ -66,4 +66,44 @@
 /* No resize option */
 .textArea.noResize {
   resize: none;
+}
+
+/* Nine Slice TextArea Style */
+.nineSliceBase {
+  background-color: transparent !important;
+  color: var(--theme-text-primary) !important;
+  padding: 8px 16px !important;
+  border: none !important;
+  box-sizing: border-box !important;
+  margin: 8px 0 !important;
+  border-radius: 0 !important;
+  font-weight: 500 !important;
+  text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5) !important;
+  font-family: 'MinecraftSeven', 'Courier New', monospace !important;
+  letter-spacing: 1px !important;
+  font-size: 16px !important;
+  -webkit-font-smoothing: none !important;
+  -moz-osx-font-smoothing: never !important;
+  font-smooth: never !important;
+  image-rendering: pixelated !important;
+  
+  /* Direct nine-slice border */
+  border: solid !important;
+  border-width: 8px 8px 10px 8px !important;
+  border-image: var(--theme-nine-slice-input) !important;
+  border-image-width: 8px 8px 10px 8px !important;
+}
+
+.nineSliceBase:hover:not(:disabled) {
+  border-image: var(--theme-nine-slice-input-hover) !important;
+}
+
+.nineSliceBase:focus {
+  outline: none !important;
+  border-image: var(--theme-nine-slice-input-hover) !important;
+  box-shadow: none !important;
+}
+
+.nineSliceBase:disabled {
+  border-image: var(--theme-nine-slice-input-disabled) !important;
 } 

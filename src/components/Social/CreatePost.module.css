@@ -88,6 +88,7 @@
 
 .uploadButton {
   display: flex;
+  flex-direction: row !important;
   align-items: center;
   gap: 0.5rem;
 }
