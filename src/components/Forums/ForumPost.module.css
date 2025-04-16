@@ -8,17 +8,9 @@
   background-color: var(--theme-tab-background);
   border-radius: var(--border-radius-md);
   padding: var(--spacing-lg);
-  border-left: 4px solid var(--theme-secondary-color);
   margin-bottom: var(--spacing-md);
   transition: transform var(--transition-fast), box-shadow var(--transition-fast);
   box-shadow: var(--shadow-sm);
-}
-
-.postContent p {
-  background-color: var(--theme-tab-background);
-  border-radius: var(--border-radius-md);
-  padding: var(--spacing-md);
-  color: var(--theme-text-secondary);
 }
 
 .forumPost:hover {
@@ -54,6 +46,8 @@
   background-color: var(--theme-tab-background);
   border-radius: var(--border-radius-md);
   padding: var(--spacing-md);
+  display: flex;
+  justify-content: space-between;
 }
 
 .pinnedIndicator {
@@ -61,7 +55,7 @@
   margin-right: var(--spacing-xs);
 }
 
-.postPreview, .contentText {
+.postFullContent {
   color: var(--theme-text-secondary);
   font-size: var(--font-size-md);
   margin-bottom: var(--spacing-lg);
@@ -69,6 +63,15 @@
   background-color: var(--theme-tab-background);
   border-radius: var(--border-radius-md);
   padding: var(--spacing-md);
+}
+
+.contentText {
+  color: var(--theme-text-secondary);
+  line-height: 1.6;
+}
+
+.contentText p {
+  margin-bottom: var(--spacing-md);
 }
 
 .postSummary {
@@ -95,22 +98,13 @@
   align-items: center;
 }
 
-.authorSkeleton {
-  height: 24px;
-  width: 120px;
-  background-color: var(--theme-tab-background);
-  border-radius: var(--border-radius-sm);
-  animation: pulse 1.5s infinite;
-  background-color: var(--theme-tab-background);
-}
-
 .authorInfo {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
   background-color: var(--theme-tab-background);
   border-radius: var(--border-radius-md);
-  padding: var(--spacing-md);
+  padding: var(--spacing-sm);
 }
 
 .authorAvatar {
@@ -121,16 +115,13 @@
   object-fit: contain;
 }
 
-.authorAvatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
 .authorName {
   color: var(--theme-text-secondary);
   font-size: var(--font-size-sm);
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
 }
 
 .adminBadge {
@@ -143,26 +134,6 @@
   font-size: var(--font-size-2xs);
   font-weight: 600;
   text-transform: uppercase;
-}
-
-.likesCount {
-  font-size: var(--font-size-sm);
-  color: var(--theme-text-secondary);
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-}
-
-@keyframes pulse {
-  0% {
-    opacity: 0.6;
-  }
-  50% {
-    opacity: 0.3;
-  }
-  100% {
-    opacity: 0.6;
-  }
 }
 
 .blogCategory {
@@ -184,23 +155,21 @@
   object-fit: cover;
 }
 
-/* New styles for the enhanced ForumPost component */
-.postActions {
+/* Controls and action buttons */
+.postControls {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
 }
 
-
-.authorActions {
+.postActions {
   display: flex;
   gap: var(--spacing-sm);
 }
 
-.authorActions button {
-  padding: var(--spacing-md);
+.actionButton {
+  border: none;
   cursor: pointer;
-  font-size: var(--font-size-sm);
   border-radius: var(--border-radius-sm);
   transition: all var(--transition-fast);
 }
@@ -209,9 +178,6 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
-  background: none;
-  border: none;
-  color: var(--theme-text-secondary) !important;
   cursor: pointer;
   font-size: var(--font-size-md);
   padding: var(--spacing-xs) var(--spacing-sm);
@@ -220,12 +186,12 @@
 }
 
 .likeButton:hover {
-  color: var(--theme-error-color) !important;
-  background-color: var(--theme-hover);
+  filter: brightness(1.1);
 }
 
 .likeButton.liked {
-  color: var(--theme-error-color) !important;
+  background-color: var(--theme-error-color);
+  color: var(--theme-text-primary) !important;
 }
 
 .likeButton:disabled {
@@ -234,41 +200,53 @@
 }
 
 .editButton {
-  color: var(--theme-info-color) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background-color: var(--theme-info-color);
+  position: relative;
 }
 
-.editButton:hover {
-  color: var(--theme-text-secondary) !important;
+.editButton::before {
+  content: "✏️";
+  font-size: 14px;
 }
 
 .deleteButton {
-  color: var(--theme-error-color) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background-color: var(--theme-error-color);
+  position: relative;
 }
 
-.deleteButton:hover {
-  color: var(--theme-text-secondary) !important;
+.deleteButton::before {
+  content: "🗑️";
+  font-size: 14px;
 }
 
 .readMoreButton {
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
-  background: none;
-  border: none;
-  color: var(--theme-primary-color) !important;
   cursor: pointer;
   font-size: var(--font-size-md);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-sm);
   transition: all var(--transition-fast);
 }
 
 .readMoreButton:hover {
-  color: var(--theme-primary-color-dark) !important;
-  transform: translateX(2px);
+  filter: brightness(1.1);
 }
 
-/* Markdown content styles */
+/* Markdown styles */
 .markdownContent {
-  color: var(--theme-text-primary);
+  color: var(--theme-text-secondary);
   line-height: 1.6;
 }
 
@@ -278,7 +256,7 @@
 .markdownContent h4,
 .markdownContent h5,
 .markdownContent h6 {
-  margin-top: var(--spacing-lg);
+  margin-top: var(--spacing-md);
   margin-bottom: var(--spacing-md);
   color: var(--theme-text-primary);
 }
@@ -288,20 +266,20 @@
 }
 
 .markdownContent a {
-  color: var(--theme-link-color);
-  text-decoration: underline;
+  color: var(--theme-info-color);
+  text-decoration: none;
 }
 
-.markdownContent ul, 
+.markdownContent ul,
 .markdownContent ol {
+  margin-left: var(--spacing-lg);
   margin-bottom: var(--spacing-md);
-  margin-left: var(--spacing-md);
 }
 
 .markdownContent blockquote {
-  border-left: 4px solid var(--theme-secondary-color);
+  border-left: 3px solid var(--theme-info-color);
   padding-left: var(--spacing-md);
+  margin-left: var(--spacing-md);
   color: var(--theme-text-secondary);
   font-style: italic;
-  margin: var(--spacing-md) 0;
 } 

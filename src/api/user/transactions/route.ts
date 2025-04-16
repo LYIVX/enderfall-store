@@ -12,7 +12,6 @@ export async function GET(req: NextRequest) {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) {
       // No session found, user is not authenticated
-      console.log('No authenticated user session found');
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -20,7 +19,6 @@ export async function GET(req: NextRequest) {
     }
     
     const userId = session.user.id;
-    console.log(`Fetching transactions for user: ${userId}`);
     
     // Fetch transactions from the transactions table
     const { data: transactions, error: transactionsError } = await supabase
@@ -60,7 +58,6 @@ export async function GET(req: NextRequest) {
       };
     });
     
-    console.log(`Returning ${formattedTransactions.length} transactions`);
     return NextResponse.json({
       transactions: formattedTransactions
     });

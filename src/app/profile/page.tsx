@@ -9,13 +9,14 @@ import dynamic from 'next/dynamic';
 import LinkMinecraftModal from '@/components/Profile/LinkMinecraftModal';
 import LinkDiscordModal from '@/components/Profile/LinkDiscordModal';
 import LinkGoogleModal from '@/components/Profile/LinkGoogleModal';
-import styles from './ProfilePage.module.css';
+import styles from './page.module.css';
 import AccountSettings from '@/components/Profile/AccountSettings';
 import { isPageRefresh } from '@/lib/navigation';
 import Tabs from '@/components/UI/Tabs';
 import PurchaseHistory from '@/components/Profile/PurchaseHistory';
 import UserForums from '@/components/Profile/UserForums';
 import ProfileInfo from '@/components/Profile/ProfileInfo';
+import { NineSliceContainer } from '@/components/UI';
 
 // Dynamically import the LoadingSpinner component
 const LoadingSpinner = dynamic(() => import('@/components/UI/LoadingSpinner'), {
@@ -268,7 +269,7 @@ export default function ProfilePage() {
   ];
   
   return (
-    <div className={styles.profilePageContainer}>
+    <NineSliceContainer variant='blue' className={styles.profilePageContainer}>
       {notification && (
         <div className={`${styles.notification} ${styles[notification.type]}`}>
           {notification.type === 'success' ? <FaCheckCircle /> : <FaExclamationTriangle />}
@@ -277,19 +278,19 @@ export default function ProfilePage() {
       )}
       
       <div className={styles.profileContent}>
-        <div className={styles.profileHeader}>
+        <NineSliceContainer className={styles.profileHeader}>
           <h1>My Profile</h1>
           <Button variant="danger" onClick={handleLogout}>
             Logout
           </Button>
-        </div>
+        </NineSliceContainer>
         
         <Tabs 
           tabs={tabs} 
           activeTab={activeTab} 
           onChange={handleTabChange} 
           showContentBackground={true}
-          showContainerBackground={true}
+          showContainerBackground={false}
         />
         
         {/* Account linking modals */}
@@ -326,6 +327,6 @@ export default function ProfilePage() {
           }}
         />
       </div>
-    </div>
+    </NineSliceContainer>
   );
 } 

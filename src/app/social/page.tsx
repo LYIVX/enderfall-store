@@ -113,7 +113,6 @@ export default function SocialPage() {
   const [forumSearchQuery, setForumSearchQuery] = useState('');
   const [forumCategory, setForumCategory] = useState('All Categories');
   const [forumSort, setForumSort] = useState('newest');
-  const [selectedForum, setSelectedForum] = useState<any | null>(null);
   const [forumComments, setForumComments] = useState<any[]>([]);
   const [forumCommentContent, setForumCommentContent] = useState('');
   const [isForumCommentLoading, setIsForumCommentLoading] = useState(false);
@@ -121,6 +120,7 @@ export default function SocialPage() {
   const [userHasLikedForum, setUserHasLikedForum] = useState(false);
   const [showCreateForum, setShowCreateForum] = useState(false);
   const [editingForum, setEditingForum] = useState<any | null>(null);
+  const [selectedForum, setSelectedForum] = useState<any | null>(null);
   
   // Blog states
   const [selectedBlog, setSelectedBlog] = useState<any | null>(null);
@@ -731,45 +731,6 @@ export default function SocialPage() {
       if (tab === 'forums') {
         setActiveTab('feed');
         setActiveContentTab('forums');
-        
-        // Check if we have a forum ID to display
-        const forumId = searchParams.get('forum');
-        if (forumId && user) {
-          // Fetch the forum post
-          supabase
-            .from('forum_posts')
-            .select('*')
-            .eq('id', forumId)
-            .single()
-            .then(async ({ data, error }) => {
-              if (error) {
-                console.error('Error fetching forum post:', error);
-                return;
-              }
-              
-              if (data) {
-                // We need to fetch the author for this forum
-                const { data: authorData, error: authorError } = await supabase
-                  .from('profiles')
-                  .select('id, username, avatar_url, minecraft_username, is_admin')
-                  .eq('id', data.user_id)
-                  .single();
-                
-                if (authorError) {
-                  console.error('Error fetching forum author:', authorError);
-                }
-                
-                // Combine the data
-                const forumWithAuthor = {
-                  ...data,
-                  author: authorData || null
-                };
-                
-                // Display the forum
-                handleViewForum(forumWithAuthor);
-              }
-            });
-        }
       } else if (tab === 'blogs') {
         setActiveTab('feed');
         setActiveContentTab('blogs');
@@ -1176,7 +1137,7 @@ export default function SocialPage() {
                               )}
                               
                               <div className={styles.postFooter}>
-                                <div className={styles.authorInfo}>
+                                <NineSliceContainer className={styles.authorInfo}>
                                   <div className={styles.authorAvatar}>
                                     <AvatarWithStatus
                                       userId={blog.user_id}
@@ -1191,7 +1152,7 @@ export default function SocialPage() {
                                       <span className={styles.adminBadge}>ADMIN</span>
                                     )}
                                   </span>
-                                </div>
+                                </NineSliceContainer>
                                 <div className={styles.postControls}>
                                   {user && (
                                     (blog?.user_id === user.id || currentUserIsAdmin) && (
@@ -1275,228 +1236,6 @@ export default function SocialPage() {
                   isOpen={true}
                   onClose={handleForumEdited}
                 />
-              </NineSliceContainer>
-            ) : selectedForum ? (
-              /* Forum Detail View */
-              <NineSliceContainer className={styles.editForumWrapper}>
-              <div className={styles.forumDetailContainer}>
-                <div className={styles.forumDetailHeader}>
-                  <h2 className={styles.sectionTitle}>Forum Post</h2>
-                  <Button
-                    variant="secondary"
-                    size="medium"
-                    onClick={handleBackToForums}
-                    className={styles.backButton}
-                  >
-                    <FaArrowLeft /> Back to Forums
-                  </Button>
-                </div>
-                
-                
-                <NineSliceContainer className={styles.forumDetail}>
-                  <NineSliceContainer className={styles.forumDetailTitle}>{selectedForum.title}
-                  <div className={styles.category}>{selectedForum.category || 'Discussion'}</div>
-                  </NineSliceContainer>
-                  <div className={styles.forumDetailMeta}>
-                    <div className={styles.date}>
-                      {new Date(selectedForum.created_at).toLocaleDateString('en-GB', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                      })}
-                    </div>
-                  </div>
-                  
-                  <NineSliceContainer className={styles.forumDetailAuthor}>
-                    <AvatarWithStatus
-                      userId={selectedForum.author?.id || selectedForum.user_id}
-                      avatarUrl={selectedForum.author?.avatar_url}
-                      username={selectedForum.author?.username || 'User'}
-                      size="medium"
-                    />
-                    <div className={styles.authorDetails}>
-                      <span className={styles.authorName}>
-                        {selectedForum.author?.username || 'Unknown User'}
-                        {selectedForum.author?.is_admin && (
-                          <span className={styles.adminBadge}>ADMIN</span>
-                        )}
-                      </span>
-                      <span className={styles.authorRole}>
-                        {selectedForum.author?.minecraft_username ? `Minecraft: ${selectedForum.author.minecraft_username}` : ''}
-                      </span>
-                    </div>
-                  </NineSliceContainer>
-                  
-                  {selectedForum.summary && (
-                    <div className={styles.postSummary}>
-                      <div className={styles.summaryText}>{selectedForum.summary}</div>
-                    </div>
-                  )}
-                  
-                  <NineSliceContainer className={styles.forumDetailContent}>
-                    {selectedForum.is_markdown ? (
-                      <div className={styles.markdownContent}>
-                        <ReactMarkdown>
-                          {selectedForum.content}
-                        </ReactMarkdown>
-                      </div>
-                    ) : (
-                      <div className={styles.plainTextContent}>
-                        {selectedForum.content.split('\n').map((line: string, index: number) => (
-                          <p key={index}>{line}</p>
-                        ))}
-                      </div>
-                    )}
-                  </NineSliceContainer>
-                  
-                  <NineSliceContainer className={styles.forumDetailFooter}>
-                    <div className={styles.postActions}>
-                      {/* Like button */}
-                      <Button 
-                        variant="danger"
-                        size="small"
-                        onClick={handleToggleForumLike}
-                        disabled={!user}
-                      >
-                        <FaHeart />
-                        <span>{selectedForum.likes || 0} {(selectedForum.likes || 0) === 1 ? 'Like' : 'Likes'}</span>
-                      </Button>
-                      
-                      {/* Comments toggle button */}
-                      <Button 
-                        variant="info"
-                        size="small"
-                        onClick={handleToggleForumComments}
-                      >
-                        <FaComment />
-                        <span>{forumComments.length} {forumComments.length === 1 ? 'Comment' : 'Comments'}</span>
-                      </Button>
-                    </div>
-
-                    {/* Edit/Delete controls */}
-                    {user && (
-                      (selectedForum?.user_id === user.id || currentUserIsAdmin) && (
-                        <div className={styles.authorActions}>
-                          <Button
-                            variant="edit"
-                            size="small"
-                            className={styles.editButton}
-                            onClick={() => handleEditForum(selectedForum)}
-                          >
-                          </Button>
-                          <Button
-                            variant="delete"
-                            size="small"
-                            className={styles.deleteButton}
-                            onClick={async () => {
-                              if (!confirm('Are you sure you want to delete this forum post? This action cannot be undone.')) {
-                                return;
-                              }
-                              
-                              try {
-                                const { error } = await supabase
-                                  .from('forum_posts')
-                                  .delete()
-                                  .eq('id', selectedForum.id);
-                                  
-                                if (error) {
-                                  console.error('Error deleting forum post:', error);
-                                  alert(`Failed to delete forum post: ${error.message}`);
-                                  return;
-                                }
-                                
-                                // Remove from the UI and go back to list
-                                setForums(forums.filter(f => f.id !== selectedForum.id));
-                                handleBackToForums();
-                                alert('Forum post deleted successfully');
-                              } catch (error: any) {
-                                console.error('Error deleting forum post:', error);
-                                alert(`An unexpected error occurred: ${error?.message || 'Unknown error'}`);
-                              }
-                            }}
-                          >
-                          </Button>
-                        </div>
-                      )
-                    )}
-                  </NineSliceContainer>
-                  
-                  {/* Comments Section */}
-                  {showForumComments && (
-                    <div className={styles.commentsSection}>
-                      <NineSliceContainer variant='blue' className={styles.commentsList}>
-                        {forumComments.length === 0 ? (
-                          <div className={styles.noComments}>
-                            No comments yet. Be the first to comment!
-                          </div>
-                        ) : (
-                          forumComments.map((comment) => (
-                            <NineSliceContainer key={comment.id} className={styles.comment}>
-                              <div className={styles.commentHeader}>
-                                <div className={styles.commentAuthor} onClick={() => comment.author?.id && router.push(`/profile/${comment.author.id}`)}>
-                                  <div className={styles.commentAvatar}>
-                                    <AvatarWithStatus
-                                      userId={comment.author?.id || comment.user_id}
-                                      avatarUrl={comment.author?.avatar_url}
-                                      username={comment.author?.username || 'User'}
-                                      size="small"
-                                    />
-                                  </div>
-                                  <span className={styles.commentAuthorName}>
-                                    {comment.author?.username || 'Unknown User'}
-                                    {comment.author?.is_admin && (
-                                      <span className={styles.commentAdminBadge}>ADMIN</span>
-                                    )}
-                                  </span>
-                                </div>
-                                <div className={styles.commentControls}>
-                                  {user && (comment.user_id === user.id || currentUserIsAdmin) && (
-                                    <Button
-                                      variant="delete"
-                                      size="small"
-                                      onClick={() => handleDeleteForumComment(comment.id)}
-                                    >
-                                    </Button>
-                                  )}
-                                </div>
-                              </div>
-                              <div className={styles.commentContent}>
-                                {comment.content}
-                              </div>
-                            </NineSliceContainer>
-                          ))
-                        )}
-                      </NineSliceContainer>
-                          
-                        {user ? (
-                          <form className={styles.commentForm} onSubmit={handleSubmitForumComment}>
-                            <Input
-                              label=""
-                              type="text"
-                              value={forumCommentContent}
-                              onChange={(e) => setForumCommentContent(e.target.value)}
-                              placeholder="Write a comment..."
-                              className={styles.commentInput}
-                            />
-                            <Button
-                              variant="primary"
-                              size="small"
-                              className={styles.commentSubmit}
-                              disabled={!forumCommentContent.trim() || isForumCommentLoading}
-                              type="submit"
-                            >
-                              <FaPaperPlane />
-                            </Button>
-                          </form>
-                        ) : (
-                          <div className={styles.loginPrompt}>
-                            <p>Please <Link href="/login">sign in</Link> to leave a comment.</p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </NineSliceContainer>
-                </div>
               </NineSliceContainer>
             ) : (
               <>
@@ -1646,7 +1385,7 @@ export default function SocialPage() {
                               </NineSliceContainer>
                               
                               <div className={styles.postFooter}>
-                                <div className={styles.authorInfo}>
+                                <NineSliceContainer className={styles.authorInfo}>
                                   <div className={styles.authorAvatar}>
                                     <AvatarWithStatus
                                       userId={forum.author?.id || forum.user_id}
@@ -1661,7 +1400,7 @@ export default function SocialPage() {
                                       <span className={styles.adminBadge}>ADMIN</span>
                                     )}
                                   </span>
-                                </div>
+                                </NineSliceContainer>
                                 
                                 <div className={styles.postControls}>
                                   <Button 
@@ -1669,8 +1408,7 @@ export default function SocialPage() {
                                     size="small"
                                     onClick={() => {
                                       if (user) {
-                                        handleViewForum(forum);
-                                        handleToggleForumLike();
+                                        handleToggleForumLike(forum);
                                       }
                                     }}
                                     disabled={!user}
@@ -1683,9 +1421,9 @@ export default function SocialPage() {
                                     variant="info"
                                     size="small"
                                     onClick={() => {
-                                      handleViewForum(forum);
-                                      setShowForumComments(true);
+                                      handleViewForumComments(forum);
                                     }}
+                                    className={showForumComments && selectedForum && selectedForum.id === forum.id ? styles.active : ''}
                                   >
                                     <FaComment />
                                     <span>Comments</span>
@@ -1738,6 +1476,93 @@ export default function SocialPage() {
                                 </div>
                               </div>
                             </div>
+                            
+                            {showForumComments && selectedForum && selectedForum.id === forum.id && (
+                              <div className={styles.commentsSection}>
+                                <NineSliceContainer variant='blue' className={styles.commentsList}>
+                                  {isForumCommentLoading ? (
+                                    <div className={styles.loadingComments}>Loading comments...</div>
+                                  ) : forumComments.length === 0 ? (
+                                    <div className={styles.noComments}>No comments yet. Be the first to comment!</div>
+                                  ) : (
+                                    forumComments.map(comment => (
+                                      <NineSliceContainer key={comment.id} className={styles.comment}>
+                                        <div className={styles.commentHeader}>
+                                          <div className={styles.commentAuthor} onClick={() => router.push(`/profile/${comment.author?.id}`)}>
+                                            {comment.author && (
+                                              <div className={styles.commentAvatar}>
+                                                <AvatarWithStatus
+                                                  userId={comment.author?.id || comment.user_id}
+                                                  avatarUrl={comment.author?.avatar_url}
+                                                  username={comment.author?.username || 'User'}
+                                                  size="small"
+                                                />
+                                              </div>
+                                            )}
+                                            <span className={styles.commentAuthorName}>
+                                              {comment.author?.username || 'Unknown User'}
+                                              {comment.author?.is_admin && (
+                                                <span className={styles.adminBadge}>ADMIN</span>
+                                              )}
+                                            </span>
+                                          </div>
+                                          <span className={styles.commentTime}>
+                                            {new Date(comment.created_at).toLocaleDateString('en-GB', {
+                                              day: 'numeric',
+                                              month: 'short',
+                                              year: 'numeric',
+                                            })}
+                                          </span>
+                                        </div>
+                                        <div className={styles.commentContent}>{comment.content}</div>
+                                        
+                                        {/* Delete button if user is the author */}
+                                        {user && (user.id === comment.user_id || currentUserIsAdmin) && (
+                                          <Button
+                                            variant="delete"
+                                            size="small"
+                                            className={styles.deleteCommentButton}
+                                            onClick={() => handleDeleteForumComment(comment.id)}
+                                          >
+                                          </Button>
+                                        )}
+                                      </NineSliceContainer>
+                                    ))
+                                  )}
+                                </NineSliceContainer>
+                                
+                                {/* Comment input form */}
+                                {user ? (
+                                  <form className={styles.commentForm} onSubmit={(e) => {
+                                    e.preventDefault();
+                                    handleSubmitForumComment();
+                                  }}>
+                                    <Input
+                                      label=""
+                                      placeholder="Write a comment..."
+                                      value={forumCommentContent}
+                                      onChange={(e) => setForumCommentContent(e.target.value)}
+                                      className={styles.commentInput}
+                                    />
+                                    <Button
+                                      type="submit"
+                                      variant="primary"
+                                      size="small"
+                                      disabled={!forumCommentContent.trim() || isForumCommentLoading}
+                                      className={styles.commentSubmit}
+                                    >
+                                      <FaPaperPlane />
+                                    </Button>
+                                  </form>
+                                ) : (
+                                  <div className={styles.loginToComment}>
+                                    <Button variant="primary" onClick={openLoginModal}>
+                                      Sign in to comment
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </NineSliceContainer>
                         ))}
                       </div>
@@ -1893,199 +1718,9 @@ export default function SocialPage() {
     );
   };
   
-  // Handle viewing a forum post
-  const handleViewForum = async (forum: any) => {
-    setSelectedForum(forum);
-    setForumComments([]);
-    setShowForumComments(false);
-    
-    // Check if user has liked this forum
-    if (user) {
-      try {
-        const hasLiked = await hasUserLikedPost(forum.id, user.id);
-        setUserHasLikedForum(hasLiked);
-      } catch (error) {
-        console.error('Error checking forum like status:', error);
-      }
-    }
-    
-    await fetchForumComments(forum.id);
-  };
-
-  // Reset selected forum to go back to list view
-  const handleBackToForums = () => {
-    setSelectedForum(null);
-    setEditingForum(null);
-    setShowCreateForum(false);
-    setForumComments([]);
-    setForumCommentContent('');
-  };
-
-  // Fetch forum comments
-  const fetchForumComments = async (forumId: string) => {
-    try {
-      // Fetch comments
-      const { data: commentsData, error: commentsError } = await supabase
-        .from('forum_comments')
-        .select('*')
-        .eq('post_id', forumId)
-        .order('created_at', { ascending: true });
-
-      if (commentsError) throw commentsError;
-      
-      // If we have comments, fetch their authors
-      let commentsWithAuthors = [];
-      if (commentsData && commentsData.length > 0) {
-        // Get unique author IDs
-        const authorIdMap: Record<string, boolean> = {};
-        commentsData.forEach(comment => {
-          if (comment.user_id) authorIdMap[comment.user_id] = true;
-        });
-        const authorIds = Object.keys(authorIdMap);
-        
-        // Fetch all authors in one query
-        const { data: authorsData, error: authorsError } = await supabase
-          .from('profiles')
-          .select('id, username, avatar_url, minecraft_username, is_admin')
-          .in('id', authorIds);
-          
-        // Create a map of author IDs to author data
-        const authorsMap: Record<string, any> = {};
-        if (!authorsError && authorsData) {
-          authorsData.forEach(author => {
-            authorsMap[author.id] = author;
-          });
-        }
-        
-        // Attach authors to comments
-        commentsWithAuthors = commentsData.map(comment => ({
-          ...comment,
-          author: comment.user_id && authorsMap[comment.user_id] ? authorsMap[comment.user_id] : null
-        }));
-      } else {
-        commentsWithAuthors = commentsData || [];
-      }
-      
-      setForumComments(commentsWithAuthors);
-    } catch (error) {
-      console.error('Error fetching forum comments:', error);
-      return [];
-    }
-  };
-
-  // Handle toggling forum comments visibility
-  const handleToggleForumComments = () => {
-    setShowForumComments(!showForumComments);
-  };
-
-  // Handle submitting a forum comment
-  const handleSubmitForumComment = async (e: React.FormEvent) => {
-    if (e) e.preventDefault();
-    
-    if (!forumCommentContent.trim() || isForumCommentLoading || !selectedForum) return;
-
-    setIsForumCommentLoading(true);
-    try {
-      if (!user) {
-        router.push('/login');
-        return;
-      }
-
-      // Insert the comment
-      const { data: commentData, error } = await supabase
-        .from('forum_comments')
-        .insert({
-          post_id: selectedForum.id,
-          content: forumCommentContent,
-          user_id: user.id,
-        })
-        .select('*')
-        .single();
-
-      if (error) throw error;
-      
-      // Get the current user's profile data 
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('id, username, avatar_url, is_admin')
-        .eq('id', user.id)
-        .single();
-        
-      if (profileError) {
-        console.error('Error fetching current user profile:', profileError);
-      }
-      
-      // Add the new comment to the list with author data
-      const newComment = {
-        ...commentData,
-        author: profileData || {
-          id: user.id,
-          username: user.user_metadata?.username || 'User',
-          avatar_url: user.user_metadata?.avatar_url,
-          is_admin: user.user_metadata?.is_admin || false
-        }
-      };
-      
-      setForumComments([...forumComments, newComment]);
-      setForumCommentContent('');
-    } catch (error) {
-      console.error('Error submitting forum comment:', error);
-    } finally {
-      setIsForumCommentLoading(false);
-    }
-  };
-
-  // Handle delete forum comment
-  const handleDeleteForumComment = async (commentId: string) => {
-    if (!user || !confirm('Are you sure you want to delete this comment?')) return;
-    
-    try {
-      const { error } = await supabase
-        .from('forum_comments')
-        .delete()
-        .eq('id', commentId);
-        
-      if (error) throw error;
-      
-      // Remove from UI
-      setForumComments(forumComments.filter(comment => comment.id !== commentId));
-    } catch (error) {
-      console.error('Error deleting comment:', error);
-    }
-  };
-
-  // Toggle like for forum
-  const handleToggleForumLike = async () => {
-    if (!user || !selectedForum) return;
-    
-    try {
-      const result = await togglePostLike(selectedForum.id, user.id);
-      
-      if (result.success) {
-        setUserHasLikedForum(result.liked);
-        // Update the likes count in the selected forum
-        setSelectedForum({
-          ...selectedForum,
-          likes: result.liked ? (selectedForum.likes || 0) + 1 : (selectedForum.likes || 0) - 1
-        });
-        
-        // Also update in the forums list for when we go back
-        setForums(forums.map(forum => 
-          forum.id === selectedForum.id 
-            ? {...forum, likes: result.liked ? (forum.likes || 0) + 1 : (forum.likes || 0) - 1} 
-            : forum
-        ));
-      }
-    } catch (error) {
-      console.error('Error toggling forum like:', error);
-    }
-  };
-  
   // Toggle create forum form
   const toggleCreateForum = () => {
     setShowCreateForum(!showCreateForum);
-    setSelectedForum(null);
-    setEditingForum(null);
   };
 
   // Toggle create blog form
@@ -2139,10 +1774,9 @@ export default function SocialPage() {
     fetchForums(); // Refresh the forums list
   };
 
-  // Handle starting to edit a forum
+  // Handle editing a forum post
   const handleEditForum = (forum: any) => {
     setEditingForum(forum);
-    setSelectedForum(null);
     setShowCreateForum(false);
   };
 
@@ -2155,6 +1789,161 @@ export default function SocialPage() {
   // Handle canceling forum edit
   const handleCancelEditForum = () => {
     setEditingForum(null);
+  };
+  
+  // Toggle like for forum post
+  const handleToggleForumLike = async (forum: any) => {
+    if (!user) return;
+    
+    try {
+      const result = await togglePostLike(forum.id, user.id);
+      
+      if (result.success) {
+        // Update the likes count in the forums list
+        setForums(forums.map(f => 
+          f.id === forum.id 
+            ? {...f, likes: result.liked ? (f.likes || 0) + 1 : (f.likes || 0) - 1} 
+            : f
+        ));
+      }
+    } catch (error) {
+      console.error('Error toggling forum like:', error);
+    }
+  };
+   
+  // Show forum comments
+  const handleViewForumComments = (forum: any) => {
+    // If this forum's comments are already showing, hide them
+    if (showForumComments && selectedForum && selectedForum.id === forum.id) {
+      setShowForumComments(false);
+      setSelectedForum(null);
+      return;
+    }
+    
+    // Set the forum for displaying comments
+    setForumComments([]);
+    setSelectedForum(forum);
+    
+    // Show loading state
+    setIsForumCommentLoading(true);
+    
+    // Fetch the comments for this forum
+    fetchForumComments(forum.id);
+  };
+  
+  // Toggle visibility of forum comments
+  const handleToggleForumComments = () => {
+    setShowForumComments(!showForumComments);
+  };
+  
+  // Fetch comments for a forum post
+  const fetchForumComments = async (forumId: string) => {
+    try {
+      // Fetch comments
+      const { data: commentsData, error: commentsError } = await supabase
+        .from('forum_comments')
+        .select('*')
+        .eq('post_id', forumId)
+        .order('created_at', { ascending: true });
+        
+      if (commentsError) throw commentsError;
+      
+      // If we have comments, fetch their authors
+      let commentsWithAuthors = [];
+      if (commentsData && commentsData.length > 0) {
+        // Get unique author IDs
+        const authorIdMap: Record<string, boolean> = {};
+        commentsData.forEach(comment => {
+          if (comment.user_id) authorIdMap[comment.user_id] = true;
+        });
+        const authorIds = Object.keys(authorIdMap);
+        
+        // Fetch all authors in one query
+        const { data: authorsData, error: authorsError } = await supabase
+          .from('profiles')
+          .select('id, username, avatar_url, minecraft_username, is_admin')
+          .in('id', authorIds);
+          
+        // Create a map of author IDs to author data
+        const authorsMap: Record<string, any> = {};
+        if (!authorsError && authorsData) {
+          authorsData.forEach(author => {
+            authorsMap[author.id] = author;
+          });
+        }
+        
+        // Attach authors to comments
+        commentsWithAuthors = commentsData.map(comment => ({
+          ...comment,
+          author: comment.user_id && authorsMap[comment.user_id] ? authorsMap[comment.user_id] : null
+        }));
+      } else {
+        commentsWithAuthors = commentsData || [];
+      }
+      
+      setForumComments(commentsWithAuthors);
+      
+      // Only show comments after they're loaded
+      setShowForumComments(true);
+    } catch (error) {
+      console.error('Error fetching forum comments:', error);
+    } finally {
+      setIsForumCommentLoading(false);
+    }
+  };
+  
+  // Handle forum comment submission
+  const handleSubmitForumComment = async () => {
+    if (!user || !selectedForum || !forumCommentContent.trim()) return;
+    
+    try {
+      setIsForumCommentLoading(true);
+      
+      // Insert the comment
+      const { data, error } = await supabase
+        .from('forum_comments')
+        .insert({
+          post_id: selectedForum.id,
+          user_id: user.id,
+          content: forumCommentContent.trim()
+        })
+        .select();
+        
+      if (error) throw error;
+      
+      // Clear the input and refresh comments
+      setForumCommentContent('');
+      if (selectedForum) {
+        fetchForumComments(selectedForum.id);
+      }
+    } catch (error) {
+      console.error('Error submitting forum comment:', error);
+    } finally {
+      setIsForumCommentLoading(false);
+    }
+  };
+  
+  // Handle forum comment deletion
+  const handleDeleteForumComment = async (commentId: string) => {
+    if (!user) return;
+    
+    try {
+      // Delete the comment
+      const { error } = await supabase
+        .from('forum_comments')
+        .delete()
+        .eq('id', commentId)
+        .eq('user_id', user.id); // Ensure only the author can delete
+        
+      if (error) throw error;
+      
+      // Refresh comments
+      if (selectedForum) {
+        fetchForumComments(selectedForum.id);
+      }
+    } catch (error) {
+      console.error('Error deleting forum comment:', error);
+    }
   };
   
   const renderContent = () => {

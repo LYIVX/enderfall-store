@@ -10,6 +10,7 @@ import ReactMarkdown from 'react-markdown';
 import Button from '@/components/UI/Button';
 import styles from './ForumPost.module.css';
 import AvatarWithStatus from '@/components/UI/AvatarWithStatus';
+import NineSliceContainer from '../UI/NineSliceContainer';
 
 interface ForumPostProps {
   post: ForumPostType & { is_blog?: boolean, thumbnail_url?: string | null };
@@ -171,7 +172,11 @@ const ForumPost = ({ post, showFullContent = false, onDelete, onEdit }: ForumPos
         : post.content) || 'No content');
 
   const PostContent = () => (
-    <div className={styles.forumPost} data-post-id={post.id}>
+    <NineSliceContainer 
+      className={styles.forumPost} 
+      data-post-id={post.id}
+      id={`forum-${post.id}`}
+    >
       <div className={styles.postContent}>
         <div className={styles.postMeta}>
           {post.is_blog ? (
@@ -182,10 +187,10 @@ const ForumPost = ({ post, showFullContent = false, onDelete, onEdit }: ForumPos
           <div className={styles.date}>{formatDate(post.created_at)}</div>
         </div>
 
-        <h3 className={styles.postTitle}>
+        <NineSliceContainer className={styles.postTitle}>
           {(post.pinned || post.is_blog) && <span className={styles.pinnedIndicator}>📌 </span>}
           {post.title || 'Untitled Post'}
-        </h3>
+        </NineSliceContainer>
 
         {post.thumbnail_url && (
           <div className={styles.thumbnailContainer}>
@@ -198,7 +203,7 @@ const ForumPost = ({ post, showFullContent = false, onDelete, onEdit }: ForumPos
         )}
 
         {!showFullContent && post.summary && (
-          <div className={styles.postSummary}>
+          <NineSliceContainer className={styles.postSummary}>
             {post.is_markdown ? (
               <ReactMarkdown>
                 {post.summary}
@@ -206,24 +211,28 @@ const ForumPost = ({ post, showFullContent = false, onDelete, onEdit }: ForumPos
             ) : (
               <div className={styles.summaryText}>{post.summary}</div>
             )}
-          </div>
+          </NineSliceContainer>
         )}
 
         {showFullContent && (
-          <div className={styles.postContent}>
+          <NineSliceContainer className={styles.postFullContent}>
             {post.is_markdown ? (
               <ReactMarkdown>
                 {contentToShow}
               </ReactMarkdown>
             ) : (
-              <div className={styles.contentText}>{contentToShow}</div>
+              <div className={styles.contentText}>
+                {contentToShow.split('\n').map((line: string, index: number) => (
+                  <p key={index}>{line}</p>
+                ))}
+              </div>
             )}
-          </div>
+          </NineSliceContainer>
         )}
         
         <div className={styles.postFooter}>
           <div className={styles.authorInfo}>
-            {author?.avatar_url && (
+            {author && (
               <div className={styles.authorAvatar}>
                 <AvatarWithStatus
                   userId={author.id}
@@ -241,29 +250,29 @@ const ForumPost = ({ post, showFullContent = false, onDelete, onEdit }: ForumPos
             </span>
           </div>
           
-          <div className={styles.postActions}>
+          <div className={styles.postControls}>
             {user && (
               <Button 
-                variant="ghost"
+                variant="danger"
                 size="small"
-                className={`${styles.likeButton} ${liked ? styles.liked : ''}`}
                 onClick={handleLikeToggle}
                 disabled={isLikeLoading}
                 stopPropagation={true}
               >
                 <FaHeart />
-                <span>{likesCount} {liked ? 'Liked' : ''}</span>
+                <span>{likesCount} {likesCount === 1 ? 'Like' : 'Likes'}</span>
               </Button>
             )}
             
             {!showFullContent && (
               <Button 
-                variant="ghost"
+                variant="info"
                 size="small"
                 className={styles.readMoreButton}
                 onClick={(e) => {
                   e.preventDefault();
-                  window.location.href = `/social?tab=forums&forum=${post.id}`;
+                  e.stopPropagation();
+                  window.location.href = `/social?tab=forums#forum-${post.id}`;
                 }}
                 stopPropagation={true}
               >
@@ -273,26 +282,27 @@ const ForumPost = ({ post, showFullContent = false, onDelete, onEdit }: ForumPos
             )}
             
             {isAuthor && (
-              <div className={styles.authorActions}>
-                <Button 
-                  variant="ghost"
+              <div className={styles.postActions}>
+                <Button
+                  variant="edit"
                   size="small"
-                  className={styles.editButton} 
+                  className={`${styles.actionButton}`}
                   onClick={handleEdit}
                 >
-                  <FaEdit />
                 </Button>
-                <Button 
-                  variant="ghost"
-                  size="small" className={styles.deleteButton} onClick={handleDelete}>
-                  <FaTrash />
+                <Button
+                  variant="delete"
+                  size="small"
+                  className={`${styles.actionButton}`}
+                  onClick={handleDelete}
+                >
                 </Button>
               </div>
             )}
           </div>
         </div>
       </div>
-    </div>
+    </NineSliceContainer>
   );
 
   // If we're showing full content, don't wrap in a link
@@ -306,7 +316,7 @@ const ForumPost = ({ post, showFullContent = false, onDelete, onEdit }: ForumPos
       <PostContent />
     ) : (
       <Link 
-        href={`/social?tab=forums&forum=${post.id}`} 
+        href={`/social?tab=forums#forum-${post.id}`} 
         className={styles.forumLink}
       >
         <PostContent />

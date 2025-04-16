@@ -7,7 +7,7 @@ import Button from '@/components/UI/Button';
 import styles from './ShoppingCart.module.css';
 import { useAuth } from '@/components/Auth/AuthContext';
 import LoginModal from '@/components/Auth/LoginModal';
-import { FaShoppingCart, FaShoppingBag, FaTimes } from 'react-icons/fa';
+import { FaShoppingCart, FaShoppingBag, FaTimes, FaLock } from 'react-icons/fa';
 import { NineSliceContainer } from '../UI';
 
 interface ShoppingCartProps {
@@ -27,7 +27,7 @@ const ShoppingCart = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isAdmin } = useAuth();
 
   useEffect(() => {
     const calculatedTotal = cartItems.reduce(
@@ -47,6 +47,12 @@ const ShoppingCart = ({
     if (!isAuthenticated || !user) {
       // Open login modal if not authenticated
       setIsLoginModalOpen(true);
+      return;
+    }
+
+    // Check if user is admin
+    if (!isAdmin) {
+      setError('Only administrators can checkout at this time');
       return;
     }
 
@@ -177,6 +183,11 @@ const ShoppingCart = ({
                       You must be logged in to checkout
                     </div>
                   )}
+                  {isAuthenticated && !isAdmin && (
+                    <div className={styles.loginPrompt}>
+                      Only administrators can checkout at this time
+                    </div>
+                  )}
                 </NineSliceContainer>
 
                 <NineSliceContainer className={styles.cartActions}>
@@ -194,9 +205,14 @@ const ShoppingCart = ({
                     nineSlice={true}
                     onClick={handleCheckout}
                     className={styles.checkoutButton}
-                    disabled={isLoading || cartItems.length === 0}
+                    disabled={isLoading || cartItems.length === 0 || (isAuthenticated && !isAdmin)}
                   >
-                    {isLoading ? 'Processing...' : (isAuthenticated ? 'Checkout' : 'Login')}
+                    {isLoading ? 'Processing...' : !isAuthenticated ? 'Login' : !isAdmin ? (
+                      <>
+                        <FaLock size={14} style={{ marginRight: '6px' }} />
+                        Admin Only
+                      </>
+                    ) : 'Checkout'}
                   </Button>
                 </NineSliceContainer>
               </div>

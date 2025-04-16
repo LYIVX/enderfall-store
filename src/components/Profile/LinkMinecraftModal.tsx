@@ -6,6 +6,7 @@ import Modal from '@/components/UI/Modal';
 import Button from '@/components/UI/Button';
 import { FaCube, FaCheck, FaTimes } from 'react-icons/fa';
 import styles from './LinkAccountModal.module.css';
+import { Input } from '../UI';
 
 interface LinkMinecraftModalProps {
   isOpen: boolean;
@@ -92,13 +93,14 @@ const LinkMinecraftModal: React.FC<LinkMinecraftModalProps> = ({
             <div className={styles.inputGroup}>
               <label htmlFor="minecraft-username">Minecraft Username</label>
               <div className={styles.inputWrapper}>
-                <input
+                <Input
                   id="minecraft-username"
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="Enter your Minecraft username"
                   className={styles.input}
+                  label=""
                 />
                 <Button 
                   variant="secondary"

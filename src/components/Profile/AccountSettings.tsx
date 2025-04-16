@@ -13,6 +13,7 @@ import AccentThemeToggle from '@/components/Theme/AccentThemeToggle';
 import LightDarkToggle from '@/components/Theme/LightDarkToggle';
 import Toggle from '@/components/UI/Toggle';
 import AvatarWithStatus from '@/components/UI/AvatarWithStatus';
+import { NineSliceContainer } from '../UI';
 
 interface AccountSettingsProps {
   email: string;
@@ -377,22 +378,25 @@ const AccountSettings: React.FC<AccountSettingsProps> = ({ email, username }) =>
         )}
       
         <div className={styles.settingsGroup}>          
-          <div className={styles.accountAction}>
+          <NineSliceContainer className={styles.accountAction}>
             <div className={styles.actionInfo}>
-              <div className={styles.avatarPreview}>
+              <div>
                 {avatarPreview ? (
                   <AvatarWithStatus
                     userId={profile?.id || 'preview'}
                     avatarUrl={avatarPreview}
                     username={username}
-                    size="large"
+                    size="xxlarge"
+                    showStatusIndicator={false}
                   />
                 ) : profile?.avatar_url ? (
                   <AvatarWithStatus
                     userId={profile?.id}
                     avatarUrl={profile.avatar_url}
                     username={username}
-                    size="large"
+                    size="xxlarge"
+                    showStatusIndicator={false}
+
                   />
                 ) : (
                   <FaUser />
@@ -419,7 +423,7 @@ const AccountSettings: React.FC<AccountSettingsProps> = ({ email, username }) =>
                 <div className={styles.confirmButtons}>
                   <Button 
                     variant="primary" 
-                    size="small" 
+                    size="medium" 
                     onClick={handleAvatarUpload}
                     disabled={isUploading}
                   >
@@ -427,7 +431,7 @@ const AccountSettings: React.FC<AccountSettingsProps> = ({ email, username }) =>
                   </Button>
                   <Button 
                     variant="secondary" 
-                    size="small" 
+                    size="medium" 
                     onClick={() => {
                       setAvatarFile(null);
                       setAvatarPreview(null);
@@ -440,7 +444,7 @@ const AccountSettings: React.FC<AccountSettingsProps> = ({ email, username }) =>
               ) : (
                 <Button 
                   variant="primary" 
-                  size="small" 
+                  size="medium" 
                   className={styles.uploadButton} 
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isUploading}
@@ -449,11 +453,11 @@ const AccountSettings: React.FC<AccountSettingsProps> = ({ email, username }) =>
                 </Button>
               )}
             </div>
-          </div>
+          </NineSliceContainer>
           
           {/* Previous Avatars Section */}
           {previousAvatars.length > 0 && (
-            <div className={styles.accountAction}>
+            <NineSliceContainer className={styles.accountAction}>
               <div className={styles.actionInfo} style={{ width: '100%' }}>
                 <div style={{ width: '100%' }}>
                   <div className={styles.actionTitle}>Previous Profile Pictures</div>
@@ -466,13 +470,15 @@ const AccountSettings: React.FC<AccountSettingsProps> = ({ email, username }) =>
                       <div>Loading previous avatars...</div>
                     ) : (
                       previousAvatars.map((avatar, index) => (
-                        <div key={index} className={styles.previousAvatarItem}>
-                          <div className={styles.previousAvatarImage}>
+                        <NineSliceContainer key={index} className={styles.previousAvatarItem}>
+                          <div>
                             <AvatarWithStatus
                               userId={profile?.id || 'prev'}
                               avatarUrl={avatar.url}
                               username={username}
-                              size="medium"
+                              size="xxxlarge"
+                              showStatusIndicator={false}
+
                             />
                           </div>
                           <div className={styles.previousAvatarActions}>
@@ -485,24 +491,23 @@ const AccountSettings: React.FC<AccountSettingsProps> = ({ email, username }) =>
                               Use
                             </Button>
                             <Button 
-                              variant="danger" 
+                              variant="delete" 
                               size="small" 
                               onClick={() => deleteAvatar(avatar.path)}
                               disabled={isUploading}
                             >
-                              <FaTrash />
                             </Button>
                           </div>
-                        </div>
+                        </NineSliceContainer>
                       ))
                     )}
                   </div>
                 </div>
               </div>
-            </div>
+            </NineSliceContainer>
           )}
 
-          <div className={styles.accountAction}>
+          <NineSliceContainer className={styles.accountAction}>
             <div className={styles.actionInfo}>
               <span className={styles.actionIcon}><FaUserCircle /></span>
               <div>
@@ -510,10 +515,10 @@ const AccountSettings: React.FC<AccountSettingsProps> = ({ email, username }) =>
                 <div className={styles.actionDescription}>{username}</div>
               </div>
             </div>
-            <Button variant="primary" size="small" onClick={() => setIsUsernameModalOpen(true)}>Change</Button>
-          </div>
+            <Button variant="primary" size="medium" onClick={() => setIsUsernameModalOpen(true)}>Change</Button>
+          </NineSliceContainer>
 
-          <div className={styles.accountAction}>
+          <NineSliceContainer className={styles.accountAction}>
             <div className={styles.actionInfo}>
               <span className={styles.actionIcon}><FaEnvelope /></span>
               <div>
@@ -521,10 +526,10 @@ const AccountSettings: React.FC<AccountSettingsProps> = ({ email, username }) =>
                 <div className={styles.actionDescription}>{email}</div>
               </div>
             </div>
-            <Button variant="primary" size="small">Change</Button>
-          </div>
+            <Button variant="primary" size="medium">Change</Button>
+          </NineSliceContainer>
           
-          <div className={styles.accountAction}>
+          <NineSliceContainer className={styles.accountAction}>
             <div className={styles.actionInfo}>
               <span className={styles.actionIcon}><FaKey /></span>
               <div>
@@ -532,13 +537,13 @@ const AccountSettings: React.FC<AccountSettingsProps> = ({ email, username }) =>
                 <div className={styles.actionDescription}>Last changed 3 months ago</div>
               </div>
             </div>
-            <Button variant="primary" size="small" onClick={() => setIsPasswordModalOpen(true)}>Change</Button>
-          </div>
+            <Button variant="primary" size="medium" onClick={() => setIsPasswordModalOpen(true)}>Change</Button>
+          </NineSliceContainer>
         </div>
 
         <div className={styles.settingsGroup}>
           <h4 className={styles.groupTitle}>Notifications</h4>
-          <div className={styles.accountAction}>
+          <NineSliceContainer className={styles.accountAction}>
             <div className={styles.actionInfo}>
               <span className={styles.actionIcon}><FaEnvelope /></span>
               <div>
@@ -550,8 +555,8 @@ const AccountSettings: React.FC<AccountSettingsProps> = ({ email, username }) =>
               isEnabled={emailNotifications}
               onChange={() => setEmailNotifications(!emailNotifications)}
             />
-          </div>
-          <div className={styles.accountAction}>
+          </NineSliceContainer>
+          <NineSliceContainer className={styles.accountAction}>
             <div className={styles.actionInfo}>
               <span className={styles.actionIcon}><FaDiscord /></span>
               <div>
@@ -563,12 +568,12 @@ const AccountSettings: React.FC<AccountSettingsProps> = ({ email, username }) =>
               isEnabled={discordNotifications}
               onChange={() => setDiscordNotifications(!discordNotifications)}
             />
-          </div>
+          </NineSliceContainer>
         </div>
         
         <div className={styles.settingsGroup}>
           <h4 className={styles.groupTitle}>Appearance</h4>
-          <div className={styles.accountAction}>
+          <NineSliceContainer className={styles.accountAction}>
             <div className={styles.actionInfo}>
               <span className={styles.actionIcon}><FaPalette /></span>
               <div>
@@ -577,9 +582,9 @@ const AccountSettings: React.FC<AccountSettingsProps> = ({ email, username }) =>
               </div>
             </div>
             <LightDarkToggle />
-          </div>
+          </NineSliceContainer>
           
-          <div className={styles.accountAction}>
+          <NineSliceContainer className={styles.accountAction}>
             <div className={styles.actionInfo}>
               <span className={styles.actionIcon}><FaPalette /></span>
               <div>
@@ -588,23 +593,8 @@ const AccountSettings: React.FC<AccountSettingsProps> = ({ email, username }) =>
               </div>
             </div>
             <AccentThemeToggle />
-          </div>
+          </NineSliceContainer>
         </div>
-        
-        <div className={styles.dangerZone}>
-          <h4 className={styles.dangerTitle}>Danger Zone</h4>
-          <div className={styles.accountAction}>
-            <div className={styles.actionInfo}>
-              <span className={styles.actionIcon}><FaTrash style={{ color: 'var(--theme-error-color)' }} /></span>
-              <div>
-                <div className={styles.actionTitle}>Delete Account</div>
-                <div className={styles.actionDescription}>This action cannot be undone</div>
-              </div>
-            </div>
-            <Button variant="danger" size="small">Delete</Button>
-          </div>
-        </div>
-        
         <div className={styles.settingsButtons}>
           <Button variant="primary">Save Changes</Button>
         </div>

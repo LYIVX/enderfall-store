@@ -1,0 +1,144 @@
+.notFoundPage {
+  width: 100%;
+  min-height: calc(100vh - 200px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem 1rem;
+  margin-top: var(--spacing-xxl);
+}
+
+.container {
+  max-width: 800px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.notFoundContainer {
+  padding: var(--spacing-lg) !important;
+}
+
+.notFoundContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--spacing-md);
+}
+
+.errorCode {
+  font-size: 8rem;
+  font-weight: 800;
+  color: var(--theme-error-color);
+  line-height: 1;
+  font-family: 'MinecraftSeven', monospace;
+  text-shadow: 4px 4px 0px rgba(0, 0, 0, 0.3);
+  letter-spacing: -4px;
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--theme-text-primary);
+  margin: 0 0 var(--spacing-md) 0;
+  font-family: 'MinecraftSeven', monospace;
+  text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.3);
+}
+
+.messageContainer {
+  max-width: 600px;
+}
+
+.message {
+  font-size: 1.125rem;
+  color: var(--theme-text-secondary);
+  line-height: 1.5;
+}
+
+.message p {
+  margin: var(--spacing-sm) 0;
+}
+
+.imageContainer {
+  position: relative;
+  height: 200px;
+  width: 200px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.notFoundImage {
+  object-fit: contain;
+  image-rendering: pixelated;
+  width: 100%;
+  height: 100%;
+}
+
+.fallbackIcon {
+  font-size: 100px;
+  color: var(--theme-error-color);
+  animation: bounce 2s infinite ease-in-out;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(15px);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
+}
+
+.actionButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  justify-content: center;
+}
+
+.actionButton {
+  display: flex !important;
+  align-items: center;
+  gap: var(--spacing-sm);
+  min-width: 140px;
+}
+
+.actionButton svg {
+  margin-right: var(--spacing-xs);
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .errorCode {
+    font-size: 6rem;
+  }
+  
+  .title {
+    font-size: 2rem;
+  }
+  
+  .actionButtons {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .actionButton {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .errorCode {
+    font-size: 4rem;
+  }
+  
+  .title {
+    font-size: 1.5rem;
+  }
+  
+  .message {
+    font-size: 1rem;
+  }
+} 

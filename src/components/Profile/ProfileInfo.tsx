@@ -3,6 +3,7 @@
 import React from 'react';
 import { FaCube, FaDiscord, FaGoogle, FaInfoCircle, FaCheckCircle } from 'react-icons/fa';
 import styles from './ProfileInfo.module.css';
+import { Button, NineSliceContainer } from '../UI';
 
 interface ProfileInfoProps {
   profile: {
@@ -38,7 +39,7 @@ export default function ProfileInfo({
       </div>
       
       <div className={styles.linkedAccounts}>
-        <div className={`${styles.accountCard} ${profile.minecraft_username ? styles.linked : ''}`}>
+        <NineSliceContainer className={`${styles.accountCard} ${profile.minecraft_username ? styles.linked : ''}`}>
           <div className={styles.accountIcon}>
             <FaCube />
           </div>
@@ -47,25 +48,23 @@ export default function ProfileInfo({
             {profile.minecraft_username ? (
               <>
                 <p className={styles.accountDetail}>{profile.minecraft_username}</p>
-                <button 
-                  className={styles.editButton}
+                <Button 
                   onClick={onOpenMinecraftModal}
                 >
                   Edit
-                </button>
+                </Button>
               </>
             ) : (
-              <button 
-                className={styles.linkButton}
+              <Button 
                 onClick={onOpenMinecraftModal}
               >
                 Link Account
-              </button>
+              </Button>
             )}
           </div>
-        </div>
+        </NineSliceContainer>
         
-        <div className={`${styles.accountCard} ${profile.discord_id ? styles.linked : ''}`}>
+        <NineSliceContainer className={`${styles.accountCard} ${profile.discord_id ? styles.linked : ''}`}>
           <div className={styles.accountIcon}>
             <FaDiscord />
           </div>
@@ -76,26 +75,25 @@ export default function ProfileInfo({
                 <p className={styles.accountDetail}>
                   Account Linked <FaCheckCircle className={styles.verifiedIcon} />
                 </p>
-                <button 
-                  className={styles.unlinkButton}
+                <Button 
+                  variant='danger'
                   onClick={() => onUnlinkAccount('discord')}
                   disabled={unlinking === 'discord'}
                 >
                   {unlinking === 'discord' ? 'Unlinking...' : 'Unlink'}
-                </button>
+                </Button>
               </>
             ) : (
-              <button 
-                className={styles.linkButton}
+              <Button 
                 onClick={onOpenDiscordModal}
               >
                 Link Discord
-              </button>
+              </Button>
             )}
           </div>
-        </div>
+        </NineSliceContainer>
         
-        <div className={`${styles.accountCard} ${profile.google_id ? styles.linked : ''}`}>
+        <NineSliceContainer className={`${styles.accountCard} ${profile.google_id ? styles.linked : ''}`}>
           <div className={styles.accountIcon}>
             <FaGoogle />
           </div>
@@ -106,33 +104,32 @@ export default function ProfileInfo({
                 <p className={styles.accountDetail}>
                   Account Linked <FaCheckCircle className={styles.verifiedIcon} />
                 </p>
-                <button 
-                  className={styles.unlinkButton}
+                <Button 
+                  variant='danger'
                   onClick={() => onUnlinkAccount('google')}
                   disabled={unlinking === 'google'}
                 >
                   {unlinking === 'google' ? 'Unlinking...' : 'Unlink'}
-                </button>
+                </Button>
               </>
             ) : (
-              <button 
-                className={styles.linkButton}
+              <Button 
                 onClick={onOpenGoogleModal}
               >
                 Link Google
-              </button>
+              </Button>
             )}
           </div>
-        </div>
+        </NineSliceContainer>
       </div>
       
-      <div className={styles.infoBox}>
+      <NineSliceContainer className={styles.infoBox}>
         <FaInfoCircle />
         <p>
           Linking your Minecraft account allows us to identify you on our servers. 
           Discord and Google accounts provide additional login options and access to community features.
         </p>
-      </div>
+      </NineSliceContainer>
     </>
   );
 } 

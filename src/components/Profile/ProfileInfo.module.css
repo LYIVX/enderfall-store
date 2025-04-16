@@ -1,6 +1,4 @@
-.profileHeader {
-  margin-bottom: 2rem;
-}
+
 
 .profileHeader h2 {
   margin-top: 0;
@@ -11,7 +9,6 @@
 
 .sectionDescription {
   color: var(--theme-text-secondary);
-  margin-bottom: 2rem;
 }
 
 /* Linked Accounts */
@@ -19,7 +16,6 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1.5rem;
-  margin-bottom: 1.5rem;
 }
 
 .accountCard {
@@ -28,7 +24,6 @@
   padding: 1.5rem;
   background-color: rgba(0, 0, 0, 0.1);
   border-radius: var(--border-radius-md);
-  border: 1px solid var(--theme-border);
   transition: all 0.3s ease;
 }
 
@@ -134,7 +129,6 @@
   padding: 1rem;
   background-color: var(--theme-tab-background);
   border-radius: var(--border-radius-md);
-  border-left: 4px solid var(--theme-primary-color);
 }
 
 .infoBox svg {

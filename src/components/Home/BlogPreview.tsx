@@ -156,7 +156,7 @@ export default function BlogPreview() {
         <NineSliceContainer className={styles.sectionHeader} variant="standard">
           <h2 className={styles.sectionTitle}>Latest News</h2>
           <Button variant="primary" size="medium" nineSlice={true}>
-            <Link href={`/social?tab=blogs`} className={styles.viewAllLink}>
+            <Link href="/social?tab=blogs" className={styles.viewAllLink}>
               View All Posts
             </Link>
           </Button>
@@ -172,7 +172,7 @@ export default function BlogPreview() {
         <NineSliceContainer className={styles.sectionHeader} variant="standard">
           <h2 className={styles.sectionTitle}>Latest News</h2>
           <Button variant="primary" size="medium" nineSlice={true}>
-            <Link href={`/social?tab=blogs`} className={styles.viewAllLink}>
+            <Link href="/social?tab=blogs" className={styles.viewAllLink}>
               View All Posts
             </Link>
           </Button>
@@ -197,7 +197,7 @@ export default function BlogPreview() {
       <NineSliceContainer className={styles.sectionHeader} variant="standard">
         <h2 className={styles.sectionTitle}>Latest News</h2>
         <Button variant="primary" size="medium" nineSlice={true}>
-            <Link href={`/social?tab=blogs&blog=${post.id}`} className={styles.viewAllLink}>
+            <Link href="/social?tab=blogs" className={styles.viewAllLink}>
               View All Posts
             </Link>
           </Button>

@@ -8,6 +8,7 @@
   grid-template-columns: 1fr;
   gap: 1rem;
   box-shadow: var(--shadow-sm);
+  justify-items: start;
 }
 
 .loading {

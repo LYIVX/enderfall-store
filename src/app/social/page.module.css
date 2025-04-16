@@ -932,182 +932,117 @@
   color: var(--theme-info-color) !important;
 }
 
-/* Comments section styles */
+/* Forum Comments Styles */
 .commentsSection {
   margin-top: var(--spacing-sm);
   padding-top: var(--spacing-md);
   border-top: 3px solid var(--theme-primary-color);
 }
 
-.commentsTitle {
-  font-size: var(--font-size-lg);
-  margin-bottom: var(--spacing-md);
-  color: var(--theme-text-primary);
+.commentsList {
+  max-height: 300px;
+  overflow-y: auto;
+  background-color: var(--theme-tab-background);
+  border-radius: var(--spacing-sm);
   display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
+  flex-direction: column;
+  gap: var(--spacing-sm);
 }
 
 .noComments {
   color: var(--theme-text-secondary);
-  font-size: var(--font-size-md);
+  font-size: 0.9rem;
+  font-style: italic;
   text-align: center;
-  padding: var(--spacing-lg);
-  background-color: var(--theme-tab-background);
-  border-radius: var(--border-radius-md);
+  padding: 1rem 0;
 }
 
-.commentsList {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
+.loadingComments {
+  color: var(--theme-text-secondary);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 1rem 0;
 }
 
 .comment {
-  border-radius: var(--border-radius-md);
+  padding: 0.75rem;
   background-color: var(--theme-tab-background);
-  box-shadow: var(--shadow-sm);
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-}
-
-.comment:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
+  border-radius: var(--spacing-sm);
+  padding: var(--spacing-md);
+  position: relative;
 }
 
 .commentHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--spacing-md);
+  margin-bottom: 0.5rem;
 }
 
 .commentAuthor {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
+  gap: 0.5rem;
   cursor: pointer;
-  transition: opacity 0.2s ease;
-}
-
-.commentAuthor:hover {
-  opacity: 0.8;
 }
 
 .commentAvatar {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--border-radius-md);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
   overflow: hidden;
-}
-
-.defaultCommentAvatar {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--border-radius-md);
-  overflow: hidden;
-  background-color: var(--theme-accent);
-  color: var(--theme-text-primary);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: var(--font-size-md);
-  font-weight: bold;
-}
-
-.commentAuthorDetails {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-2xs);
 }
 
 .commentAuthorName {
   font-weight: 500;
-  font-size: var(--font-size-sm);
+  font-size: 0.85rem;
   display: flex;
   align-items: center;
-  gap: var(--spacing-xs);
-  color: var(--theme-text-primary);
-}
-
-.commentAdminBadge {
-  font-size: var(--font-size-2xs);
-  padding: 2px 6px;
-  background-color: var(--theme-error-color);
-  color: var(--theme-text-primary);
-  border-radius: var(--border-radius-sm);
-  font-weight: bold;
-  text-transform: uppercase;
+  gap: 0.25rem;
 }
 
 .commentTime {
-  font-size: var(--font-size-sm);
+  font-size: 0.75rem;
   color: var(--theme-text-secondary);
 }
 
-.commentControls {
-  display: flex;
-  gap: var(--spacing-xs);
+.commentContent {
+  font-size: 0.9rem;
+  color: var(--theme-text-primary);
+  line-height: 1.4;
 }
 
 .deleteCommentButton {
-  padding: var(--spacing-xs) var(--spacing-sm);
-  color: var(--theme-error-color);
-  transition: all 0.2s ease;
-}
-
-.deleteCommentButton:hover {
-  background-color: var(--theme-error-color);
-  color: var(--theme-text-primary);
-}
-
-.commentContent {
-  font-size: var(--font-size-md);
-  color: var(--theme-text-primary);
-  line-height: 1.6;
-  white-space: pre-wrap;
-  padding: var(--spacing-md);
-  background-color: var(--theme-tab-background);
-  border-radius: var(--border-radius-md);
+  position: absolute;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  font-size: 0.75rem;
+  padding: 2px 6px !important;
+  background-color: transparent !important;
 }
 
 .commentForm {
   display: flex;
-  gap: var(--spacing-md);
-  border-radius: var(--border-radius-md);
+  gap: 0.5rem;
+  margin-top: 0.5rem;
 }
 
 .commentInput {
   flex: 1;
 }
 
-.commentInput > div > label {
-  display: none;
-}
-
-.commentInput input {
-  height: 48px;
-  border-radius: var(--border-radius-md);
-  background-color: var(--theme-tab-background);
-  color: var(--theme-text-primary);
-  font-size: var(--font-size-md);
-  padding: 0 var(--spacing-md);
-  border: 1px solid var(--theme-border);
-}
-
-.commentInput input:focus {
-  border-color: var(--theme-info-color);
-}
-
 .commentSubmit {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    width: 52px !important;
-    height: 52px !important;
-    transition: all 0.3s ease;
-    transform: scale(0.9);
-    margin: var(--spacing-xs) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 52px !important;
+  height: 52px !important;
+  transition: all 0.3s ease;
+}
+
+.loginToComment {
+  margin-top: 1rem;
+  text-align: center;
 }
 
 .loginPrompt {
