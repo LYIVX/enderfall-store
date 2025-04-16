@@ -41,7 +41,6 @@
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
-  border: none;
 }
 
 .conversationHeader {
@@ -72,7 +71,6 @@
   height: 40px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid var(--theme-primary-color);
 }
 
 .recipientDefaultAvatar {
@@ -264,7 +262,6 @@
   height: 32px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid var(--theme-primary-color);
 }
 
 .messageDefaultAvatar {
@@ -302,7 +299,6 @@
   margin: 0 var(--spacing-sm);
   word-break: break-word;
   transition: all 0.2s ease;
-  border-left: 3px solid var(--theme-secondary-color);
 }
 
 .ownMessageContent {
@@ -312,7 +308,6 @@
   margin-right: var(--spacing-sm);
   margin-left: auto;
   border-left: none;
-  border-right: 3px solid var(--theme-primary-color);
 }
 
 .ownMessageIndicator {
@@ -375,7 +370,6 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   word-break: break-word;
   transition: all 0.2s ease;
-  border-left: 3px solid var(--theme-secondary-color);
   max-width: 20%;
   margin: 0 !important;
 }
@@ -456,7 +450,6 @@
   flex: 1;
   padding: 0.75rem 1rem;
   border-radius: 24px !important;
-  border: 1px solid var(--theme-border);
   background: var(--background-secondary) !important;
   color: var(--theme-text-primary);
   font-size: 1rem;
@@ -900,7 +893,6 @@
   bottom: -2px;
   right: -2px;
   z-index: 5;
-  border: 2px solid var(--theme-tab-background);
 }
 
 /* Debug buttons */
@@ -913,7 +905,6 @@
 .debugButton {
   padding: 8px 12px;
   background-color: var(--theme-tab-background);
-  border: 1px solid var(--theme-border-color);
   border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
@@ -933,7 +924,6 @@
 
 .editMessageInput {
   width: 100%;
-  border: 1px solid var(--theme-primary-color);
   border-radius: 8px;
   padding: 6px 8px;
   background-color: var(--theme-background);
