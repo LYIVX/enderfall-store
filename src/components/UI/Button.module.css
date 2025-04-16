@@ -191,14 +191,14 @@
 .nineSliceBase {
   background-color: transparent;
   color: var(--theme-text-primary);
-  padding: 0 20px;
+  padding: var(--spacing-sm);
   position: relative;
   border: none;
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin: 10px;
+  margin: var(--spacing-sm);
   z-index: 1;
   font-weight: 500;
   text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.5);
