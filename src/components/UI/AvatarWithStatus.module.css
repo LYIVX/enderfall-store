@@ -36,16 +36,24 @@
 }
 
 .online {
-  background-color: #4CAF50; /* Green */
+  background-color: var(--success);
+  color: var(--success);
   animation: pulse 2s infinite;
 }
 
 .doNotDisturb {
-  background-color: #F44336; /* Red */
+  background-color: var(--error);
+  color: var(--error);
+}
+
+.away {
+  background-color: var(--info);
+  color: var(--info);
 }
 
 .offline {
-  background-color: #9E9E9E; /* Gray */
+  background-color: var(--theme-text-tertiary);
+  color: var(--theme-text-tertiary);
 }
 
 /* Status indicator sizes */
@@ -180,17 +188,6 @@
 
 .large .defaultAvatar {
   font-size: 1.5rem;
-}
-
-/* DND line */
-.doNotDisturbLine {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 70%;
-  height: 2px;
-  background-color: var(--theme-background);
 }
 
 /* Pulse animation for online status */

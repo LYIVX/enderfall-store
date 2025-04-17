@@ -4,6 +4,8 @@ import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useUserStatus } from '@/components/Auth/UserStatusContext';
 import styles from './AvatarWithStatus.module.css';
+import { UserStatusValue, UserStatusRecord } from '@/types/user-status';
+import StatusIndicator from './StatusIndicator';
 
 interface AvatarWithStatusProps {
   userId: string;
@@ -26,48 +28,72 @@ const AvatarWithStatus: React.FC<AvatarWithStatusProps> = ({
   showStatusTooltip = false,
   showStatusIndicator = true,
 }) => {
-  const { userStatuses, inactivityThreshold } = useUserStatus();
-  const userStatus = userStatuses[userId] || 'offline';
-  const [statusText, setStatusText] = useState<string>('');
+  // Get the full myStatus record and userStatuses map from the context
+  const { userStatuses, myStatus } = useUserStatus();
+
+  // *** DEBUG LOGGING START ***
+  useEffect(() => {
+    console.log(`[AvatarWithStatus] userId: ${userId}, username: ${username}`);
+    console.log(`[AvatarWithStatus] Received userStatuses:`, userStatuses);
+    console.log(`[AvatarWithStatus] myStatus user_id: ${myStatus?.user_id}`);
+  }, [userId, username, userStatuses, myStatus]); // Log when props or context change
+  // *** DEBUG LOGGING END ***
+
+  // Determine if the current avatar is for the logged-in user
+  const isCurrentUser = myStatus?.user_id === userId;
+
+  // Get the relevant status record
+  const statusRecord: UserStatusRecord | undefined | null = isCurrentUser ? myStatus : userStatuses[userId];
+
+  // *** DEBUG LOGGING START ***
+  useEffect(() => {
+    console.log(`[AvatarWithStatus] Found statusRecord for ${userId}:`, statusRecord);
+  }, [userId, statusRecord]); // Log when statusRecord changes
+  // *** DEBUG LOGGING END ***
+
+  // Extract the status value, defaulting to 'offline'
+  const statusValue: UserStatusValue = statusRecord?.status || 'offline';
+
+  // Get status text for tooltip
+  const getStatusTextForTooltip = () => {
+    switch (statusValue) {
+      case 'online': return 'Online';
+      case 'do_not_disturb': return 'Do Not Disturb';
+      case 'away': return 'Away';
+      case 'offline':
+      default: return 'Offline';
+    }
+  };
+
+  const [statusText, setStatusText] = useState<string>(getStatusTextForTooltip());
+
+  // Update tooltip text if status changes
+  useEffect(() => {
+    setStatusText(getStatusTextForTooltip());
+  }, [statusValue]);
 
   // Set CSS class based on size
   const sizeClass = styles[size];
 
-  // Set CSS class based on status
-  const statusClass = 
-    userStatus === 'online' ? styles.online :
-    userStatus === 'do_not_disturb' ? styles.doNotDisturb :
-    styles.offline;
-  
-  // Update status text for tooltip
-  useEffect(() => {
-    switch (userStatus) {
-      case 'online':
-        setStatusText('Online');
-        break;
-      case 'do_not_disturb':
-        setStatusText('Do Not Disturb');
-        break;
-      case 'offline':
-        setStatusText('Offline');
-        break;
-      default:
-        setStatusText('Unknown');
-    }
-  }, [userStatus]);
+  // Determine the size prop for StatusIndicator based on Avatar size
+  const indicatorSize = 
+    size === 'xsmall' || size === 'small' ? 'small' :
+    size === 'large' || size === 'xlarge' ? 'medium' :
+    'medium'; // Default or adjust as needed
 
   return (
-    <div 
+    <div
       className={`${styles.avatarContainer} ${sizeClass} ${className}`}
       title={showStatusTooltip ? `${username} - ${statusText}` : undefined}
     >
       {avatarUrl ? (
-        <Image 
+        <Image
           src={avatarUrl}
           alt={`${username}'s profile picture`}
-          width={64}
-          height={64}
+          width={64} // Consider making these dynamic based on size prop
+          height={64} // Consider making these dynamic based on size prop
           className={styles.avatar}
+          priority={size === 'large' || size === 'xlarge'}
         />
       ) : (
         <div className={styles.defaultAvatar}>
@@ -75,12 +101,10 @@ const AvatarWithStatus: React.FC<AvatarWithStatusProps> = ({
         </div>
       )}
       {showStatusIndicator && (
-        <div className={`${styles.statusIndicator} ${statusClass}`}>
-          {userStatus === 'do_not_disturb' && <div className={styles.doNotDisturbLine} />}
-        </div>
+        <StatusIndicator status={statusValue} size={indicatorSize} className={styles.statusPosition} />
       )}
     </div>
   );
 };
 
-export default AvatarWithStatus; 
+export default AvatarWithStatus;

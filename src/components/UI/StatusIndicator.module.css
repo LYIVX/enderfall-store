@@ -11,16 +11,21 @@
 }
 
 .online {
-  background-color: #44b700;
+  /*background-color: var(--success);*/
+  color: var(--success);
   animation: pulse 2s infinite;
 }
 
 .doNotDisturb {
-  background-color: #ff3b30;
+  color: var(--error);
+}
+
+.away {
+  color: var(--info);
 }
 
 .offline {
-  background-color: #9e9e9e;
+  color: var(--warning);
 }
 
 .small {

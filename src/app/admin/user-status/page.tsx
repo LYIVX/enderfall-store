@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useUserStatus } from '@/components/Auth/UserStatusContext';
 import { useAuth } from '@/components/Auth/AuthContext';
 import AvatarWithStatus from '@/components/UI/AvatarWithStatus';
@@ -9,6 +8,11 @@ import styles from './page.module.css';
 import { Loading } from '@/components/UI';
 import { Database } from '@/types/database';
 import { UserStatusType } from '@/types/user-status';
+import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+
+// Define types based on Database schema
+type UserStatusRow = Database['public']['Tables']['user_status']['Row'];
+type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 
 interface UserStatusData {
   user_id: string;
@@ -16,13 +20,12 @@ interface UserStatusData {
   last_updated: string;
   profiles: {
     username: string;
-    avatar_url: string | null;
+    avatar_url: ProfileRow['avatar_url'];
   } | null;
 }
 
 export default function UserStatusMonitor() {
-  const supabase = createClientComponentClient<Database>();
-  const { user } = useAuth();
+  const { user, supabase } = useAuth(); // Get supabase from context
   const { inactivityThreshold } = useUserStatus();
   const [userStatuses, setUserStatuses] = useState<UserStatusData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -35,18 +38,24 @@ export default function UserStatusMonitor() {
   
   // For forcing re-renders to update countdown timers
   const [, setTick] = useState(0);
-  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null); // Renamed for clarity
+  const channelRef = useRef<RealtimeChannel | null>(null); // Ref to store the channel
 
   // Fetch all user statuses
   const fetchUserStatuses = useCallback(async () => {
+    if (!supabase) {
+      console.warn('fetchUserStatuses: Supabase client not available yet.');
+      return;
+    }
+
     try {
       // First, fetch user statuses
       const { data: statusData, error: statusError } = await supabase
-        .from('user_status')
+        .from('user_status') // Explicitly type the returned data
         .select(`
           user_id,
           status,
-          last_updated
+          last_updated,
         `)
         .order('last_updated', { ascending: false });
 
@@ -56,11 +65,11 @@ export default function UserStatusMonitor() {
       }
 
       if (statusData) {
-        // Create a set of unique user IDs to fetch profiles for
-        const userIds = statusData.map(status => status.user_id);
+        // Ensure statusData has the correct type before mapping
+        const userIds = (statusData as UserStatusRow[]).map(status => status.user_id);
         
         // Fetch profiles for these users
-        const { data: profilesData, error: profilesError } = await supabase
+        const { data: profilesData, error: profilesError } = await supabase // Explicitly type the returned data
           .from('profiles')
           .select('id, username, avatar_url')
           .in('id', userIds);
@@ -70,28 +79,28 @@ export default function UserStatusMonitor() {
         }
         
         // Create a map of profiles by user ID for easy lookup
-        const profilesMap = (profilesData || []).reduce((map, profile) => {
+        const profilesMap = (profilesData as ProfileRow[] || []).reduce((map: Record<string, ProfileRow>, profile: ProfileRow) => {
           map[profile.id] = profile;
           return map;
-        }, {} as Record<string, any>);
+        }, {} as Record<string, ProfileRow>);
         
         // Combine status data with profile data
-        const combinedData = statusData.map(status => ({
+        const combinedData = (statusData as UserStatusRow[]).map((status: UserStatusRow) => ({
           user_id: status.user_id,
           status: status.status as UserStatusType,
           last_updated: status.last_updated,
           profiles: profilesMap[status.user_id] ? {
             username: profilesMap[status.user_id].username,
-            avatar_url: profilesMap[status.user_id].avatar_url
+            avatar_url: profilesMap[status.user_id].avatar_url,
           } : null
         })) as UserStatusData[];
         
         setUserStatuses(combinedData);
         
         // Calculate stats
-        const online = statusData.filter(user => user.status === 'online').length;
-        const offline = statusData.filter(user => user.status === 'offline').length;
-        const doNotDisturb = statusData.filter(user => user.status === 'do_not_disturb').length;
+        const online = (statusData as UserStatusRow[]).filter((user: UserStatusRow) => user.status === 'online').length;
+        const offline = (statusData as UserStatusRow[]).filter((user: UserStatusRow) => user.status === 'offline').length;
+        const doNotDisturb = (statusData as UserStatusRow[]).filter((user: UserStatusRow) => user.status === 'do_not_disturb').length;
         
         setStats({
           online,
@@ -109,47 +118,74 @@ export default function UserStatusMonitor() {
 
   // Set up real-time subscription
   useEffect(() => {
-    fetchUserStatuses();
+    if (!supabase || channelRef.current) { // Also check if channel already exists
+      console.warn('Real-time subscription: Supabase client not available yet or channel already exists.');
+      return;
+    }
+
+    console.log("Setting up Supabase channel 'user_status_monitor'");
+    fetchUserStatuses(); // Initial fetch
 
     // Subscribe to changes in the user_status table
-    const subscription = supabase
+    const channel = supabase
       .channel('user_status_monitor')
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'user_status'
+          table: 'user_status',
         },
-        (payload: any) => {
+        (payload: RealtimePostgresChangesPayload<UserStatusRow>) => { // Use specific payload type
           console.log('Status change detected:', payload);
-          
+
           // Refresh the data when any change occurs
           fetchUserStatuses();
         }
       )
-      .subscribe();
+      .subscribe((status, err) => { // Add subscribe callback for debugging
+        if (status === 'SUBSCRIBED') {
+          console.log('Successfully subscribed to user_status_monitor!');
+        }
+        if (status === 'CHANNEL_ERROR') {
+          console.error('Subscription channel error:', err);
+          // Optionally attempt to remove the channel if an error occurs during subscription
+          if (channelRef.current) {
+            supabase.removeChannel(channelRef.current);
+            channelRef.current = null;
+          }
+        }
+        if (status === 'TIMED_OUT') {
+          console.warn('Subscription timed out.');
+        }
+      });
 
+    channelRef.current = channel; // Store the channel instance
+ 
     return () => {
-      subscription.unsubscribe();
+      console.log("Cleaning up Supabase channel 'user_status_monitor'");
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current); // Use removeChannel for cleanup
+        channelRef.current = null; // Clear the ref
+      }
     };
   }, [supabase, fetchUserStatuses]);
-  
+
   // Set up countdown timer that updates every second
   useEffect(() => {
     // Clear any existing interval
-    if (countdownIntervalRef.current) {
-      clearInterval(countdownIntervalRef.current);
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
     }
-    
+
     // Set up a new interval that updates every second
-    countdownIntervalRef.current = setInterval(() => {
+    intervalRef.current = setInterval(() => {
       setTick(prev => prev + 1);
     }, 1000);
-    
+
     return () => {
-      if (countdownIntervalRef.current) {
-        clearInterval(countdownIntervalRef.current);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
       }
     };
   }, []);

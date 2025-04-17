@@ -1,10 +1,34 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
-import { UserStatusType } from '@/types/user-status';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { UserStatusValue, UserStatusRecord } from '@/types/user-status'; // Import updated types
 import { useAuth } from './AuthContext';
 import { Database } from '@/types/database';
+import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+
+// Simple debounce utility function (module scope)
+function debounce<T extends (...args: any[]) => void>(func: T, wait: number): { (...args: Parameters<T>): void; cancel: () => void } {
+  let timeoutId: NodeJS.Timeout | null = null;
+
+  const debounced = (...args: Parameters<T>) => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+    timeoutId = setTimeout(() => {
+      timeoutId = null; // Clear timeoutId after execution
+      func(...args);
+    }, wait);
+  };
+
+  debounced.cancel = () => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+  };
+
+  return debounced;
+}
 
 /**
  * UserStatusContext provides real-time user status tracking with automatic offline detection.
@@ -17,9 +41,9 @@ import { Database } from '@/types/database';
  */
 
 interface UserStatusContextType {
-  myStatus: UserStatusType;
-  setMyStatus: (status: UserStatusType) => Promise<void>;
-  userStatuses: Record<string, UserStatusType>;
+  myStatus: UserStatusRecord | null; // Store the full record
+  setMyStatus: (status: UserStatusValue, isManual: boolean) => Promise<void>; // Accept isManual flag
+  userStatuses: Record<string, UserStatusRecord>; // Store full records for others too
   isLoading: boolean;
   /** Time in milliseconds after which a user is considered inactive */
   inactivityThreshold: number;
@@ -44,481 +68,408 @@ interface UserStatusProviderProps {
 }
 
 export const UserStatusProvider: React.FC<UserStatusProviderProps> = ({ children }) => {
-  const supabase = createClientComponentClient<Database>();
-  const { user } = useAuth();
-  const [myStatus, setMyStatusState] = useState<UserStatusType>('online');
-  const [userStatuses, setUserStatuses] = useState<Record<string, UserStatusType>>({});
+  const { user, supabase } = useAuth(); // Get supabase from AuthContext
+  const [myStatus, setMyStatusState] = useState<UserStatusRecord | null>(null); // Initialize as null
+  const [userStatuses, setUserStatuses] = useState<Record<string, UserStatusRecord>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const lastActivityRef = useRef<number>(Date.now());
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
-  
-  // Store current status in a ref to access in callbacks without dependencies
-  const myStatusRef = useRef<UserStatusType>(myStatus);
-  // Store user statuses in a ref to avoid dependency issues
-  const userStatusesRef = useRef<Record<string, UserStatusType>>(userStatuses);
-  
+  // Ref to hold the debounced function instance with cancel method
+  const debouncedActivityUpdaterRef = useRef<ReturnType<typeof debounce> | null>(null);
+
+  // Store current status record in a ref
+  const myStatusRef = useRef<UserStatusRecord | null>(myStatus);
+  // Store other user status records in a ref
+  const userStatusesRef = useRef<Record<string, UserStatusRecord>>(userStatuses);
+
   // Update refs when state changes
   useEffect(() => {
     myStatusRef.current = myStatus;
   }, [myStatus]);
-  
+
   useEffect(() => {
     userStatusesRef.current = userStatuses;
   }, [userStatuses]);
 
-  // Function to track user activity
-  const updateUserActivity = () => {
-    lastActivityRef.current = Date.now();
-    
-    // Always update the last_updated timestamp to prevent being marked as inactive
-    if (user) {
-      try {
-        // If user is not in do_not_disturb, set them to online
-        if (myStatusRef.current !== 'do_not_disturb') {
-          setMyStatusState('online');
-          void supabase
-            .from('user_status')
-            .update({
-              status: 'online',
-              last_updated: new Date().toISOString(),
-            })
-            .eq('user_id', user.id);
-          console.log('User activity detected, status updated to online');
-        } else {
-          // Just update the timestamp for do_not_disturb users
-          void supabase
-            .from('user_status')
-            .update({
-              last_updated: new Date().toISOString(),
-            })
-            .eq('user_id', user.id);
-        }
-      } catch (error) {
-        console.error('Error updating user activity:', error);
-      }
-    }
-  };
+  // Function to update the user's status record in the database
+  const updateStatusRecord = useCallback(async (status: UserStatusValue, isManual: boolean) => {
+    if (!user || !supabase) return;
 
-  // Function to update user's status in the database
-  const setMyStatus = async (status: UserStatusType) => {
-    if (!user) return;
-    
-    // Skip if status hasn't changed
-    if (status === myStatusRef.current) return;
+    const record: Partial<Database['public']['Tables']['user_status']['Row']> = {
+      user_id: user.id,
+      status,
+      is_manual: isManual,
+      last_updated: new Date().toISOString(),
+    };
 
     try {
-      console.log(`Setting status to: ${status}`);
-      
-      // First update UI state for immediate feedback
-      setMyStatusState(status);
-      
-      // Try to update first to avoid conflicts
-      const { data: existingStatus, error: checkError } = await supabase
+      const { error } = await supabase
         .from('user_status')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-        
-      if (checkError && checkError.code !== 'PGRST116') {
-        console.error('Error checking existing status:', checkError);
-      }
-      
-      let updateError;
-      
-      if (existingStatus) {
-        // If record exists, do an update instead of upsert
-        const { error } = await supabase
-          .from('user_status')
-          .update({
-            status,
-            last_updated: new Date().toISOString()
-          })
-          .eq('user_id', user.id);
-          
-        updateError = error;
-      } else {
-        // If no record exists, do an insert
-        const { error } = await supabase
-          .from('user_status')
-          .insert({
-            user_id: user.id,
-            status,
-            last_updated: new Date().toISOString()
-          });
-          
-        updateError = error;
-      }
+        .upsert(record, { onConflict: 'user_id' }); // Use upsert for simplicity
 
-      if (updateError) {
-        console.error('Error updating status:', updateError);
-        // If failed, attempt to use API endpoint as fallback
-        try {
-          const response = await fetch('/api/status', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ 
-              status,
-              userId: user.id 
-            }),
-          });
-          
-          if (!response.ok) {
-            throw new Error(`API status update failed: ${response.statusText}`);
-          }
-        } catch (apiError) {
-          console.error('API fallback error:', apiError);
-        }
+      if (error) {
+        console.error('Error upserting status:', error);
+        // Implement fallback or retry logic if needed
       }
-    } catch (error) {
-      console.error('Error updating status:', error);
-    }
-  };
-
-  // Check for inactivity
-  const checkInactivity = useCallback(() => {
-    const inactiveTime = Date.now() - lastActivityRef.current;
-    
-    if (inactiveTime >= INACTIVITY_THRESHOLD && myStatusRef.current !== 'offline' && user) {
-      console.log('User inactive for 5 minutes, setting status to offline');
-      setMyStatus('offline');
-    }
-  }, [user]);
-
-  // Function to check and update inactive users
-  const checkAndUpdateInactiveUsers = useCallback(async () => {
-    if (!user) return;
-    
-    const now = new Date();
-    const inactivityTimestamp = new Date(now.getTime() - INACTIVITY_THRESHOLD).toISOString();
-    
-    try {
-      // Get all users who were last active more than 5 minutes ago and are not already offline
-      const { data: inactiveUsers, error: fetchError } = await supabase
-        .from('user_status')
-        .select('user_id')
-        .lt('last_updated', inactivityTimestamp)
-        .neq('status', 'offline');
-      
-      if (fetchError) {
-        console.error('Error fetching inactive users:', fetchError);
-        return;
-      }
-      
-      if (inactiveUsers && inactiveUsers.length > 0) {
-        // Extract user IDs
-        const userIds = inactiveUsers.map(u => u.user_id);
-        console.log(`Found ${userIds.length} inactive users to update to offline status`);
-        
-        // Update all inactive users to offline in a single batch operation
-        const { error: updateError } = await supabase
-          .from('user_status')
-          .update({
-            status: 'offline',
-            last_updated: now.toISOString()
-          })
-          .in('user_id', userIds);
-        
-        if (updateError) {
-          console.error('Error updating inactive users:', updateError);
-        } else {
-          // Update local state with the changes - use a callback to avoid dependency issues
-          setUserStatuses(prevStatuses => {
-            const updatedStatusMap = { ...prevStatuses };
-            userIds.forEach(userId => {
-              updatedStatusMap[userId] = 'offline';
-            });
-            return updatedStatusMap;
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error in automatic inactive user update:', error);
+    } catch (err) {
+      console.error('Exception during status upsert:', err);
     }
   }, [user, supabase]);
 
-  const fetchInitialStatuses = useCallback(async () => {
-    try {
-      if (!user) {
-        setIsLoading(false);
-        return;
+  // Public function for users to set their status
+  const setMyStatus = useCallback(async (status: UserStatusValue, isManual: boolean) => {
+    if (!user || !supabase) return;
+
+    // Determine the final manual state: force false if setting to 'online'.
+    const finalIsManual = status === 'online' ? false : isManual;
+
+    // 1. Optimistically update local state for instant UI feedback
+    const newStatusRecord: UserStatusRecord = {
+      user_id: user.id,
+      status,
+      is_manual: finalIsManual,
+      last_updated: new Date().toISOString(), // Use current time for optimistic update
+    };
+    setMyStatusState(newStatusRecord);
+
+    // 2. Update database asynchronously
+    // The realtime listener will eventually confirm or correct this state.
+    await updateStatusRecord(status, finalIsManual);
+
+  }, [user, supabase, updateStatusRecord]);
+
+  // Function to track user activity
+  const updateUserActivity = useCallback(() => {
+    lastActivityRef.current = Date.now();
+    if (!user || !supabase || !myStatusRef.current) return;
+
+    // Only update to 'online' if the current status is not manually set to offline or DND
+    if (!myStatusRef.current.is_manual || myStatusRef.current.status === 'online') {
+      // Check if status is not already 'online' to avoid unnecessary updates
+      if (myStatusRef.current.status !== 'online') {
+        console.log('User activity detected, setting status to online (dynamic)');
+        setMyStatus('online', false); // Set dynamically
+      } else {
+        // If already online, just update the timestamp in DB (heartbeat)
+        updateStatusRecord(myStatusRef.current.status, myStatusRef.current.is_manual);
       }
-      
-      console.log('Fetching initial status');
-      
-      // First fetch current user's status
-      const { data: myStatusData, error: myStatusError } = await supabase
+    } else {
+      // If manually set (offline/dnd), just update the timestamp for heartbeat
+      console.log('User activity detected, but status is manual. Updating timestamp only.');
+      updateStatusRecord(myStatusRef.current.status, myStatusRef.current.is_manual);
+    }
+  }, [user, supabase, setMyStatus, updateStatusRecord]);
+
+  // Debounced version of activity update
+  const debouncedUpdateActivity = useCallback(() => {
+    // Create the debounced function only once and store it in the ref
+    if (!debouncedActivityUpdaterRef.current) {
+      debouncedActivityUpdaterRef.current = debounce(updateUserActivity, 500); // Debounce by 500ms
+    }
+    // Call the debounced function via the ref
+    debouncedActivityUpdaterRef.current();
+  }, [updateUserActivity]); // Dependency ensures debounce is recreated if updateUserActivity changes
+
+  // Check for inactivity
+  const checkInactivity = useCallback(() => {
+    if (!user || !supabase || !myStatusRef.current) return;
+
+    const inactiveTime = Date.now() - lastActivityRef.current;
+
+    // Only set to offline if inactive AND status is not manually set to offline/DND
+    if (
+      inactiveTime >= INACTIVITY_THRESHOLD &&
+      myStatusRef.current.status !== 'offline' &&
+      (!myStatusRef.current.is_manual || myStatusRef.current.status === 'online') // Allow going offline if manual 'online'
+    ) {
+      console.log('User inactive, setting status to offline (dynamic)');
+      setMyStatus('offline', false); // Set dynamically
+    }
+  }, [user, supabase, setMyStatus]);
+
+  // Function to fetch the initial status for the current user
+  const fetchMyInitialStatus = useCallback(async () => {
+    if (!user || !supabase) return;
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
         .from('user_status')
-        .select('status')
+        .select('status, is_manual, last_updated')
         .eq('user_id', user.id)
         .single();
 
-      if (myStatusError && myStatusError.code !== 'PGRST116') {
-        console.error('Error fetching my status:', myStatusError);
-      }
-
-      if (myStatusData) {
-        // Only auto-set to online if this is the initial load and status is offline
-        if (myStatusData.status === 'offline' && isInitialLoad) {
-          console.log('User was previously offline, setting to online');
-          // Update state without recursive call
-          setMyStatusState('online');
-          
-          // Update database directly
-          await supabase
-            .from('user_status')
-            .update({
-              status: 'online',
-              last_updated: new Date().toISOString()
-            })
-            .eq('user_id', user.id);
-        } else {
-          // Just update the state without making another database call
-          setMyStatusState(myStatusData.status as UserStatusType);
+      if (error && error.code !== 'PGRST116') { // PGRST116: Row not found
+        console.error('Error fetching initial status:', error);
+        setMyStatusState(null); // Or a default status
+      } else if (data) {
+        setMyStatusState({
+          status: data.status as UserStatusValue,
+          is_manual: data.is_manual ?? false, // Default to false if null
+          last_updated: data.last_updated
+        });
+        // If status is not manual 'offline' or 'dnd', ensure it's 'online' on load
+        if (!data.is_manual || data.status === 'online') {
+          setMyStatus('online', false); // Set to online dynamically on load
         }
       } else {
-        // If no status found, just update local state and database directly
-        console.log('No status found, setting to online');
-        setMyStatusState('online');
-        
-        // Insert directly
-        await supabase
-          .from('user_status')
-          .insert({
-            user_id: user.id,
-            status: 'online',
-            last_updated: new Date().toISOString()
-          });
+        // No existing status, set default (online, not manual)
+        console.log('No initial status found, setting default (online, dynamic)');
+        setMyStatus('online', false);
       }
-
-      // Mark initial load as complete - only do this once successfully initialized
-      setIsInitialLoad(false);
-      
-      // Run the initial check for inactive users
-      await checkAndUpdateInactiveUsers();
-      
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Error in fetchInitialStatuses:', error);
+    } catch (err) {
+      console.error('Exception fetching initial status:', err);
+      setMyStatusState(null);
+    } finally {
       setIsLoading(false);
     }
-  }, [user, supabase, isInitialLoad, checkAndUpdateInactiveUsers]);
+  }, [user, supabase, setMyStatus]);
 
-  // Function to set user status to offline
-  const setUserOffline = (userId: string) => {
-    // Only update database, don't modify state during cleanup
-    supabase
-      .from('user_status')
-      .update({
-        status: 'offline',
-        last_updated: new Date().toISOString(),
-      })
-      .eq('user_id', userId);
-  };
-
-  // Set up a heartbeat to update user's online status periodically
-  const heartbeat = useCallback(async () => {
-    if (!user || myStatusRef.current === 'offline') return;
-    
+  // Function to fetch initial statuses for all users (can be optimized for large numbers)
+  const fetchInitialStatuses = useCallback(async () => {
+    if (!supabase) return;
+    // Fetching all statuses might be heavy. Consider fetching only online/recent ones.
+    setIsLoading(true);
     try {
-      // Use update instead of upsert for the heartbeat
-      const { data: existingStatus } = await supabase
+      const { data, error } = await supabase
         .from('user_status')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-        
-      if (existingStatus) {
-        await supabase
-          .from('user_status')
-          .update({
-            status: myStatusRef.current,
-            last_updated: new Date().toISOString(),
-          })
-          .eq('user_id', user.id);
-      } else {
-        await supabase
-          .from('user_status')
-          .insert({
-            user_id: user.id,
-            status: myStatusRef.current,
-            last_updated: new Date().toISOString(),
-          });
+        .select('user_id, status, is_manual, last_updated');
+
+      if (error) {
+        console.error('Error fetching initial statuses:', error);
+        setUserStatuses({});
+      } else if (data) {
+        const statuses: Record<string, UserStatusRecord> = data.reduce((acc, record) => {
+          if (record.user_id) {
+            acc[record.user_id] = {
+              status: record.status as UserStatusValue,
+              is_manual: record.is_manual ?? false,
+              last_updated: record.last_updated
+            };
+          }
+          return acc;
+        }, {} as Record<string, UserStatusRecord>);
+        setUserStatuses(statuses);
       }
-    } catch (error) {
-      console.error('Error in heartbeat:', error);
+    } catch (err) {
+      console.error('Exception fetching initial statuses:', err);
+      setUserStatuses({});
+    } finally {
+      // Combine loading state logic if fetchMyInitialStatus is called within this
+      // setIsLoading(false); // Might be set by fetchMyInitialStatus
+      setIsInitialLoad(false);
+    }
+  }, [supabase]);
+
+  // Function to check and update users who haven't sent a heartbeat
+  const checkAndUpdateInactiveUsers = useCallback(async () => {
+    if (!user || !supabase) return; // Ensure supabase client is available
+
+    const threshold = new Date(Date.now() - HEARTBEAT_INTERVAL * 2).toISOString(); // 2x heartbeat interval for tolerance
+
+    try {
+      // Find users whose last_updated is older than the threshold AND are not manually offline/DND
+      const { data: inactiveUsers, error: fetchError } = await supabase
+        .from('user_status')
+        .select('user_id')
+        .lt('last_updated', threshold)
+        .eq('status', 'online') // Only consider those currently 'online'
+        .eq('is_manual', false); // Only consider dynamically managed ones
+
+      if (fetchError) {
+        console.error('Error fetching potentially inactive users:', fetchError);
+        return;
+      }
+
+      if (inactiveUsers && inactiveUsers.length > 0) {
+        const userIdsToUpdate = inactiveUsers.map(u => u.user_id);
+        console.log(`Found ${userIdsToUpdate.length} inactive users, setting to offline:`, userIdsToUpdate);
+
+        // Batch update their status to offline
+        const { error: updateError } = await supabase
+          .from('user_status')
+          .update({ status: 'offline', is_manual: false, last_updated: new Date().toISOString() })
+          .in('user_id', userIdsToUpdate);
+
+        if (updateError) {
+          console.error('Error batch updating inactive users:', updateError);
+        }
+      }
+    } catch (err) {
+      console.error('Exception checking/updating inactive users:', err);
     }
   }, [user, supabase]);
 
   // Main effect for setting up listeners and subscriptions
   useEffect(() => {
-    if (!user) {
+    if (!user || !supabase) {
+      console.log('UserStatusProvider: User or Supabase client not available yet.');
       setIsLoading(false);
+      setMyStatusState(null);
+      setUserStatuses({});
       return;
     }
 
     console.log('UserStatusContext: Setting up user status monitoring');
 
-    // Track user activity events - comprehensive list to catch all interactions
+    // Fetch initial status for the current user
+    fetchMyInitialStatus();
+
+    // Set up activity tracking
     const activityEvents = [
-      'mousedown', 'mouseup', 'mousemove', 
-      'keydown', 'keyup', 
-      'touchstart', 'touchmove', 'touchend',
-      'click', 'dblclick',
-      'scroll', 'wheel', 
-      'focus', 'blur',
-      'input', 'change', 'submit'
+      'mousedown', 'mousemove', 'keydown', 'touchstart', 'scroll', 'click'
+      // Add other relevant events as needed, avoid overly frequent ones like mousemove without debounce
     ];
-    
-    // Debounced version to avoid too many updates
-    let activityTimeout: NodeJS.Timeout | null = null;
-    
-    const debouncedUpdateActivity = () => {
-      if (activityTimeout) {
-        clearTimeout(activityTimeout);
-      }
-      
-      activityTimeout = setTimeout(() => {
-        updateUserActivity();
-      }, 300); // 300ms debounce
-    };
-    
-    // Add event listeners
+
     activityEvents.forEach(event => {
       window.addEventListener(event, debouncedUpdateActivity, { passive: true });
     });
-    
+
     // Start inactivity check timer
     inactivityTimerRef.current = setInterval(checkInactivity, INACTIVITY_CHECK_INTERVAL);
 
-    let inactiveUsersCheckInterval: NodeJS.Timeout | null = null;
-    
-    // Only fetch initial statuses on first load
-    if (isInitialLoad) {
-      fetchInitialStatuses();
-    }
-    
-    // Set up a regular check for inactive users - regardless of initial load status
-    inactiveUsersCheckInterval = setInterval(checkAndUpdateInactiveUsers, HEARTBEAT_INTERVAL);
+    // Set up a regular check for users who haven't sent a heartbeat
+    const inactiveUsersCheckInterval = setInterval(checkAndUpdateInactiveUsers, HEARTBEAT_INTERVAL);
 
-    // Set up Supabase subscription to listen for status changes
-    const statusSubscription = supabase
-      .channel('user_status_changes')
-      .on(
+    // Set up Supabase subscription
+    const channel = supabase.channel('user-status-changes');
+    const subscription = channel
+      .on<Database['public']['Tables']['user_status']['Row']>(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'user_status',
-          filter: user ? `user_id=eq.${user.id}` : undefined,
+          // No filter here, receive all changes and handle locally
         },
         (payload) => {
-          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-            const { user_id, status } = payload.new as { user_id: string; status: UserStatusType };
-            
-            // Update my status if it's my update
-            if (user_id === user?.id) {
-              setMyStatusState(status);
+          let changedRecord: UserStatusRecord | null = null;
+          let userIdChanged: string | null = null;
+
+          if ((payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') && payload.new) {
+            const newRecord = payload.new;
+            if (newRecord.user_id && newRecord.status && newRecord.last_updated) {
+              changedRecord = {
+                status: newRecord.status as UserStatusValue,
+                is_manual: newRecord.is_manual ?? false,
+                last_updated: newRecord.last_updated
+              };
+              userIdChanged = newRecord.user_id;
             }
-            
-            // Update the statuses map
-            setUserStatuses((prev) => ({
-              ...prev,
-              [user_id]: status,
-            }));
+          } else if (payload.eventType === 'DELETE' && payload.old) {
+            // Handle delete: mark as offline or remove from local state
+            const oldRecord = payload.old;
+            if (oldRecord?.user_id) {
+              userIdChanged = oldRecord.user_id;
+              // Set to a default offline state or remove completely
+              changedRecord = { status: 'offline', is_manual: false, last_updated: new Date().toISOString() };
+            }
+          }
+
+          if (userIdChanged && changedRecord) {
+            if (userIdChanged === user.id) {
+              // Update my own status state only if status or is_manual differs
+              const currentState = myStatusRef.current;
+              if (
+                !currentState || // Update if current state is null
+                currentState.status !== changedRecord.status ||
+                currentState.is_manual !== changedRecord.is_manual
+              ) {
+                console.log('Updating my status from realtime:', changedRecord); // Optional: Keep for debugging if needed
+                setMyStatusState(changedRecord);
+              }
+            } else {
+              // Update other user's status (consider comparing here too if needed)
+              console.log(`Updating status for ${userIdChanged} from realtime:`, changedRecord); // Optional: Keep for debugging
+              setUserStatuses(prev => ({
+                ...prev,
+                [userIdChanged!]: changedRecord!
+              }));
+            }
+          } else if (payload.eventType === 'DELETE' && payload.old?.user_id && payload.old.user_id !== user.id) {
+            // Handle deletion of other users more robustly if needed
+            console.log(`Removing status for deleted user ${payload.old.user_id}`);
+            setUserStatuses(prev => {
+              const newState = { ...prev };
+              delete newState[payload.old.user_id!];
+              return newState;
+            });
           }
         }
       )
-      .subscribe();
-
-    // Setup a separate channel for other users' status changes
-    const otherUsersSubscription = supabase
-      .channel('other_users_status_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_status',
-          filter: user ? `user_id=neq.${user.id}` : undefined,
-        },
-        (payload) => {
-          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-            const { user_id, status } = payload.new as { user_id: string; status: UserStatusType };
-            
-            // Update the statuses map
-            setUserStatuses((prev) => ({
-              ...prev,
-              [user_id]: status,
-            }));
-          }
+      .subscribe((status, err) => {
+        if (err) {
+          console.error('Supabase subscription error:', err);
+        } else {
+          console.log('Supabase subscription established with status:', status);
+          // Fetch all statuses again on successful subscribe/reconnect
+          fetchInitialStatuses();
         }
-      )
-      .subscribe();
+      });
 
-    // Set user to offline when they close the window/tab
-    const handleBeforeUnload = () => {
-      if (user) {
-        // Using fetch directly for synchronous operation before unload
-        fetch('/api/status/offline', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ userId: user.id }),
-          keepalive: true, // Important to ensure the request completes
-        }).catch(console.error);
+    // Set user to offline via API when they close the window/tab
+    const handleBeforeUnload = async () => {
+      if (user && myStatusRef.current && !myStatusRef.current.is_manual) {
+        // Only set offline on close if status is dynamic ('online')
+        try {
+          // Use fetch with keepalive
+          await fetch('/api/status/set', { // Assuming this endpoint exists
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: user.id, status: 'offline', isManual: false }),
+            keepalive: true,
+          });
+          console.log('Set status to offline via API before unload');
+        } catch (error) {
+          console.error('Error setting status via API on beforeunload:', error);
+        }
       }
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
 
-    // Set up a heartbeat to update user's online status periodically
-    const heartbeatInterval = setInterval(heartbeat, HEARTBEAT_INTERVAL);
-
-    // Comprehensive cleanup function
+    // Cleanup function
     return () => {
       console.log('UserStatusContext: Cleaning up status monitoring');
-      
-      // Unsubscribe from Supabase channels
-      statusSubscription.unsubscribe();
-      otherUsersSubscription.unsubscribe();
-      
+
       // Remove event listeners
-      window.removeEventListener('beforeunload', handleBeforeUnload);
       activityEvents.forEach(event => {
         window.removeEventListener(event, debouncedUpdateActivity);
       });
-      
-      if (activityTimeout) {
-        clearTimeout(activityTimeout);
-      }
-      
-      // Clear all intervals
-      clearInterval(heartbeatInterval);
+
+      // Clear timers
       if (inactivityTimerRef.current) {
         clearInterval(inactivityTimerRef.current);
-        inactivityTimerRef.current = null;
       }
+      // Cancel any pending debounced activity update on cleanup
+      if (debouncedActivityUpdaterRef.current?.cancel) {
+         debouncedActivityUpdaterRef.current.cancel();
+      }
+
       if (inactiveUsersCheckInterval) {
         clearInterval(inactiveUsersCheckInterval);
       }
-      
-      // If user is logging out, set status to offline
-      if (user) {
-        setUserOffline(user.id);
+
+      // Cleanup Supabase subscription
+      if (subscription) {
+        console.log('UserStatusContext: Cleaning up Supabase subscription');
+        supabase.removeChannel(subscription)
+          .then(() => console.log('Successfully removed channel'))
+          .catch((error: Error) => console.error('Error removing channel:', error));
       }
+
+      // Remove beforeunload listener
+      window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [
-    user, 
-    isInitialLoad, 
-    fetchInitialStatuses, 
-    checkInactivity,
-    checkAndUpdateInactiveUsers,
-    heartbeat
-  ]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, supabase]); // Rerun effect if user or supabase changes
+
+  // Initial fetch of all statuses (run once after mount)
+  useEffect(() => {
+    if (user && supabase && isInitialLoad) {
+      fetchInitialStatuses();
+    }
+  }, [user, supabase, isInitialLoad, fetchInitialStatuses]);
 
   // Expose the context values
   const value = {
@@ -536,4 +487,4 @@ export const UserStatusProvider: React.FC<UserStatusProviderProps> = ({ children
   );
 };
 
-export default UserStatusProvider; 
+export default UserStatusProvider;

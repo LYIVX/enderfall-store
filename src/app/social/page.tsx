@@ -2029,6 +2029,7 @@ export default function SocialPage() {
                     >
                       <div className={styles.miniAvatar}>
                         <AvatarWithStatus
+                          key={friendship.friend_id}
                           userId={friendship.friend_id}
                           avatarUrl={friendship.friend.avatar_url}
                           username={friendship.friend.username || 'User'}

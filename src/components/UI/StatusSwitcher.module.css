@@ -115,21 +115,28 @@
 }
 
 .onlineIcon {
-  color: #44b700;
+  color: var(--success);
   font-size: 0.8rem;
   display: flex;
   align-items: center;
 }
 
 .dndIcon {
-  color: #ff3e3e;
+  color: var(--error);
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+}
+
+.awayIcon {
+  color: var(--info);
   font-size: 0.8rem;
   display: flex;
   align-items: center;
 }
 
 .offlineIcon {
-  color: #9e9e9e;
+  color: var(--warning);
   font-size: 0.8rem;
   display: flex;
   align-items: center;

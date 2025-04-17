@@ -3,7 +3,7 @@
 import { Metadata } from 'next';
 import { useState, useEffect } from 'react';
 import { ShopItem, Category } from '@/lib/supabase';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useAuth } from '@/components/Auth/AuthContext'; 
 import RankCard from '@/components/Shop/RankCard';
 import ShoppingCart from '@/components/Shop/ShoppingCart';
 import MinecraftAvatar from '@/components/UI/MinecraftAvatar';
@@ -28,11 +28,17 @@ export default function Shop() {
   const [shopItems, setShopItems] = useState<Record<string, ShopItem[]>>({});
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const supabase = createClientComponentClient();
+  const { supabase } = useAuth(); 
   
   // Fetch shop items and categories from Supabase
   useEffect(() => {
     async function fetchData() {
+      if (!supabase) {
+        console.log('Shop page: Supabase client not available yet.');
+        setIsLoading(false);
+        return;
+      }
+      
       setIsLoading(true);
       
       // Fetch categories
@@ -67,7 +73,7 @@ export default function Shop() {
         // Group items by category_id
         const groupedItems: Record<string, ShopItem[]> = {};
         
-        itemsData.forEach(item => {
+        itemsData.forEach((item: ShopItem) => {
           if (!groupedItems[item.category_id]) {
             groupedItems[item.category_id] = [];
           }

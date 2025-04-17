@@ -5,7 +5,6 @@ import styles from './RankCard.module.css';
 import * as FaIcons from 'react-icons/fa';
 import Button from '@/components/UI/Button';
 import Tooltip from '@/components/UI/Tooltip';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { NineSliceContainer } from '../UI';
 
 interface RankCardProps {
@@ -24,7 +23,6 @@ const RankCard: React.FC<RankCardProps> = ({
   onRemoveItem,
 }) => {
   const [tooltipPosition, setTooltipPosition] = useState<'right' | 'bottom'>('right');
-  const supabase = createClientComponentClient();
 
   // Check if this item is in the cart and calculate quantity
   const itemsInCart = cartItems.filter(item => item.id === rank.id);

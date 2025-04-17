@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { useAuth } from '@/components/Auth/AuthContext';
 import { Category, ShopItem } from '@/lib/supabase';
 
 export default function DebugPage() {
@@ -9,10 +9,15 @@ export default function DebugPage() {
   const [shopItems, setShopItems] = useState<ShopItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const supabase = createClientComponentClient();
+  const { supabase } = useAuth();
 
   useEffect(() => {
     async function fetchData() {
+      if (!supabase) {
+        console.log('Debug page: Supabase client not available yet.');
+        setLoading(false);
+        return;
+      }
       setLoading(true);
       setError(null);
       
