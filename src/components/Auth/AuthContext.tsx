@@ -192,55 +192,73 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('Profile created successfully:', JSON.stringify(data, null, 2));
         return data;
       } else {
-        // We have an existing profile, check if we need to update with the current provider ID
-        console.log('Existing profile found, checking for updates:', JSON.stringify(userProfile, null, 2));
+        // Profile exists, check for updates based on provider data
+        console.log('Updating existing profile for user:', currentUser.id);
         
+        const updates: Partial<Profile> = {};
         let needsUpdate = false;
-        const updates: Partial<Profile> = {
-          updated_at: new Date().toISOString()
-        };
         
-        // Update email if missing
-        if (!userProfile.email && currentUser.email) {
+        // Update email if it changed
+        if (currentUser.email && userProfile.email !== currentUser.email) {
           updates.email = currentUser.email;
-          console.log(`Adding email to existing profile: ${updates.email}`);
+          console.log(`Updating email from '${userProfile.email}' to '${updates.email}'`);
           needsUpdate = true;
         }
         
-        // Add missing provider IDs if the user is authenticating with a new provider
-        if (effectiveProvider === 'discord' && !userProfile.discord_id) {
-          updates.discord_id = identityId || userMetadata.provider_id || userMetadata.sub;
-          console.log(`Adding Discord ID to existing profile: ${updates.discord_id}`);
-          needsUpdate = true;
-        } else if (effectiveProvider === 'google' && !userProfile.google_id) {
-          updates.google_id = identityId || userMetadata.provider_id || userMetadata.sub;
-          console.log(`Adding Google ID to existing profile: ${updates.google_id}`);
+        // Update username if provided and different
+        const newUsername = userMetadata.full_name || 
+                          userMetadata.name || 
+                          userMetadata.user_name || 
+                          userMetadata.preferred_username;
+                          
+        if (newUsername && userProfile.username !== newUsername) {
+          updates.username = newUsername;
+          console.log(`Updating username from '${userProfile.username}' to '${updates.username}'`);
           needsUpdate = true;
         }
         
-        // Update avatar if missing
-        if (!userProfile.avatar_url && userMetadata.avatar_url) {
+        // Update avatar if provided and different
+        if (userMetadata.avatar_url && userProfile.avatar_url !== userMetadata.avatar_url) {
           updates.avatar_url = userMetadata.avatar_url;
+          console.log(`Updating avatar_url`);
           needsUpdate = true;
         }
-        
+
+        // Ensure provider ID is set if user authenticated with Discord/Google
+        if (effectiveProvider === 'discord' && identityId) {
+          const currentDiscordId = (userProfile as any).discord_id;
+          if (!currentDiscordId || currentDiscordId !== identityId) {
+            updates.discord_id = identityId;
+            console.log(`Updating discord_id to '${identityId}' (was: '${currentDiscordId}')`);
+            needsUpdate = true;
+          }
+        } else if (effectiveProvider === 'google' && identityId) {
+          const currentGoogleId = (userProfile as any).google_id;
+          if (!currentGoogleId || currentGoogleId !== identityId) {
+            updates.google_id = identityId;
+            console.log(`Updating google_id to '${identityId}' (was: '${currentGoogleId}')`);
+            needsUpdate = true;
+          }
+        }
+
+        // If there are updates, apply them
         if (needsUpdate) {
-          console.log('Updating profile with new data:', JSON.stringify(updates, null, 2));
-          
-          const { data, error } = await supabase
+          updates.updated_at = new Date().toISOString();
+          console.log('Applying updates to profile:', JSON.stringify(updates, null, 2));
+          const { data: updatedProfile, error: updateError } = await supabase
             .from('profiles')
             .update(updates)
             .eq('id', currentUser.id)
             .select('*')
             .single();
             
-          if (error) {
-            console.error('Error updating profile:', error);
+          if (updateError) {
+            console.error('Error updating profile:', updateError);
             return userProfile; // Return original profile even if update fails
           }
           
-          console.log('Profile updated successfully:', JSON.stringify(data, null, 2));
-          return data;
+          console.log('Profile updated successfully:', JSON.stringify(updatedProfile, null, 2));
+          return updatedProfile;
         }
       }
       

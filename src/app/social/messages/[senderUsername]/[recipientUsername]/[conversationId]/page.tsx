@@ -286,7 +286,7 @@ export default function ConversationPage() {
       supabase.removeChannel(readStatusSubscription);
     };
   }, [user, conversationId, recipientUser, messages]);
-  
+
   useEffect(() => {
     // Mark all messages as read when the conversation is opened
     if (user && messages.length > 0) {
@@ -998,7 +998,7 @@ export default function ConversationPage() {
             {recipientUser && (
               <div className={styles.onlineStatus}>
                 <StatusIndicator 
-                  status={userStatuses[recipientUser.id] || 'offline'} 
+                  status={userStatuses[recipientUser.id]?.status || 'offline'} 
                   showDot={false}
                   showText={true}
                 />
