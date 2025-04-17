@@ -20,7 +20,6 @@ export type AuthContextType = {
   user: User | null;
   profile: Profile | null;
   session: Session | null;
-  loading: boolean;
   error: string | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
@@ -32,7 +31,7 @@ export type AuthContextType = {
   updateProfile: (updates: Partial<Profile>) => Promise<Profile | null>;
   updatePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   clearError: () => void;
-  isLoading: boolean; // Add isLoading
+  isLoading: boolean;
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -40,7 +39,6 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   profile: null,
   session: null,
-  loading: true,
   error: null,
   isAuthenticated: false,
   isAdmin: false,
@@ -52,7 +50,7 @@ const AuthContext = createContext<AuthContextType>({
   updateProfile: async () => null,
   updatePassword: async () => {},
   clearError: () => {},
-  isLoading: true, // Initialize isLoading
+  isLoading: true,
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -61,11 +59,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
-  const [isLoading, setIsLoading] = useState(true); // Add isLoading
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   // Compute isAuthenticated based on user state
@@ -269,46 +266,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (authChecked) return; // Skip if auth is already initialized
     
-    const authListener = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
-        console.log('Auth state changed:', event);
-        
-        // Update session whenever it changes
-        if (newSession !== session) {
-          setSession(newSession);
-        }
-        
-        if (event === 'SIGNED_IN' && newSession?.user) {
-          console.log('User signed in:', newSession.user.id);
-          setUser(newSession.user);
-          
-          // Create or update profile when user logs in
-          const userProfile = await createOrUpdateProfile(newSession.user);
-          setProfile(userProfile);
-          
-          if (!userProfile) {
-            setError('Your account was created, but we had trouble setting up your profile. Try refreshing the page.');
-          }
-        } else if (event === 'SIGNED_OUT') {
-          console.log('User signed out');
-          setUser(null);
-          setProfile(null);
-          setSession(null);
-        } else if (event === 'TOKEN_REFRESHED' && newSession?.user) {
-          console.log('Token refreshed for user:', newSession.user.id);
-          setUser(newSession.user);
-        } else if (event === 'USER_UPDATED' && newSession?.user) {
-          console.log('User updated:', newSession.user.id);
-          setUser(newSession.user);
-          // Refresh profile after user update
-          const userProfile = await fetchProfile(newSession.user.id);
-          setProfile(userProfile);
-        }
-      }
-    );
-    
-    // Also perform a manual check to ensure the current session is recognized
-    const checkCurrentAuth = async () => {
+    const checkAuthState = async () => {
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         if (currentSession && currentSession.user) {
@@ -328,24 +286,66 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (err) {
         console.error('Error checking current auth state:', err);
       } finally {
-        setLoading(false);
-        setIsLoading(false); // Set isLoading to false
+        setIsLoading(false);
         setAuthChecked(true);
       }
     };
     
-    checkCurrentAuth();
-    
+    checkAuthState();
+  }, [supabase, fetchProfile]);
+
+  useEffect(() => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        console.log(`Auth state changed: ${_event}`);
+        setSession(session);
+        setUser(session?.user ?? null);
+
+        if (session?.user) {
+          console.log(`User ${_event}: ${session.user.id}`);
+          // Re-fetch or update profile on relevant events
+          if (_event === 'SIGNED_IN' || _event === 'TOKEN_REFRESHED' || _event === 'USER_UPDATED') {
+            const fetchedProfile = await fetchProfile(session.user.id);
+            setProfile(fetchedProfile);
+            // Check onboarding status after profile is available
+            if (fetchedProfile && !fetchedProfile.has_completed_onboarding && !window.location.pathname.startsWith('/onboarding')) {
+              console.log('Redirecting to onboarding...');
+              setIsRedirecting(true);
+              router.push('/onboarding');
+            } else {
+              setIsRedirecting(false);
+            }
+          } else if (_event === 'SIGNED_OUT') {
+             setProfile(null);
+             setIsRedirecting(false);
+             // Optional: Redirect to login on sign out
+             // if (window.location.pathname !== '/login') { // Avoid loop
+             //   router.push('/login');
+             // }
+          }
+        } else {
+          // No user/session
+          setProfile(null);
+          setIsRedirecting(false);
+        }
+        
+        // Ensure loading is false after handling the auth state change
+        setAuthChecked(true); // Mark that auth state has been processed
+        setIsLoading(false);
+      }
+    );
+
+    // Cleanup listener on unmount
     return () => {
-      authListener.data.subscription.unsubscribe();
+      authListener?.subscription.unsubscribe();
     };
-  }, [authChecked]);
-  
+  }, [supabase, router]);
+
   // Auth methods
   const loginWithDiscord = async (redirectPath = '/profile') => {
     try {
       setError(null);
-      setLoading(true);
+      setIsLoading(true);
       await signInWithDiscord(redirectPath);
     } catch (err: any) {
       console.error('Discord login error:', err);
@@ -364,14 +364,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       setError(errorMessage);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
   
   const loginWithGoogle = async (redirectPath = '/profile') => {
     try {
       setError(null);
-      setLoading(true);
+      setIsLoading(true);
       await signInWithGoogle(redirectPath);
     } catch (err: any) {
       console.error('Google login error:', err);
@@ -390,14 +390,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       setError(errorMessage);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
   
   const logout = async (redirectTo?: string) => {
     try {
       setError(null);
-      setLoading(true);
+      setIsLoading(true);
       
       // Store the current page to redirect back after login
       if (typeof window !== 'undefined' && redirectTo) {
@@ -422,7 +422,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Logout error:', err);
       setError(`Failed to logout: ${err?.message || 'Unknown error'}`);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -430,7 +430,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateMinecraftUsername = async (minecraftUsername: string): Promise<Profile | null> => {
     try {
       setError(null);
-      setLoading(true);
+      setIsLoading(true);
       
       if (!user) {
         throw new Error('You must be logged in to update your Minecraft username');
@@ -456,7 +456,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setError(err.message || 'Failed to update Minecraft username');
       return null;
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -474,7 +474,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateProfile = async (updates: Partial<Profile>): Promise<Profile | null> => {
     try {
       setError(null);
-      setLoading(true);
+      setIsLoading(true);
       
       if (!user) {
         throw new Error('You must be logged in to update your profile');
@@ -518,7 +518,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setError(err.message || 'Failed to update profile');
       return null;
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -526,7 +526,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updatePassword = async (currentPassword: string, newPassword: string): Promise<void> => {
     try {
       setError(null);
-      setLoading(true);
+      setIsLoading(true);
       
       if (!user) {
         throw new Error('You must be logged in to update your password');
@@ -548,7 +548,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setError(err.message || 'Failed to update password');
       throw err;
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -557,7 +557,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user,
     profile,
     session,
-    loading,
     error,
     isAuthenticated,
     isAdmin,
@@ -569,7 +568,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updateProfile,
     updatePassword,
     clearError,
-    isLoading, // Add isLoading
+    isLoading,
   };
 
   // Conditional Rendering based on isLoading
