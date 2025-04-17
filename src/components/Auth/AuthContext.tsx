@@ -77,111 +77,151 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Fetch user profile from Supabase
   const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
-    console.log(`Fetching profile for user: ${userId}`);
+    console.log('fetchProfile: Starting for user:', userId); // Log start
+    if (!supabase || !userId) {
+        console.log('fetchProfile: Exiting early - no supabase client or userId.');
+        return null;
+    }
     try {
+      console.log('fetchProfile: Executing Supabase select...'); // Log before DB call
       const { data, error, status } = await supabase
         .from('profiles')
-        .select('*')
+        .select(`
+          id,
+          email,
+          username,
+          avatar_url,
+          created_at,
+          updated_at,
+          has_completed_onboarding,
+          google_id,
+          discord_id
+        `) // Removed '*' and specified columns
         .eq('id', userId)
         .single();
 
-      if (error && status !== 406) { // 406: Not acceptable (means no rows found)
-        console.error('Error fetching profile:', error.message);
+      console.log('fetchProfile: Supabase select finished. Status:', status, 'Error:', error, 'Data:', data ? 'Exists' : 'null'); // Log after DB call & data status
+
+      if (error && status !== 406) { // 406: 'Not Found' - Normal if profile doesn't exist yet
+        console.error('Error fetching profile:', error);
+        setError('Could not fetch user profile.');
         return null;
       }
-      console.log('Profile fetched in fetchProfile:', data?.id);
-      return data;
-    } catch (e: any) {
-      console.error('Exception fetching profile:', e.message);
+      console.log('fetchProfile: Returning data:', data ? 'Profile data' : 'null'); // Log return
+      return data as Profile | null;
+    } catch (err: any) {
+      console.error('Error in fetchProfile catch block:', err);
+      setError(`An unexpected error occurred while fetching the profile: ${err.message}`);
       return null;
+    } finally {
+        console.log('fetchProfile: Finished for user:', userId); // Log finish
     }
-  }, [supabase]);
+  }, [supabase]); // Dependency on supabase client
 
   // Create or update user profile
   const createOrUpdateProfile = useCallback(async (currentUser: User): Promise<Profile | null> => {
-     console.log(`createOrUpdateProfile called for user: ${currentUser.id}`);
-     try {
-       let userProfile = await fetchProfile(currentUser.id);
-       const userMetadata = currentUser.user_metadata || {};
-       const appMetadata = currentUser.app_metadata || {};
-       const provider = appMetadata.provider || currentUser.identities?.slice(-1)[0]?.provider || 'unknown';
-       const providerId = userMetadata.provider_id || currentUser.identities?.slice(-1)[0]?.identity_data?.sub;
+    console.log('createOrUpdateProfile: Starting for user:', currentUser.id); // Log start
+    if (!supabase) {
+      console.error('createOrUpdateProfile: Supabase client is not available.');
+      setError('Supabase client not available.');
+      return null;
+    }
 
-       if (!userProfile) {
-         console.log('Creating new profile for user:', currentUser.id);
-         const isSocialLogin = provider === 'google' || provider === 'discord';
-         const profileData: Partial<Profile> = {
-           id: currentUser.id,
-           email: currentUser.email || 'No Email Provided',
-           username: userMetadata.full_name || userMetadata.name || userMetadata.user_name || userMetadata.preferred_username || `User_${currentUser.id.substring(0, 8)}`,
-           avatar_url: userMetadata.avatar_url || null,
-           created_at: new Date().toISOString(),
-           updated_at: new Date().toISOString(),
-           has_completed_onboarding: isSocialLogin,
-           google_id: provider === 'google' ? providerId : null,
-           discord_id: provider === 'discord' ? providerId : null
-         };
-         const { data: newProfile, error: createError } = await supabase
-           .from('profiles')
-           .upsert(profileData)
-           .select('*')
-           .single();
-         if (createError) throw createError;
-         console.log('Profile created:', newProfile?.id);
-         return newProfile;
-       } else {
-         // Profile exists, check for updates
-         console.log('Existing profile found for user:', currentUser.id);
-         const updates: Partial<Profile> = {};
-         let needsUpdate = false;
+    try {
+      console.log('createOrUpdateProfile: Calling fetchProfile...'); // Log before fetch
+      const existingProfile = await fetchProfile(currentUser.id);
+      console.log('createOrUpdateProfile: fetchProfile returned:', existingProfile ? 'Profile found' : 'No profile found'); // Log after fetch
 
-         // Update email if changed
-         if (currentUser.email && userProfile.email !== currentUser.email) {
-           updates.email = currentUser.email; needsUpdate = true; 
-         }
-         // Update username if changed from metadata
-         const newUsername = userMetadata.full_name || userMetadata.name || userMetadata.user_name || userMetadata.preferred_username;
-         if (newUsername && userProfile.username !== newUsername) {
-           updates.username = newUsername; needsUpdate = true;
-         }
-         // Update avatar if changed from metadata
-         if (userMetadata.avatar_url && userProfile.avatar_url !== userMetadata.avatar_url) {
-           updates.avatar_url = userMetadata.avatar_url; needsUpdate = true;
-         }
-         // Update provider ID if missing or different
-         if (provider === 'google' && providerId && userProfile.google_id !== providerId) {
-           updates.google_id = providerId; needsUpdate = true;
-         }
-         if (provider === 'discord' && providerId && userProfile.discord_id !== providerId) {
-           updates.discord_id = providerId; needsUpdate = true;
-         }
+      const userMetadata = currentUser.app_metadata;
+      const isSocialLogin = !!(userMetadata?.provider && userMetadata.provider !== 'email');
+      const effectiveProvider = userMetadata?.provider || 'email';
 
-         if (needsUpdate) {
-           updates.updated_at = new Date().toISOString();
-           console.log('Applying updates to profile:', JSON.stringify(updates));
-           const { data: updatedProfile, error: updateError } = await supabase
-             .from('profiles')
-             .update(updates)
-             .eq('id', currentUser.id)
-             .select('*')
-             .single();
-           if (updateError) {
-              console.error('Error updating profile:', updateError);
-              return userProfile; // Return old profile on error
-           }
-           console.log('Profile updated:', updatedProfile?.id);
-           return updatedProfile;
-         } else {
-            console.log('No profile updates needed.');
-            return userProfile;
-         }
-       }
-     } catch (err: any) {
-       console.error('Error in createOrUpdateProfile:', err);
-       setError(`Failed to process profile: ${err.message}`);
-       return null;
-     }
-  }, [supabase, fetchProfile]);
+      if (!existingProfile) {
+        console.log('createOrUpdateProfile: No existing profile, creating new one...'); // Log before create
+        const profileData: Partial<Profile> = {
+          id: currentUser.id,
+          email: currentUser.email || null, // Default to null if not provided
+          username: null, // Username to be set during onboarding ideally
+          avatar_url: userMetadata?.avatar_url || null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          has_completed_onboarding: isSocialLogin,
+          google_id: effectiveProvider === 'google' ? userMetadata.provider_id : null,
+          discord_id: effectiveProvider === 'discord' ? userMetadata.provider_id : null,
+        };
+
+        console.log('createOrUpdateProfile: Attempting insert with data:', profileData);
+        const { data: newProfile, error: insertError } = await supabase
+          .from('profiles')
+          .insert(profileData as Profile) // Cast needed if insert expects full Profile type
+          .select()
+          .single();
+
+        console.log('createOrUpdateProfile: Insert result:', { newProfile, insertError }); // Log after create
+
+        if (insertError) {
+          console.error('Error creating profile:', insertError);
+          setError(`Failed to create profile: ${insertError.message}`);
+          return null;
+        }
+
+        console.log('createOrUpdateProfile: New profile created:', newProfile?.id);
+        return newProfile;
+      } else {
+        console.log('createOrUpdateProfile: Existing profile found. Checking for updates...'); // Log before update check
+        let needsUpdate = false;
+        const updates: Partial<Profile> = { updated_at: new Date().toISOString() };
+
+        // Update provider ID if missing or different
+        if (effectiveProvider === 'google' && !existingProfile.google_id && userMetadata.provider_id) {
+          updates.google_id = userMetadata.provider_id;
+          needsUpdate = true;
+          console.log('createOrUpdateProfile: Updating google_id.');
+        }
+        if (effectiveProvider === 'discord' && !existingProfile.discord_id && userMetadata.provider_id) {
+          updates.discord_id = userMetadata.provider_id;
+          needsUpdate = true;
+           console.log('createOrUpdateProfile: Updating discord_id.');
+        }
+        // Potentially update email if it was missing before (handle with care)
+        if (!existingProfile.email && currentUser.email) {
+           updates.email = currentUser.email;
+           needsUpdate = true;
+           console.log('createOrUpdateProfile: Updating missing email.');
+        }
+
+        if (needsUpdate) {
+          console.log('createOrUpdateProfile: Applying updates:', updates); // Log before update
+          const { data: updatedProfile, error: updateError } = await supabase
+            .from('profiles')
+            .update(updates)
+            .eq('id', currentUser.id)
+            .select()
+            .single();
+
+          console.log('createOrUpdateProfile: Update result:', { updatedProfile, updateError }); // Log after update
+
+          if (updateError) {
+            console.error('Error updating profile:', updateError);
+            setError(`Failed to update profile: ${updateError.message}`);
+            return existingProfile; // Return old profile on error
+          }
+
+          console.log('createOrUpdateProfile: Profile updated:', updatedProfile?.id);
+          return updatedProfile;
+        } else {
+          console.log('createOrUpdateProfile: No updates needed.');
+          return existingProfile;
+        }
+      }
+    } catch (err: any) {
+      console.error('Error in createOrUpdateProfile catch block:', err);
+      setError(`Failed to process profile: ${err.message}`);
+      return null;
+    } finally {
+        console.log('createOrUpdateProfile: Finished for user:', currentUser.id); // Log finish
+    }
+  }, [supabase, fetchProfile]); // Keep dependencies stable
 
   // Effect to initialize auth state and listen for changes
   useEffect(() => {
