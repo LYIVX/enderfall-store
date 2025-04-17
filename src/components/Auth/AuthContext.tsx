@@ -240,6 +240,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
            // Ensure profile is null if user becomes null for other reasons
            if (isMounted) setProfile(null);
         }
+
+        // *** FALLBACK MECHANISM ***
+        // If isLoading is still true when a significant auth event occurs,
+        // set it to false here to prevent getting stuck.
+        if (isLoading && (_event === 'SIGNED_IN' || _event === 'INITIAL_SESSION' || _event === 'SIGNED_OUT')) {
+            if (isMounted) {
+                console.log(`Auth Effect: onAuthStateChange (${_event}) setting isLoading=false as fallback.`);
+                setIsLoading(false);
+            }
+        }
       }
     );
 
