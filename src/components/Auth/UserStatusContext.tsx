@@ -4,7 +4,7 @@ import React, { createContext, useContext, useEffect, useState, useRef, useCallb
 import { UserStatusValue, UserStatusRecord } from '@/types/user-status'; // Import updated types
 import { useAuth } from './AuthContext';
 import { Database } from '@/types/database';
-import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import { RealtimePostgresChangesPayload, REALTIME_SUBSCRIBE_STATES } from '@supabase/supabase-js'; // Correct import
 
 // Simple debounce utility function (module scope)
 function debounce<T extends (...args: any[]) => void>(func: T, wait: number): { (...args: Parameters<T>): void; cancel: () => void } {
@@ -204,6 +204,7 @@ export const UserStatusProvider: React.FC<UserStatusProviderProps> = ({ children
         setMyStatusState(null); // Or a default status
       } else if (data) {
         setMyStatusState({
+          user_id: user.id, // Add user_id
           status: data.status as UserStatusValue,
           is_manual: data.is_manual ?? false, // Default to false if null
           last_updated: data.last_updated
@@ -228,7 +229,6 @@ export const UserStatusProvider: React.FC<UserStatusProviderProps> = ({ children
   // Function to fetch initial statuses for all users (can be optimized for large numbers)
   const fetchInitialStatuses = useCallback(async () => {
     if (!supabase) return;
-    // Fetching all statuses might be heavy. Consider fetching only online/recent ones.
     setIsLoading(true);
     try {
       const { data, error } = await supabase
@@ -239,12 +239,13 @@ export const UserStatusProvider: React.FC<UserStatusProviderProps> = ({ children
         console.error('Error fetching initial statuses:', error);
         setUserStatuses({});
       } else if (data) {
-        const statuses: Record<string, UserStatusRecord> = data.reduce((acc, record) => {
-          if (record.user_id) {
-            acc[record.user_id] = {
-              status: record.status as UserStatusValue,
-              is_manual: record.is_manual ?? false,
-              last_updated: record.last_updated
+        const statuses: Record<string, UserStatusRecord> = data.reduce((acc: Record<string, UserStatusRecord>, u: Database['public']['Tables']['user_status']['Row']) => {
+          if (u.user_id) {
+            acc[u.user_id] = {
+              user_id: u.user_id, // Add user_id
+              status: u.status as UserStatusValue,
+              is_manual: u.is_manual ?? false,
+              last_updated: u.last_updated
             };
           }
           return acc;
@@ -255,8 +256,7 @@ export const UserStatusProvider: React.FC<UserStatusProviderProps> = ({ children
       console.error('Exception fetching initial statuses:', err);
       setUserStatuses({});
     } finally {
-      // Combine loading state logic if fetchMyInitialStatus is called within this
-      // setIsLoading(false); // Might be set by fetchMyInitialStatus
+      setIsLoading(false);
       setIsInitialLoad(false);
     }
   }, [supabase]);
@@ -282,7 +282,7 @@ export const UserStatusProvider: React.FC<UserStatusProviderProps> = ({ children
       }
 
       if (inactiveUsers && inactiveUsers.length > 0) {
-        const userIdsToUpdate = inactiveUsers.map(u => u.user_id);
+        const userIdsToUpdate = inactiveUsers.map((u: { user_id: string }) => u.user_id);
         console.log(`Found ${userIdsToUpdate.length} inactive users, setting to offline:`, userIdsToUpdate);
 
         // Batch update their status to offline
@@ -332,80 +332,87 @@ export const UserStatusProvider: React.FC<UserStatusProviderProps> = ({ children
     const inactiveUsersCheckInterval = setInterval(checkAndUpdateInactiveUsers, HEARTBEAT_INTERVAL);
 
     // Set up Supabase subscription
-    const channel = supabase.channel('user-status-changes');
-    const subscription = channel
-      .on<Database['public']['Tables']['user_status']['Row']>(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_status',
-          // No filter here, receive all changes and handle locally
-        },
-        (payload) => {
-          let changedRecord: UserStatusRecord | null = null;
-          let userIdChanged: string | null = null;
+    const channel = supabase
+      .channel('user_status_changes')
+    
+    const subscription = channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'user_status',
+        // No filter here, receive all changes and handle locally
+      },
+      (payload: RealtimePostgresChangesPayload<Database['public']['Tables']['user_status']['Row']>) => { 
+        let changedRecord: UserStatusRecord | null = null;
+        let userIdChanged: string | null = null;
 
-          if ((payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') && payload.new) {
-            const newRecord = payload.new;
-            if (newRecord.user_id && newRecord.status && newRecord.last_updated) {
-              changedRecord = {
-                status: newRecord.status as UserStatusValue,
-                is_manual: newRecord.is_manual ?? false,
-                last_updated: newRecord.last_updated
-              };
-              userIdChanged = newRecord.user_id;
-            }
-          } else if (payload.eventType === 'DELETE' && payload.old) {
-            // Handle delete: mark as offline or remove from local state
-            const oldRecord = payload.old;
-            if (oldRecord?.user_id) {
-              userIdChanged = oldRecord.user_id;
-              // Set to a default offline state or remove completely
-              changedRecord = { status: 'offline', is_manual: false, last_updated: new Date().toISOString() };
-            }
+        if ((payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') && payload.new) {
+          const newRecord = payload.new;
+          if (newRecord.user_id && newRecord.status && newRecord.last_updated) {
+            changedRecord = {
+              user_id: newRecord.user_id, // Add user_id
+              status: newRecord.status as UserStatusValue,
+              is_manual: newRecord.is_manual ?? false,
+              last_updated: newRecord.last_updated
+            };
+            userIdChanged = newRecord.user_id;
           }
-
-          if (userIdChanged && changedRecord) {
-            if (userIdChanged === user.id) {
-              // Update my own status state only if status or is_manual differs
-              const currentState = myStatusRef.current;
-              if (
-                !currentState || // Update if current state is null
-                currentState.status !== changedRecord.status ||
-                currentState.is_manual !== changedRecord.is_manual
-              ) {
-                console.log('Updating my status from realtime:', changedRecord); // Optional: Keep for debugging if needed
-                setMyStatusState(changedRecord);
-              }
-            } else {
-              // Update other user's status (consider comparing here too if needed)
-              console.log(`Updating status for ${userIdChanged} from realtime:`, changedRecord); // Optional: Keep for debugging
-              setUserStatuses(prev => ({
-                ...prev,
-                [userIdChanged!]: changedRecord!
-              }));
-            }
-          } else if (payload.eventType === 'DELETE' && payload.old?.user_id && payload.old.user_id !== user.id) {
-            // Handle deletion of other users more robustly if needed
-            console.log(`Removing status for deleted user ${payload.old.user_id}`);
-            setUserStatuses(prev => {
-              const newState = { ...prev };
-              delete newState[payload.old.user_id!];
-              return newState;
-            });
+        } else if (payload.eventType === 'DELETE' && payload.old) {
+          // Handle delete: mark as offline or remove from local state
+          const oldRecord = payload.old;
+          if (oldRecord?.user_id) {
+            userIdChanged = oldRecord.user_id;
+            // Set to a default offline state or remove completely
+            changedRecord = { 
+              user_id: oldRecord.user_id, // Add user_id
+              status: 'offline', 
+              is_manual: false, 
+              last_updated: new Date().toISOString() 
+            };
           }
         }
-      )
-      .subscribe((status, err) => {
-        if (err) {
-          console.error('Supabase subscription error:', err);
-        } else {
-          console.log('Supabase subscription established with status:', status);
-          // Fetch all statuses again on successful subscribe/reconnect
-          fetchInitialStatuses();
+
+        if (userIdChanged && changedRecord) {
+          if (userIdChanged === user.id) {
+            // Update my own status state only if status or is_manual differs
+            const currentState = myStatusRef.current;
+            if (
+              !currentState || // Update if current state is null
+              currentState.status !== changedRecord.status ||
+              currentState.is_manual !== changedRecord.is_manual
+            ) {
+              console.log('Updating my status from realtime:', changedRecord); // Optional: Keep for debugging if needed
+              setMyStatusState(changedRecord);
+            }
+          } else {
+            // Update other user's status (consider comparing here too if needed)
+            console.log(`Updating status for ${userIdChanged} from realtime:`, changedRecord); // Optional: Keep for debugging
+            setUserStatuses(prev => ({
+              ...prev,
+              [userIdChanged!]: changedRecord!
+            }));
+          }
+        } else if (payload.eventType === 'DELETE' && payload.old?.user_id && payload.old.user_id !== user.id) {
+          // Handle deletion of other users more robustly if needed
+          console.log(`Removing status for deleted user ${payload.old.user_id}`);
+          setUserStatuses(prev => {
+            const newState = { ...prev };
+            delete newState[payload.old.user_id!];
+            return newState;
+          });
         }
-      });
+      }
+    )
+    .subscribe((status: `${REALTIME_SUBSCRIBE_STATES}`, err: Error | null) => { 
+      if (err) {
+        console.error('Subscription error:', status, err);
+      } else {
+        console.log('Subscription established with status:', status);
+        // Fetch all statuses again on successful subscribe/reconnect
+        fetchInitialStatuses();
+      }
+    });
 
     // Set user to offline via API when they close the window/tab
     const handleBeforeUnload = async () => {
@@ -453,9 +460,7 @@ export const UserStatusProvider: React.FC<UserStatusProviderProps> = ({ children
       // Cleanup Supabase subscription
       if (subscription) {
         console.log('UserStatusContext: Cleaning up Supabase subscription');
-        supabase.removeChannel(subscription)
-          .then(() => console.log('Successfully removed channel'))
-          .catch((error: Error) => console.error('Error removing channel:', error));
+        subscription.unsubscribe();
       }
 
       // Remove beforeunload listener
