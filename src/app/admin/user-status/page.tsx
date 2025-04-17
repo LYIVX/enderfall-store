@@ -7,8 +7,8 @@ import AvatarWithStatus from '@/components/UI/AvatarWithStatus';
 import styles from './page.module.css';
 import { Loading } from '@/components/UI';
 import { Database } from '@/types/database';
-import { UserStatusType } from '@/types/user-status';
-import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import { UserStatusValue } from '@/types/user-status';
+import { RealtimeChannel, RealtimePostgresChangesPayload, REALTIME_SUBSCRIBE_STATES } from '@supabase/supabase-js';
 
 // Define types based on Database schema
 type UserStatusRow = Database['public']['Tables']['user_status']['Row'];
@@ -16,7 +16,7 @@ type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 
 interface UserStatusData {
   user_id: string;
-  status: UserStatusType;
+  status: UserStatusValue;
   last_updated: string;
   profiles: {
     username: string;
@@ -87,7 +87,7 @@ export default function UserStatusMonitor() {
         // Combine status data with profile data
         const combinedData = (statusData as UserStatusRow[]).map((status: UserStatusRow) => ({
           user_id: status.user_id,
-          status: status.status as UserStatusType,
+          status: status.status as UserStatusValue,
           last_updated: status.last_updated,
           profiles: profilesMap[status.user_id] ? {
             username: profilesMap[status.user_id].username,
@@ -143,7 +143,7 @@ export default function UserStatusMonitor() {
           fetchUserStatuses();
         }
       )
-      .subscribe((status, err) => { // Add subscribe callback for debugging
+      .subscribe((status: REALTIME_SUBSCRIBE_STATES, err?: Error) => { // Add subscribe callback for debugging
         if (status === 'SUBSCRIBED') {
           console.log('Successfully subscribed to user_status_monitor!');
         }
