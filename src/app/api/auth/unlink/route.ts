@@ -14,6 +14,10 @@ interface UserIdentity {
 }
 
 export async function POST(request: NextRequest) {
+  // Log incoming cookies
+  const cookieStore = cookies();
+  console.log('Cookies received by /api/auth/unlink:', JSON.stringify(cookieStore.getAll(), null, 2));
+  
   // Clone the request so we can read the body multiple times if needed
   const requestClone = request.clone();
   
@@ -33,16 +37,11 @@ export async function POST(request: NextRequest) {
     console.log(`Processing request to unlink ${provider}`);
 
     // Get the current user session with proper cookie handling
-    const cookieStore = cookies();
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
     
     // Get session with better error handling
     const sessionResponse = await supabase.auth.getSession();
-    console.log('Session response:', JSON.stringify({
-      status: sessionResponse.error ? 'error' : 'success',
-      hasSession: !!sessionResponse.data.session,
-      error: sessionResponse.error
-    }));
+    console.log('Session check result in API route:', { sessionResponse, sessionError: JSON.stringify(sessionResponse.error) }); // Log session result
 
     if (!sessionResponse.data.session || !sessionResponse.data.session.user) {
       console.error('No authenticated session found');
@@ -78,7 +77,7 @@ async function handleUnlinking(provider: string, userId: string, supabase: any, 
   console.log(`Handling unlink request for ${provider} user ${userId}`);
 
   try {
-    // Get the user's identities to check if unlinking is possible
+    // 1. Get User Identities (Admin API)
     const { data: identitiesData, error: identitiesError } = await adminClient.auth.admin.getUserById(userId);
     
     if (identitiesError) {
@@ -94,7 +93,7 @@ async function handleUnlinking(provider: string, userId: string, supabase: any, 
     const identities = identitiesData.user.identities;
     console.log(`Found ${identities.length} identities for user ${userId}`);
     
-    // Prevent account lockout
+    // 2. Prevent account lockout
     if (identities.length < 2) {
       console.error('Cannot unlink the only identity - would cause account lockout');
       return NextResponse.json({
@@ -102,7 +101,7 @@ async function handleUnlinking(provider: string, userId: string, supabase: any, 
       }, { status: 400 });
     }
     
-    // Find the specific identity linked to the user
+    // 3. Find the target identity
     const targetIdentity = identities.find((identity: UserIdentity) => identity.provider === provider);
     
     if (!targetIdentity) {
@@ -112,256 +111,87 @@ async function handleUnlinking(provider: string, userId: string, supabase: any, 
     
     console.log(`Found identity to unlink: ${targetIdentity.id} (${provider})`);
     
-    // FIRST: Try to unlink the auth identity - critical that this succeeds before updating profiles
+    // 4. Attempt Unlink - Prioritize Admin SDK
     let authUnlinkSuccess = false;
     let authError = null;
-    
-    // Approach 1: Try the unlink_identity RPC function with explicit parameters
-    try {
-      console.log('Attempting unlink_identity RPC call with explicit parameters');
-      
-      const { data, error } = await adminClient.rpc('unlink_identity_server', {
-        user_uuid: userId,
-        provider_name: provider
-      });
-      
-      if (error) {
-        console.error('RPC unlink_identity_server failed:', error);
-        
-        // Try the regular unlink_identity function next
-        try {
-          console.log('Trying standard unlink_identity function');
-          
-          const { data: stdData, error: stdError } = await adminClient.rpc('unlink_identity', {
-            identity_provider: provider,
-            user_id: userId
-          });
-          
-          if (stdError) {
-            console.error('Standard unlink_identity failed:', stdError);
-            authError = stdError;
-          } else {
-            console.log('Standard unlink_identity succeeded:', stdData);
-            // We need to verify if it actually worked
-            authUnlinkSuccess = true;
-          }
-        } catch (stdE) {
-          console.error('Error calling standard unlink_identity:', stdE);
-          authError = stdE;
-        }
-      } else {
-        console.log('RPC unlink_identity_server succeeded:', data);
-        authUnlinkSuccess = true;
-      }
-    } catch (e) {
-      console.error('Error with RPC calls:', e);
-      authError = e;
-    }
-    
-    // Approach 2: Try with a modified SQL approach that avoids permission issues
-    if (!authUnlinkSuccess) {
+
+    // Preferred Method: Use adminClient.auth.admin.unlinkIdentity
+    if (typeof adminClient.auth.admin.unlinkIdentity === 'function') {
       try {
-        console.log('Attempting database access via RPC');
-        
-        // Use a simplified approach with parameterized query
-        const { data, error } = await adminClient.rpc('delete_identity_by_provider', {
-          p_user_id: userId,
-          p_provider: provider
+        console.log('Attempting unlink via adminClient.auth.admin.unlinkIdentity...');
+        const { error: unlinkAdminError } = await adminClient.auth.admin.unlinkIdentity({
+          identity_id: targetIdentity.id,
+          user_id: userId // Include user_id as per potential new API requirements
         });
-        
-        if (error) {
-          console.error('RPC delete_identity_by_provider failed:', error);
-          
-          // Try another approach with direct execute_sql
-          console.log('Falling back to SQL function approach');
-          
-          // Try a simpler query without variables in string
-          const sqlParams = {
-            provider_value: provider,
-            user_id_value: userId
+
+        if (unlinkAdminError) {
+          // Log the full error object for detailed diagnosis
+          console.error('adminClient.auth.admin.unlinkIdentity failed:', JSON.stringify(unlinkAdminError, null, 2));
+          authError = unlinkAdminError; 
+        } else {
+          console.log('Successfully unlinked using adminClient.auth.admin.unlinkIdentity');
+          authUnlinkSuccess = true;
+        }
+      } catch (e: any) { // Catch potential exceptions
+        console.error('Exception calling adminClient.auth.admin.unlinkIdentity:', e);
+        authError = e instanceof Error ? e : new Error(String(e));
+      }
+    }
+
+    // Fallback Method: Use custom RPC function 'unlink_identity'
+    // Ensure the 'unlink_identity' function exists and is correctly defined in your database
+    // AND that the SQL migration with qualified user_id has been applied.
+    if (!authUnlinkSuccess) {
+      console.log("Admin SDK method failed or unavailable. Attempting fallback RPC 'unlink_identity'...");
+      try {
+        const { data: rpcData, error: rpcError } = await adminClient.rpc('unlink_identity', {
+          identity_provider: provider,
+          user_id: userId
+        });
+
+        if (rpcError) {
+          // Log the full RPC error object
+          console.error("RPC 'unlink_identity' call returned an error:", JSON.stringify(rpcError, null, 2));
+          authError = { 
+            message: `RPC unlink_identity error: ${rpcError.message}`,
+            details: rpcError.details, 
+            code: rpcError.code 
           };
-          
-          const { data: sqlData, error: sqlError } = await adminClient.rpc('execute_sql_with_params', {
-            query: `DELETE FROM auth.identities WHERE provider = :provider_value AND user_id = :user_id_value`,
-            params: sqlParams
-          });
-          
-          if (sqlError) {
-            console.error('SQL execute_sql_with_params failed:', sqlError);
-            authError = sqlError;
-          } else {
-            console.log('SQL execute_sql_with_params succeeded:', sqlData);
-            authUnlinkSuccess = true;
-          }
+        } else if (rpcData && rpcData.success === false) {
+          // Handle cases where the RPC function itself returns success: false
+          console.error("RPC 'unlink_identity' function reported failure:", rpcData.message);
+          authError = { message: rpcData.message || 'RPC function reported failure.' };
         } else {
-          console.log('RPC delete_identity_by_provider succeeded:', data);
-          authUnlinkSuccess = true;
+          // Check if rpcData indicates success (may vary based on your function's return)
+          console.log("RPC 'unlink_identity' succeeded. Response data:", JSON.stringify(rpcData, null, 2));
+          authUnlinkSuccess = true; // Assume success if no error and not explicitly failed
         }
-      } catch (e) {
-        console.error('Error with database operations:', e);
-        authError = e;
+      } catch (e: any) { // Catch potential exceptions during RPC call
+        console.error("Exception calling RPC 'unlink_identity':", e);
+        authError = e instanceof Error ? e : new Error(String(e));
       }
     }
-    
-    // Approach 3: Try using auth.admin functions if available
-    if (!authUnlinkSuccess && typeof adminClient.auth.admin.unlinkIdentity === 'function') {
-      try {
-        console.log('Trying auth.admin.unlinkIdentity method');
-        
-        const { error } = await adminClient.auth.admin.unlinkIdentity(userId, {
-          identityId: targetIdentity.id
-        });
-        
-        if (error) {
-          console.error('Admin unlinkIdentity failed:', error);
-          authError = error;
-        } else {
-          console.log('Successfully unlinked using admin.unlinkIdentity');
-          authUnlinkSuccess = true;
-        }
-      } catch (e) {
-        console.error('Error with admin.unlinkIdentity:', e);
-        authError = e;
-      }
-    }
-    
-    // Approach 4: Directly call the Supabase Auth API
+
+    // 5. Handle Unlink Failure
     if (!authUnlinkSuccess) {
-      try {
-        console.log('Attempting direct call to Supabase Auth API');
-        
-        // Get base URL and API key
-        const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, '');
-        const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-        
-        if (!baseUrl || !serviceKey) {
-          throw new Error('Missing environment variables');
-        }
-        
-        // Get the identity ID
-        const identityId = targetIdentity.id;
-        
-        // Direct call to the auth API
-        const authApiUrl = `${baseUrl}/auth/v1/admin/user/${userId}/identities/${identityId}`;
-        
-        console.log(`Calling Auth API: ${authApiUrl}`);
-        
-        const response = await fetch(authApiUrl, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${serviceKey}`,
-            'apikey': serviceKey,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (!response.ok) {
-          const errorText = await response.text().catch(() => 'No error text');
-          console.error(`Auth API call failed: ${response.status} ${errorText}`);
-          
-          // Try alternative URL format
-          const altApiUrl = `${baseUrl}/auth/v1/admin/identities/${identityId}`;
-          console.log(`Trying alternative API URL: ${altApiUrl}`);
-          
-          const altResponse = await fetch(altApiUrl, {
-            method: 'DELETE',
-            headers: {
-              'Authorization': `Bearer ${serviceKey}`,
-              'apikey': serviceKey,
-              'Content-Type': 'application/json'
-            }
-          });
-          
-          if (!altResponse.ok) {
-            const altErrorText = await altResponse.text().catch(() => 'No error text');
-            console.error(`Alternative Auth API call failed: ${altResponse.status} ${altErrorText}`);
-            authError = new Error(`API call failed: ${altResponse.status}`);
-          } else {
-            console.log('Alternative Auth API call succeeded');
-            authUnlinkSuccess = true;
-          }
-        } else {
-          console.log('Auth API call succeeded');
-          authUnlinkSuccess = true;
-        }
-      } catch (e) {
-        console.error('Error with Auth API call:', e);
-        authError = e;
-      }
-    }
-    
-    // If auth unlinking failed, return an error without updating profiles
-    if (!authUnlinkSuccess) {
-      console.error('Failed to unlink auth identity');
+      // Log the captured error before returning the response
+      console.error('All auth unlinking methods failed. Final captured error:', JSON.stringify(authError, null, 2));
+      const errorMessage = authError?.message || 'Failed to unlink from authentication system';
+      const errorDetails = authError?.details ? `Details: ${authError.details}` : '';
+      const errorCode = authError?.code ? `Code: ${authError.code}` : '';
+      
       return NextResponse.json({
         success: false,
-        error: 'Failed to unlink from authentication system',
-        message: authError?.message || 'Unknown error',
-        need_client_unlinking: true,
-        frontend_code: `
-        // IMPORTANT: Since server-side unlinking failed, you must run this code on the client
-        import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-        
-        async function completeUnlinking() {
-          try {
-            const supabase = createClientComponentClient();
-            
-            // First get user identities
-            const { data, error } = await supabase.auth.getUserIdentities();
-            
-            if (error) {
-              console.error('Error getting identities:', error);
-              return false;
-            }
-            
-            if (!data || !data.identities) {
-              console.error('No identities found');
-              return false;
-            }
-            
-            // Find the ${provider} identity
-            const identity = data.identities.find(i => i.provider === '${provider}');
-            
-            if (!identity) {
-              console.log('${provider} identity not found - might already be unlinked');
-              return true;
-            }
-            
-            // Unlink the identity
-            const { error: unlinkError } = await supabase.auth.unlinkIdentity(identity);
-            
-            if (unlinkError) {
-              console.error('Error unlinking identity:', unlinkError);
-              return false;
-            }
-            
-            console.log('Successfully unlinked ${provider} identity!');
-            
-            // After successful unlinking, update the profile in the database
-            const { error: updateError } = await supabase
-              .from('profiles')
-              .update({
-                ${provider}_id: null,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', '${userId}');
-              
-            if (updateError) {
-              console.error('Error updating profile:', updateError);
-            }
-            
-            return true;
-          } catch (e) {
-            console.error('Error in completeUnlinking:', e);
-            return false;
-          }
-        }
-        `
-      });
+        error: 'Failed to unlink authentication identity.',
+        message: `${errorMessage} ${errorDetails} ${errorCode}`.trim(),
+        // Note: Client-side unlinking (using supabase.auth.unlinkIdentity) is generally 
+        // NOT recommended for security reasons when an admin client is available.
+        // If server-side fails, it usually points to a config/permission issue.
+      }, { status: 500 }); // Use 500 for server-side failure
     }
     
-    // If auth unlinking succeeded, now update the profiles table
-    console.log('Auth unlinking succeeded! Now updating profiles table');
+    // 6. Update Profiles Table (only if auth unlink succeeded)
+    console.log('Auth unlinking succeeded! Now updating profiles table.');
     
     const providerIdField = `${provider}_id` as 'discord_id' | 'google_id';
     const { error: updateError } = await adminClient
@@ -371,11 +201,12 @@ async function handleUnlinking(provider: string, userId: string, supabase: any, 
         updated_at: new Date().toISOString()
       })
       .eq('id', userId);
-    
+
     if (updateError) {
       console.error(`Error updating profile:`, updateError);
+      // Even though profile update failed, auth unlink succeeded.
       return NextResponse.json({ 
-        success: true, 
+        success: true, // Overall operation partially succeeded
         auth_unlinked: true,
         profile_updated: false,
         message: `${provider} account unlinked from authentication, but there was an error updating your profile.`
@@ -384,14 +215,17 @@ async function handleUnlinking(provider: string, userId: string, supabase: any, 
     
     console.log(`Successfully updated profile to remove ${provider} ID`);
     
+    // 7. Return Success
     return NextResponse.json({
       success: true,
       auth_unlinked: true,
       profile_updated: true,
       message: `${provider} account has been successfully unlinked from your profile.`
     });
+
   } catch (error) {
-    console.error('Error in unlinking process:', error);
-    return NextResponse.json({ error: 'Failed to process unlinking request' }, { status: 500 });
+    // Catch any unexpected errors in the overall process
+    console.error('Critical error in handleUnlinking process:', error);
+    return NextResponse.json({ error: 'Server error processing unlinking request.' }, { status: 500 });
   }
 }

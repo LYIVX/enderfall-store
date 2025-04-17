@@ -16,6 +16,7 @@ import {
 import { useRouter } from 'next/navigation';
 
 export type AuthContextType = {
+  supabase: any;
   user: User | null;
   profile: Profile | null;
   session: Session | null;
@@ -34,6 +35,7 @@ export type AuthContextType = {
 };
 
 const AuthContext = createContext<AuthContextType>({
+  supabase: null,
   user: null,
   profile: null,
   session: null,
@@ -537,6 +539,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const value = {
+    supabase,
     user,
     profile,
     session,

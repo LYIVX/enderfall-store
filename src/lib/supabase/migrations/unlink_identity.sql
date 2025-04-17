@@ -18,7 +18,7 @@ begin
   -- Only allow for users with multiple identity providers to prevent lockout
   select count(*) into identity_count
   from auth.identities
-  where user_id = $1;
+  where auth.identities.user_id = $1;
   
   if identity_count <= 1 then
     return json_build_object(
@@ -30,7 +30,7 @@ begin
   -- Find the identity ID to delete
   select id into identity_id
   from auth.identities
-  where user_id = $1 and provider = $2;
+  where auth.identities.user_id = $1 and provider = $2;
   
   if identity_id is null then
     return json_build_object(
@@ -41,7 +41,7 @@ begin
   
   -- Delete the identity
   delete from auth.identities
-  where id = identity_id and user_id = $1;
+  where id = identity_id and auth.identities.user_id = $1;
   
   return json_build_object(
     'success', true,

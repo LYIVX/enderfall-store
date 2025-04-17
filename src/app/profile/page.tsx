@@ -7,8 +7,6 @@ import { FaUser, FaBox, FaCreditCard, FaCube, FaDiscord, FaGoogle, FaInfoCircle,
 import { useAuth } from '@/components/Auth/AuthContext';
 import dynamic from 'next/dynamic';
 import LinkMinecraftModal from '@/components/Profile/LinkMinecraftModal';
-import LinkDiscordModal from '@/components/Profile/LinkDiscordModal';
-import LinkGoogleModal from '@/components/Profile/LinkGoogleModal';
 import styles from './page.module.css';
 import AccountSettings from '@/components/Profile/AccountSettings';
 import { isPageRefresh } from '@/lib/navigation';
@@ -25,17 +23,18 @@ const LoadingSpinner = dynamic(() => import('@/components/UI/LoadingSpinner'), {
 });
 
 export default function ProfilePage() {
-  const { user, profile, logout, loading, error } = useAuth();
+  const { user, profile, logout, loading, error, supabase } = useAuth(); // Get supabase from context
+  console.log('Auth Context State on component mount:', { user, profile, loading, error });
   const router = useRouter();
   const searchParams = useSearchParams();
   
   const [activeTab, setActiveTab] = useState(searchParams?.get('tab') || 'profile');
   const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
   const [isMinecraftModalOpen, setIsMinecraftModalOpen] = useState(false);
-  const [isDiscordModalOpen, setIsDiscordModalOpen] = useState(false);
-  const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
   const [unlinking, setUnlinking] = useState<string | null>(null);
   const [loadingTimeout, setLoadingTimeout] = useState(false);
+  
+  // State variables
   
   // Check for link success/error parameters
   useEffect(() => {
@@ -202,6 +201,58 @@ export default function ProfilePage() {
     }
   };
   
+  const handleLinkAccount = async (provider: 'discord' | 'google') => {
+    try {
+      setNotification(null); // Clear previous notifications
+      console.log(`Initiating link with ${provider}...`);
+      
+      // Ensure supabase client from context is available
+      if (!supabase) {
+        throw new Error('Supabase client not available from AuthContext');
+      }
+      
+      // 1. Refresh the session to ensure we have a valid access token
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) {
+        console.error('Error refreshing session:', refreshError);
+        setNotification({
+          type: 'error',
+          message: `Session refresh failed: ${refreshError.message}`,
+        });
+        return; // Stop if session refresh fails
+      }
+      console.log('Session refreshed successfully.');
+      
+      // 2. Get the full current URL to redirect back to after linking
+      const redirectUrl = window.location.href;
+      
+      // 3. Attempt to link the identity
+      const { error: linkError } = await supabase.auth.linkIdentity({
+        provider: provider,
+        options: {
+          redirectTo: redirectUrl, // Ensures user returns to the profile page
+        },
+      });
+      
+      if (linkError) {
+        console.error(`Error initiating ${provider} link:`, linkError);
+        setNotification({
+          type: 'error',
+          message: `Failed to start linking process for ${provider}: ${linkError.message}`,
+        });
+      }
+      // No need for further action here; Supabase handles the redirect.
+      // The useEffect hook checking searchParams will handle success/error display upon return.
+      
+    } catch (error: any) {
+      console.error(`Unexpected error during ${provider} link process:`, error);
+      setNotification({
+        type: 'error',
+        message: `An unexpected error occurred: ${error.message}`,
+      });
+    }
+  };
+  
   // Use a safe version of profile for rendering
   const safeProfile = {
     username: profile?.username || 'User',
@@ -223,8 +274,8 @@ export default function ProfilePage() {
           <ProfileInfo
             profile={safeProfile}
             onOpenMinecraftModal={() => setIsMinecraftModalOpen(true)}
-            onOpenDiscordModal={() => setIsDiscordModalOpen(true)}
-            onOpenGoogleModal={() => setIsGoogleModalOpen(true)}
+            onLinkDiscord={() => handleLinkAccount('discord')}
+            onLinkGoogle={() => handleLinkAccount('google')}
             onUnlinkAccount={handleUnlinkAccount}
             unlinking={unlinking}
           />
@@ -301,28 +352,6 @@ export default function ProfilePage() {
             setNotification({
               type: 'success',
               message: 'Minecraft account linked successfully!'
-            });
-          }}
-        />
-        
-        <LinkDiscordModal
-          isOpen={isDiscordModalOpen}
-          onClose={() => setIsDiscordModalOpen(false)}
-          onSuccess={() => {
-            setNotification({
-              type: 'success',
-              message: 'Discord account linked successfully!'
-            });
-          }}
-        />
-        
-        <LinkGoogleModal
-          isOpen={isGoogleModalOpen}
-          onClose={() => setIsGoogleModalOpen(false)}
-          onSuccess={() => {
-            setNotification({
-              type: 'success',
-              message: 'Google account linked successfully!'
             });
           }}
         />

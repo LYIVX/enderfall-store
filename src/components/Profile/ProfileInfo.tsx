@@ -15,8 +15,8 @@ interface ProfileInfoProps {
     created_at: string;
   };
   onOpenMinecraftModal: () => void;
-  onOpenDiscordModal: () => void;
-  onOpenGoogleModal: () => void;
+  onLinkDiscord: () => void;
+  onLinkGoogle: () => void;
   onUnlinkAccount: (provider: 'discord' | 'google') => void;
   unlinking: string | null;
 }
@@ -24,8 +24,8 @@ interface ProfileInfoProps {
 export default function ProfileInfo({
   profile,
   onOpenMinecraftModal,
-  onOpenDiscordModal,
-  onOpenGoogleModal,
+  onLinkDiscord,
+  onLinkGoogle,
   onUnlinkAccount,
   unlinking
 }: ProfileInfoProps) {
@@ -85,7 +85,7 @@ export default function ProfileInfo({
               </>
             ) : (
               <Button 
-                onClick={onOpenDiscordModal}
+                onClick={onLinkDiscord}
               >
                 Link Discord
               </Button>
@@ -114,7 +114,7 @@ export default function ProfileInfo({
               </>
             ) : (
               <Button 
-                onClick={onOpenGoogleModal}
+                onClick={onLinkGoogle}
               >
                 Link Google
               </Button>
