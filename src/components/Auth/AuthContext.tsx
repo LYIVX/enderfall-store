@@ -32,6 +32,7 @@ export type AuthContextType = {
   updateProfile: (updates: Partial<Profile>) => Promise<Profile | null>;
   updatePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   clearError: () => void;
+  isLoading: boolean; // Add isLoading
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -50,7 +51,8 @@ const AuthContext = createContext<AuthContextType>({
   validateMinecraftUsername: async () => ({ valid: false, message: '' }),
   updateProfile: async () => null,
   updatePassword: async () => {},
-  clearError: () => {}
+  clearError: () => {},
+  isLoading: true, // Initialize isLoading
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -63,6 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [error, setError] = useState<string | null>(null);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Add isLoading
   const router = useRouter();
 
   // Compute isAuthenticated based on user state
@@ -326,6 +329,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('Error checking current auth state:', err);
       } finally {
         setLoading(false);
+        setIsLoading(false); // Set isLoading to false
         setAuthChecked(true);
       }
     };
@@ -564,8 +568,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     validateMinecraftUsername,
     updateProfile,
     updatePassword,
-    clearError
+    clearError,
+    isLoading, // Add isLoading
   };
+
+  // Conditional Rendering based on isLoading
+  if (isLoading) {
+    // TODO: Replace with a proper loading component/spinner
+    return <div>Loading authentication...</div>; // Or return null;
+  }
 
   return (
     <AuthContext.Provider value={value}>
