@@ -67,8 +67,8 @@ export async function POST(request: Request) {
   }
 
   try {
-    const record: Partial<Database['public']['Tables']['user_status']['Row']> = {
-      user_id: userId,
+    // Construct the record for upsert. Ensure user_id is always present.
+    const updateData = {
       status: status as UserStatusValue,
       is_manual: isManual,
       last_updated: new Date().toISOString(),
@@ -76,7 +76,7 @@ export async function POST(request: Request) {
 
     const { error } = await supabaseAdmin
       .from('user_status')
-      .upsert(record, { onConflict: 'user_id' });
+      .upsert({ user_id: userId, ...updateData }, { onConflict: 'user_id' }); // Directly include userId here
 
     if (error) {
       console.error('Supabase Admin Error updating status:', error);
