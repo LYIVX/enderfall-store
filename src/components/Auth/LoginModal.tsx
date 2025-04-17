@@ -18,7 +18,7 @@ interface LoginModalProps {
 }
 
 const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, redirectPath = '/profile' }) => {
-  const { loginWithDiscord, loginWithGoogle, error, loading, clearError, profile } = useAuth();
+  const { loginWithDiscord, loginWithGoogle, error, isLoading, clearError, profile } = useAuth();
   const [authInProgress, setAuthInProgress] = useState<string | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -257,7 +257,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, redirectPath =
               onClick={handleDiscordLogin}
               variant="primary"
               className={styles.discordButton}
-              disabled={loading || authInProgress !== null}
+              disabled={isLoading || authInProgress !== null}
               size="medium"
             >
               <FaDiscord className={styles.buttonIcon} />
@@ -270,7 +270,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, redirectPath =
               onClick={handleGoogleLogin}
               variant="primary"
               className={styles.googleButton}
-              disabled={loading || authInProgress !== null}
+              disabled={isLoading || authInProgress !== null}
               size="medium"
             >
               <FaGoogle className={styles.buttonIcon} />
@@ -316,7 +316,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, redirectPath =
                 onClick={handleEmailLogin}
                 variant="primary"
                 className={styles.emailButton}
-                disabled={!email || !password}
+                disabled={!email || !password || isLoading}
                 size="medium"
               >
                 <span>{authInProgress === 'email' ? 'Signing In...' : 'Sign In'}</span>

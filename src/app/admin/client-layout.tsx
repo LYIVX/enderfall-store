@@ -16,17 +16,17 @@ interface AdminLayoutProps {
 }
 
 export default function AdminClientLayout({ children }: AdminLayoutProps) {
-  const { isAuthenticated, isAdmin, loading } = useAuth();
+  const { isAuthenticated, isAdmin, isLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!loading && (!isAuthenticated || !isAdmin)) {
+    if (!isLoading && (!isAuthenticated || !isAdmin)) {
       router.push('/');
     }
-  }, [isAuthenticated, isAdmin, loading, router]);
+  }, [isAuthenticated, isAdmin, isLoading, router]);
 
-  if (loading) {
+  if (isLoading) {
     return <div className={styles.loading}>Loading...</div>;
   }
 
