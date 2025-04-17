@@ -8,6 +8,7 @@ export interface Profile {
   username: string | null;
   avatar_url: string | null;
   minecraft_username: string | null;
+  minecraft_uuid: string | null;
   discord_id: string | null;
   google_id: string | null;
   email: string | null;

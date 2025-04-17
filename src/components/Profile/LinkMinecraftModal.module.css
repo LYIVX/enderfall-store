@@ -1,238 +1,128 @@
-.modalOverlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
+/* Styles for LinkMinecraftModal */
+
+.modalContentPadding {
+  padding: var(--space-md); /* Add padding inside the nine-slice container if needed */
+  margin: var(--space-md);
 }
 
-.modal {
-  background-color: var(--theme-tab-background);
-  border-radius: var(--border-radius-md);
-  width: 100%;
-  max-width: 500px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-  animation: fadeIn 0.2s ease;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.modalHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--spacing-md) var(--spacing-lg);
-  border-bottom: 1px solid var(--theme-border);
-}
-
-.modalHeader h3 {
-  margin: 0;
-  color: var(--theme-text-primary);
-  font-size: var(--font-size-lg);
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-}
-
-.icon {
-  color: var(--theme-primary-color);
-}
-
-.closeButton {
-  background: none;
-  border: none;
-  font-size: 24px;
-  color: var(--theme-text-secondary);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.2s ease;
-}
-
-.closeButton:hover {
-  color: var(--theme-text-primary);
-}
-
-.modalContent {
-  padding: var(--spacing-lg);
-}
-
-.modalText {
-  margin-bottom: var(--spacing-lg);
-  color: var(--theme-text-secondary);
-  font-size: var(--font-size-md);
-  line-height: 1.5;
-}
-
-.inputGroup {
-  margin-bottom: var(--spacing-lg);
-}
-
-.inputGroup label {
-  display: block;
-  margin-bottom: var(--spacing-xs);
-  color: var(--theme-text-primary);
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-}
-
-.inputWrapper {
-  display: flex;
-  gap: var(--spacing-sm);
-}
-
-.input {
-  flex: 1;
-  background-color: var(--theme-text-tertiary);
-  border: 1px solid var(--theme-border);
-  border-radius: var(--border-radius-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
-  color: var(--theme-text-primary);
-  font-size: var(--font-size-md);
-  outline: none;
-  transition: border-color 0.2s ease;
-}
-
-.input:focus {
-  border-color: var(--theme-primary-color);
-}
-
-.validateButton {
-  background-color: var(--theme-text-tertiary);
-  color: var(--theme-text-primary);
-  border: 1px solid var(--theme-border);
-  border-radius: var(--border-radius-sm);
-  padding: 0 var(--spacing-md);
-  font-size: var(--font-size-sm);
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.validateButton:hover:not(:disabled) {
-  background-color: var(--theme-text-tertiary);
-}
-
-.validateButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.validationResult {
-  margin-top: var(--spacing-sm);
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  font-size: var(--font-size-sm);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border-radius: var(--border-radius-sm);
-}
-
-.valid {
-  color: var(--theme-success-color);
-  background-color: rgba(var(--success-rgb), 0.1);
-}
-
-.invalid {
-  color: var(--theme-error-color) !important;
-  background-color: rgba(var(--error-rgb), 0.1);
-}
-
-.validIcon {
-  color: var(--theme-success-color);
-}
-
-.invalidIcon {
-  color: var(--theme-error-color);
-}
-
-.errorMessage {
-  margin-top: var(--spacing-sm);
-  color: var(--theme-text-primary);
-  font-size: var(--font-size-sm);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  background-color: rgba(var(--error-rgb), 0.1);
-  border-radius: var(--border-radius-sm);
-  border-left: 3px solid var(--theme-error-color);
-}
-
-.buttonGroup {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--spacing-md);
-  margin-top: var(--spacing-lg);
-}
-
-.cancelButton {
-  background-color: transparent;
-  color: var(--theme-text-secondary);
-  border: 1px solid var(--theme-border);
-  border-radius: var(--border-radius-sm);
-  padding: var(--spacing-sm) var(--spacing-lg);
-  font-size: var(--font-size-sm);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.cancelButton:hover {
-  background-color: var(--theme-text-tertiary);
-  color: var(--theme-text-primary);
-}
-
-.submitButton {
-  background-color: var(--theme-primary-color);
-  color: var(--theme-text-primary);
-  border: none;
-  border-radius: var(--border-radius-sm);
-  padding: var(--spacing-sm) var(--spacing-lg);
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.submitButton:hover:not(:disabled) {
-  background-color: var(--theme-primary-color);
-  transform: translateY(-1px);
-}
-
-.submitButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.successMessage {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: var(--spacing-xl);
+.instructions {
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
   text-align: center;
 }
 
-.successIcon {
-  font-size: 48px;
-  color: var(--theme-success-color);
-  margin-bottom: var(--spacing-md);
+.inputGroup {
+  display: flex;
+  align-items: flex-start; /* Align items to the top */
+  gap: 1rem;
 }
 
-.successMessage p {
-  color: var(--theme-text-primary);
-  font-size: var(--font-size-lg);
-  font-weight: 500;
-} 
+.usernameInput {
+  flex-grow: 1; /* Allow input to take available space */
+}
+
+.avatarPreview {
+  width: 80px; /* Fixed width for the preview area */
+  height: 100px; /* Minimum height to accommodate content */
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* Center content vertically */
+  align-items: center; /* Center content horizontally */
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+  flex-shrink: 0; /* Prevent shrinking */
+}
+
+.avatarContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  width: 100%; /* Take full width of the preview area */
+  box-sizing: border-box;
+}
+
+.avatarImage {
+  border-radius: 4px;
+  background-color: var(--color-background-alt); /* Placeholder bg */
+  border: 1px solid var(--color-border);
+  display: block; /* Prevents extra space below image */
+  width: 64px; /* Ensure image doesn't exceed container */
+  height: 64px;
+}
+
+.validatedUsername {
+  font-weight: bold;
+  color: var(--color-text-primary);
+  font-size: 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 70px; /* Prevent long names from breaking layout */
+  display: block; /* Ensure it takes block space */
+}
+
+.avatarPlaceholder {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: var(--color-background-alt);
+  border: 1px dashed var(--color-border);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  text-align: center;
+  padding: 5px;
+  box-sizing: border-box;
+}
+
+.avatarErrorPlaceholder {
+  border-color: var(--color-error);
+  color: var(--color-error);
+  font-weight: bold;
+}
+
+.errorMessage {
+  color: var(--color-error);
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+  text-align: center;
+  min-height: 1.2em; /* Reserve space to prevent layout shifts */
+}
+
+.button {
+  min-width: 80px; /* Ensure buttons have a minimum width */
+}
+
+/* Ensure footer buttons don't wrap unnecessarily on small modals */
+
+/* Styles for the manually added footer wrapper */
+.modalFooterContent {
+  padding: var(--space-md); 
+  display: flex; /* Add flex properties here */
+  justify-content: flex-end; /* Add flex properties here */
+  gap: var(--space-sm); /* Add some gap between buttons */
+  border-top: 1px solid var(--color-border-muted); /* Optional: Add a top border like standard footers */
+}
+
+
+
+.modalFooterContent {
+  padding: var(--space-md); 
+  display: flex; /* Add flex properties here */
+  justify-content: flex-end; /* Add flex properties here */
+  gap: var(--space-sm); /* Add some gap between buttons */
+  border-top: 1px solid var(--color-border-muted); /* Optional: Add a top border like standard footers */
+  margin-top: auto; /* Helps push footer down if modal has fixed height */
+}
+
+@media (max-width: 450px) {
+  .inputGroup {
+    flex-direction: column;
+    align-items: center;
+  }
+}

@@ -95,7 +95,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           updated_at,
           has_completed_onboarding,
           google_id,
-          discord_id
+          discord_id,
+          minecraft_username,
+          minecraft_uuid
         `) // Removed '*' and specified columns
         .eq('id', userId)
         .single();
@@ -108,6 +110,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return null;
       }
       console.log('fetchProfile: Returning data:', data ? 'Profile data' : 'null'); // Log return
+      console.log('fetchProfile: Data object BEFORE return:', JSON.stringify(data)); // Log detailed data
       return data as Profile | null;
     } catch (err: any) {
       console.error('Error in fetchProfile catch block:', err);
@@ -130,6 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('createOrUpdateProfile: Calling fetchProfile...'); // Log before fetch
       const existingProfile = await fetchProfile(currentUser.id);
+      console.log('createOrUpdateProfile: Fetched existingProfile data:', JSON.stringify(existingProfile)); // Log detailed data
       console.log('createOrUpdateProfile: fetchProfile returned:', existingProfile ? 'Profile found' : 'No profile found'); // Log after fetch
 
       const userMetadata = currentUser.app_metadata;
@@ -419,7 +423,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) throw error;
 
+      console.log('AuthContext updateProfile: Fetched updated data:', data); // Log fetched data
       setProfile(data); 
+      console.log('AuthContext updateProfile: Called setProfile with new data.'); // Log after setProfile call
       return data;
     } catch (err: any) {
       console.error('Update profile error:', err);

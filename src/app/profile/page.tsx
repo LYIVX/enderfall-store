@@ -6,7 +6,7 @@ import Button from '@/components/UI/Button';
 import { FaUser, FaBox, FaCreditCard, FaCube, FaDiscord, FaGoogle, FaInfoCircle, FaCheckCircle, FaExclamationTriangle, FaComments, FaCog } from 'react-icons/fa';
 import { useAuth } from '@/components/Auth/AuthContext';
 import dynamic from 'next/dynamic';
-import LinkMinecraftModal from '@/components/Profile/LinkMinecraftModal';
+import { LinkMinecraftModal } from '@/components/Profile/LinkMinecraftModal';
 import styles from './page.module.css';
 import AccountSettings from '@/components/Profile/AccountSettings';
 import { isPageRefresh } from '@/lib/navigation';
@@ -258,6 +258,7 @@ export default function ProfilePage() {
     username: profile?.username || 'User',
     avatar_url: profile?.avatar_url || '/default-avatar.png',
     minecraft_username: profile?.minecraft_username,
+    minecraft_uuid: profile?.minecraft_uuid, // Add this line
     discord_id: profile?.discord_id,
     google_id: profile?.google_id,
     created_at: profile?.created_at || new Date().toISOString(),
@@ -271,6 +272,7 @@ export default function ProfilePage() {
       icon: <FaUser />,
       content: (
         <div className={styles.profileContent}>
+          {console.log('ProfilePage: Rendering ProfileInfo with profile:', JSON.stringify(safeProfile))}
           <ProfileInfo
             profile={safeProfile}
             onOpenMinecraftModal={() => setIsMinecraftModalOpen(true)}
@@ -318,6 +320,8 @@ export default function ProfilePage() {
       ),
     },
   ];
+  
+  console.log('ProfilePage: Rendering ProfileInfo with profile:', JSON.stringify(profile));
   
   return (
     <NineSliceContainer variant='blue' className={styles.profilePageContainer}>
