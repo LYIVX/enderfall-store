@@ -10,17 +10,17 @@ export default function UserStatusLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, isLoading } = useAuth();
   const router = useRouter();
 
   // Check if user is authenticated and is an admin
   React.useEffect(() => {
-    if (!loading && (!user || !profile?.is_admin)) {
+    if (!isLoading && (!user || !profile?.is_admin)) {
       router.push('/');
     }
-  }, [user, profile, loading, router]);
+  }, [user, profile, isLoading, router]);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
         <Loading type="fullscreen" text="Loading..." />

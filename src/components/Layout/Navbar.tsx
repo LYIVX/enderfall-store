@@ -27,7 +27,7 @@ const Navbar: React.FC<NavbarProps> = ({ navLinks }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
-  const { user, profile, logout, loading } = useAuth();
+  const { user, profile, logout, isLoading } = useAuth();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Convert a string to a URL-friendly slug
@@ -224,7 +224,7 @@ const Navbar: React.FC<NavbarProps> = ({ navLinks }) => {
 
             <div className={styles.authButtons}>
 
-              {!loading && (
+              {!isLoading && (
                 user ? (
                   <div className={styles.userSection} ref={dropdownRef} data-open={showDropdown ? "true" : "false"}>
                     <Button 

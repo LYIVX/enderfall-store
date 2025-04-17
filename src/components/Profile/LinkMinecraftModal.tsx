@@ -19,7 +19,7 @@ const LinkMinecraftModal: React.FC<LinkMinecraftModalProps> = ({
   onClose,
   onSuccess
 }) => {
-  const { updateMinecraftUsername, validateMinecraftUsername, loading, error, clearError } = useAuth();
+  const { updateMinecraftUsername, validateMinecraftUsername, isLoading, error, clearError } = useAuth();
   const [username, setUsername] = useState('');
   const [isValidating, setIsValidating] = useState(false);
   const [validationResult, setValidationResult] = useState<{valid: boolean, message: string} | null>(null);
@@ -54,7 +54,7 @@ const LinkMinecraftModal: React.FC<LinkMinecraftModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!username.trim() || loading) return;
+    if (!username.trim() || isLoading) return;
     
     try {
       const profile = await updateMinecraftUsername(username);
@@ -140,9 +140,9 @@ const LinkMinecraftModal: React.FC<LinkMinecraftModalProps> = ({
               <Button 
                 variant="primary"
                 type="submit"
-                disabled={loading || !username.trim() || (validationResult ? !validationResult.valid : false)}
+                disabled={isLoading || !username.trim() || (validationResult ? !validationResult.valid : false)}
               >
-                {loading ? 'Linking...' : 'Link Account'}
+                {isLoading ? 'Linking...' : 'Link Account'}
               </Button>
             </div>
           </form>

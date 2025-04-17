@@ -12,7 +12,7 @@ import { NineSliceContainer } from '@/components/UI';
 
 export default function LoginPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { user, loading, isAuthenticated } = useAuth();
+  const { user, isLoading, isAuthenticated } = useAuth();
   const searchParams = useSearchParams();
   const error = searchParams ? searchParams.get('error') : null;
   const redirectPathParam = searchParams ? searchParams.get('redirect') : null;
@@ -21,17 +21,17 @@ export default function LoginPage() {
 
   // Log the auth state
   useEffect(() => {
-    console.log('Login page auth state:', { isAuthenticated, loading, redirectPath });
+    console.log('Login page auth state:', { isAuthenticated, isLoading, redirectPath });
     
     // Add a timeout to prevent getting stuck in loading state
-    if (loading) {
+    if (isLoading) {
       const timer = setTimeout(() => {
         setLoadingTimeout(true);
       }, 3000); // 3 second timeout
       
       return () => clearTimeout(timer);
     }
-  }, [isAuthenticated, loading, redirectPath]);
+  }, [isAuthenticated, isLoading, redirectPath]);
 
   // Get redirect from localStorage, referrer, or default to profile
   useEffect(() => {
@@ -59,7 +59,7 @@ export default function LoginPage() {
   }, [isAuthenticated, user, redirectPath]);
 
   // Show loading state while checking auth, but not for too long
-  if (loading && !loadingTimeout) {
+  if (isLoading && !loadingTimeout) {
     return (
       <div className={styles.loadingContainer}>
         <NineSliceContainer variant="blue" className={styles.loginContent}>

@@ -47,7 +47,7 @@ const STEPS = [
 ];
 
 export default function OnboardingPage() {
-  const { user, profile, loading, error } = useAuth();
+  const { user, profile, isLoading, error } = useAuth();
   const router = useRouter();
   
   // Form state
@@ -72,9 +72,9 @@ export default function OnboardingPage() {
   
   // Check authentication and onboarding status
   useEffect(() => {
-    console.log('Onboarding page useEffect triggered:', { loading, user, profile });
+    console.log('Onboarding page useEffect triggered:', { isLoading, user, profile });
     
-    if (!loading) {
+    if (!isLoading) {
       if (user) {
         // If user is authenticated and has completed onboarding, redirect to profile
         if (profile?.has_completed_onboarding) {
@@ -93,7 +93,7 @@ export default function OnboardingPage() {
         console.log('User is not authenticated, allowing access to onboarding');
       }
     }
-  }, [loading, user, profile, router]);
+  }, [isLoading, user, profile, router]);
 
   // Initialize form with user data when loaded
   useEffect(() => {
@@ -402,7 +402,7 @@ export default function OnboardingPage() {
                                passwordStrength.score === 3 ? styles.good : styles.strong;
   
   // If loading, show loading state
-  if (loading) {
+  if (isLoading) {
     return (
       <div className={styles.container}>
         <NineSliceContainer variant="blue" className={styles.onboardingModal}>
