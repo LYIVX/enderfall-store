@@ -117,6 +117,16 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, redirectPath =
         // If on mobile, set a flag for special handling
         if (isMobileDevice) {
           localStorage.setItem('auth_on_mobile', 'true');
+          localStorage.setItem('auth_provider', 'discord');
+          
+          // Clear any previous session data
+          localStorage.removeItem('auth_error');
+          localStorage.removeItem('auth_retry_count');
+          
+          // Set a cookie as another way to remember login state
+          document.cookie = `auth_in_progress=discord; path=/; max-age=300; samesite=lax; ${
+            window.location.protocol === 'https:' ? 'secure;' : ''
+          }`;
         }
       }
       
@@ -146,6 +156,16 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, redirectPath =
         // If on mobile, set a flag for special handling
         if (isMobileDevice) {
           localStorage.setItem('auth_on_mobile', 'true');
+          localStorage.setItem('auth_provider', 'google');
+          
+          // Clear any previous session data
+          localStorage.removeItem('auth_error');
+          localStorage.removeItem('auth_retry_count');
+          
+          // Set a cookie as another way to remember login state
+          document.cookie = `auth_in_progress=google; path=/; max-age=300; samesite=lax; ${
+            window.location.protocol === 'https:' ? 'secure;' : ''
+          }`;
         }
       }
       

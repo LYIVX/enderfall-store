@@ -654,6 +654,93 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Inside the AuthProvider component, add a useEffect for token refreshing on mobile
+  useEffect(() => {
+    // Only run this on mobile devices and when we have a session
+    const isMobileDevice = typeof window !== 'undefined' && 
+      /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (!isMobileDevice || !session || !user) return;
+    
+    console.log('Setting up periodic token refresh for mobile device');
+    
+    // Set up periodic token refresh (every 5 minutes)
+    const refreshInterval = setInterval(async () => {
+      try {
+        console.log('Performing periodic token refresh for mobile');
+        
+        // Update last interaction time in localStorage
+        localStorage.setItem('auth_last_active', Date.now().toString());
+        
+        // Refresh the token
+        const { data, error } = await supabase.auth.refreshSession();
+        
+        if (error) {
+          console.error('Error refreshing token in interval:', error);
+          return;
+        }
+        
+        if (data.session) {
+          console.log('Token refreshed successfully');
+          setSession(data.session);
+          // Update auth_session_active flag
+          localStorage.setItem('auth_session_active', 'true');
+          localStorage.setItem('auth_session_refreshed', Date.now().toString());
+        }
+      } catch (err) {
+        console.error('Unexpected error during token refresh:', err);
+      }
+    }, 5 * 60 * 1000); // 5 minutes
+    
+    return () => {
+      clearInterval(refreshInterval);
+    };
+  }, [session, user]);
+
+  // Add Visibility change detection to refresh token when tab becomes visible again on mobile
+  useEffect(() => {
+    const isMobileDevice = typeof window !== 'undefined' && 
+      /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (!isMobileDevice || typeof document === 'undefined') return;
+    
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible' && session && user) {
+        console.log('Tab became visible on mobile, refreshing token');
+        try {
+          // Check if we should refresh based on time since last refresh
+          const lastRefresh = localStorage.getItem('auth_session_refreshed');
+          const now = Date.now();
+          
+          // Only refresh if it's been more than 1 minute since last refresh
+          if (!lastRefresh || now - parseInt(lastRefresh) > 60 * 1000) {
+            const { data, error } = await supabase.auth.refreshSession();
+            
+            if (error) {
+              console.error('Error refreshing token on visibility change:', error);
+              return;
+            }
+            
+            if (data.session) {
+              console.log('Token refreshed on visibility change');
+              setSession(data.session);
+              localStorage.setItem('auth_session_active', 'true');
+              localStorage.setItem('auth_session_refreshed', now.toString());
+            }
+          }
+        } catch (err) {
+          console.error('Error in visibility change token refresh:', err);
+        }
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [session, user]);
+
   const value = {
     user,
     profile,

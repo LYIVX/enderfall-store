@@ -171,14 +171,102 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Missing Supabase environment variables. Check your .env.local file.');
 }
 
-// Create and export the Supabase client
+// Check if we're in a browser and on a mobile device
+const isBrowser = typeof window !== 'undefined';
+const isMobileDevice = isBrowser && /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+// Create and export the Supabase client with optimized settings
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
+    storageKey: 'supabase.auth.token',
+    storage: isBrowser
+      ? {
+          getItem: (key) => {
+            try {
+              // Try localStorage first (most reliable)
+              const localValue = localStorage.getItem(key);
+              if (localValue) return localValue;
+              
+              // Fall back to sessionStorage if localStorage fails
+              const sessionValue = sessionStorage.getItem(key);
+              if (sessionValue) return sessionValue;
+              
+              // Fall back to cookies as last resort
+              return getCookie(key);
+            } catch (e) {
+              console.error('Error accessing storage:', e);
+              return null;
+            }
+          },
+          setItem: (key, value) => {
+            try {
+              // Store in multiple places for redundancy
+              // This helps with cross-browser and mobile issues
+              localStorage.setItem(key, value);
+              try { sessionStorage.setItem(key, value); } catch (e) {}
+              
+              // Also set a cookie as backup (especially for iOS)
+              setCookie(key, value);
+              
+              // For mobile devices, add extra indicator
+              if (isMobileDevice) {
+                localStorage.setItem('auth_session_active', 'true');
+                localStorage.setItem('auth_last_updated', new Date().toISOString());
+              }
+            } catch (e) {
+              console.error('Error setting item in storage:', e);
+            }
+          },
+          removeItem: (key) => {
+            try {
+              localStorage.removeItem(key);
+              try { sessionStorage.removeItem(key); } catch (e) {}
+              removeCookie(key);
+              
+              if (isMobileDevice) {
+                localStorage.removeItem('auth_session_active');
+              }
+            } catch (e) {
+              console.error('Error removing item from storage:', e);
+            }
+          }
+        }
+      : undefined
+  },
+  // Force longer sessions for better persistence
+  realtime: {
+    params: {
+      eventsPerSecond: 10,
+    },
   },
 });
+
+// Helper function to get a cookie by name
+function getCookie(name: string): string | null {
+  if (!isBrowser) return null;
+  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  return match ? decodeURIComponent(match[2]) : null;
+}
+
+// Helper function to set a cookie with good defaults for auth
+function setCookie(name: string, value: string): void {
+  if (!isBrowser) return;
+  const maxAge = 60 * 60 * 24 * 7; // 7 days
+  document.cookie = `${name}=${encodeURIComponent(value)};path=/;max-age=${maxAge};samesite=lax;${
+    window.location.protocol === 'https:' ? 'secure;' : ''
+  }`;
+}
+
+// Helper function to remove a cookie
+function removeCookie(name: string): void {
+  if (!isBrowser) return;
+  document.cookie = `${name}=;path=/;max-age=0;samesite=lax;${
+    window.location.protocol === 'https:' ? 'secure;' : ''
+  }`;
+}
 
 // Helper functions for authentication
 export const signInWithDiscord = async (redirectPath = '/profile') => {

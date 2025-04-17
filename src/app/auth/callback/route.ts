@@ -3,6 +3,40 @@ import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import type { Profile } from '@/lib/supabase';
 
+// Helper function to generate secure session storage code
+function getSessionStorageScript(user: any, provider: string) {
+  return `
+    // Store auth data in multiple places for redundancy on mobile
+    localStorage.setItem('auth_session_active', 'true');
+    localStorage.setItem('auth_user_id', '${user.id}');
+    localStorage.setItem('auth_provider', '${provider || 'unknown'}');
+    localStorage.setItem('auth_email', '${user.email || ''}');
+    localStorage.setItem('auth_last_login', '${new Date().toISOString()}');
+    
+    // Store in sessionStorage as backup
+    try {
+      sessionStorage.setItem('auth_session_active', 'true');
+      sessionStorage.setItem('auth_user_id', '${user.id}');
+      sessionStorage.setItem('auth_provider', '${provider || 'unknown'}');
+    } catch(e) {
+      console.error('Failed to store session in sessionStorage:', e);
+    }
+    
+    // Set cookies for another layer of redundancy (especially for iOS)
+    document.cookie = 'auth_session_active=true; path=/; max-age=${60 * 60 * 24 * 7}; samesite=lax; ${
+      process.env.NODE_ENV === 'production' ? 'secure;' : ''
+    }';
+    document.cookie = 'auth_user_id=${user.id}; path=/; max-age=${60 * 60 * 24 * 7}; samesite=lax; ${
+      process.env.NODE_ENV === 'production' ? 'secure;' : ''
+    }';
+    
+    // Clear any auth error flags
+    localStorage.removeItem('auth_error');
+    localStorage.removeItem('auth_retry_count');
+    localStorage.removeItem('auth_refresh_count');
+  `;
+}
+
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
@@ -310,18 +344,24 @@ export async function GET(request: NextRequest) {
                 <title>Redirecting...</title>
                 <script>
                   // Store auth data in localStorage for better persistence on mobile
-                  localStorage.setItem('auth_user_id', '${user.id}');
-                  localStorage.setItem('auth_session_active', 'true');
+                  ${getSessionStorageScript(user, effectiveProvider)}
+                  
+                  // Add successful auth indicator
                   localStorage.setItem('mobile_auth_success', 'true');
                   
-                  // Clear any previous error states
-                  localStorage.removeItem('auth_error');
-                  localStorage.removeItem('auth_retry_count');
-                  
-                  // Redirect to the final destination
-                  setTimeout(function() {
+                  // Force token refresh before redirecting to ensure best persistence
+                  setTimeout(async function() {
+                    try {
+                      // Attempt to refresh session to improve persistence
+                      await fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' })
+                        .catch(err => console.log('Refresh attempt error:', err));
+                    } catch (e) {
+                      console.log('Refresh attempt failed:', e);
+                    }
+                    
+                    // Redirect regardless of refresh success
                     window.location.href = "${redirectTo}";
-                  }, 300);
+                  }, 500);
                 </script>
               </head>
               <body>

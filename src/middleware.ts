@@ -6,6 +6,12 @@ export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
   
   // Create a Supabase client configured to use cookies
+  const cookieOptions = {
+    sameSite: 'lax' as const,
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 60 * 60 * 24 * 7 // 7 days
+  };
+  
   const supabase = createMiddlewareClient({ req, res });
   
   try {
@@ -13,8 +19,16 @@ export async function middleware(req: NextRequest) {
     const userAgent = req.headers.get('user-agent') || '';
     const isMobileDevice = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
     
-    // Store the device type in a header that client-side code can read
+    // Store the device type in a header and cookie for client access
     res.headers.set('X-Device-Type', isMobileDevice ? 'mobile' : 'desktop');
+    
+    // Set a device type cookie with long expiration
+    res.cookies.set('device_type', isMobileDevice ? 'mobile' : 'desktop', { 
+      path: '/',
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production'
+    });
     
     // Generate a unique request ID to help track request loops
     const requestId = crypto.randomUUID();
@@ -33,6 +47,30 @@ export async function middleware(req: NextRequest) {
     
     // Refresh the session without redirecting
     const { data: { session } } = await supabase.auth.getSession();
+    
+    // Set a cookie with the session presence status
+    res.cookies.set('has_active_session', session ? 'true' : 'false', {
+      path: '/',
+      maxAge: 3600, // 1 hour
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production'
+    });
+    
+    // If on mobile with a session, refresh the token more aggressively
+    if (isMobileDevice && session) {
+      // Force token refresh on mobile to ensure longer persistence
+      try {
+        await supabase.auth.refreshSession();
+        res.cookies.set('session_refreshed', 'true', { 
+          path: '/',
+          maxAge: 60, // 1 minute
+          sameSite: 'lax',
+          secure: process.env.NODE_ENV === 'production'
+        });
+      } catch (refreshError) {
+        console.error('Error refreshing token in middleware:', refreshError);
+      }
+    }
     
     // Log for debugging - remove in production
     if (req.nextUrl.pathname.startsWith('/api/checkout')) {
