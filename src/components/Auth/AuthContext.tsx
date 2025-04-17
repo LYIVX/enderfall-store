@@ -252,196 +252,78 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Initialize authentication state
   useEffect(() => {
+    if (authChecked) return; // Skip if auth is already initialized
+    
+    const authListener = supabase.auth.onAuthStateChange(
+      async (event, newSession) => {
+        console.log('Auth state changed:', event);
+        
+        // Update session whenever it changes
+        if (newSession !== session) {
+          setSession(newSession);
+        }
+        
+        if (event === 'SIGNED_IN' && newSession?.user) {
+          console.log('User signed in:', newSession.user.id);
+          setUser(newSession.user);
+          
+          // Create or update profile when user logs in
+          const userProfile = await createOrUpdateProfile(newSession.user);
+          setProfile(userProfile);
+          
+          if (!userProfile) {
+            setError('Your account was created, but we had trouble setting up your profile. Try refreshing the page.');
+          }
+        } else if (event === 'SIGNED_OUT') {
+          console.log('User signed out');
+          setUser(null);
+          setProfile(null);
+          setSession(null);
+        } else if (event === 'TOKEN_REFRESHED' && newSession?.user) {
+          console.log('Token refreshed for user:', newSession.user.id);
+          setUser(newSession.user);
+        } else if (event === 'USER_UPDATED' && newSession?.user) {
+          console.log('User updated:', newSession.user.id);
+          setUser(newSession.user);
+          // Refresh profile after user update
+          const userProfile = await fetchProfile(newSession.user.id);
+          setProfile(userProfile);
+        }
+      }
+    );
+    
+    // Also perform a manual check to ensure the current session is recognized
     const checkCurrentAuth = async () => {
       try {
-        setLoading(true);
-        
-        // Check if we're on a mobile device using user agent
-        const isMobileDevice = typeof window !== 'undefined' && 
-          /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-          
-        // Get device type from middleware headers if available
-        const deviceType = document.cookie
-          .split('; ')
-          .find(row => row.startsWith('X-Device-Type='))
-          ?.split('=')[1];
-          
-        const isDetectedAsMobile = deviceType === 'mobile' || isMobileDevice;
-        
-        if (isDetectedAsMobile) {
-          console.log('Running on mobile device, using optimized auth check strategy');
-          
-          // Check if we have a successful auth flag from the callback page
-          if (localStorage.getItem('auth_session_active') === 'true') {
-            console.log('Found active session flag in localStorage for mobile');
-            
-            // We'll attempt to use the session but won't get stuck in a loop
-            // The timeout approach below will still protect us
-            localStorage.setItem('auth_retry_count', '0');
-          }
-          
-          // Check for auth errors from callback
-          if (localStorage.getItem('auth_error') === 'true') {
-            console.log('Found auth error in localStorage, skipping session check');
-            setLoading(false);
-            setUser(null);
-            setSession(null);
-            setProfile(null);
-            setAuthChecked(true);
-            
-            // Clear the error after reading it
-            localStorage.removeItem('auth_error');
-            return;
-          }
-        }
-        
-        // Continue with the rest of the auth check logic...
-        
-        // Check if we've attempted auth too many times
-        const authRetryCount = parseInt(localStorage.getItem('auth_retry_count') || '0');
-        
-        // If we're on mobile and have tried too many times, skip the session check
-        if (isDetectedAsMobile && authRetryCount > 5) {
-          console.log('Too many auth retries on mobile, skipping supabase session check');
-          localStorage.setItem('auth_retry_count', '0');
-          setLoading(false);
-          setUser(null);
-          setSession(null);
-          setProfile(null);
-          setAuthChecked(true);
-          return;
-        }
-        
-        // Increment retry counter
-        if (isDetectedAsMobile) {
-          localStorage.setItem('auth_retry_count', (authRetryCount + 1).toString());
-        }
-        
-        // Try to get the current session with a timeout for mobile devices
-        const sessionPromise = getCurrentSession();
-        
-        // If on mobile, use a timeout to prevent hanging
-        let currentSession: Session | null = null;
-        if (isDetectedAsMobile) {
-          const timeoutPromise = new Promise<null>((_, reject) => 
-            setTimeout(() => reject(new Error('Auth session check timed out')), 5000)
-          );
-          try {
-            currentSession = await Promise.race([sessionPromise, timeoutPromise]);
-          } catch (error) {
-            console.error('Session check timed out or failed:', error);
-            setLoading(false);
-            setUser(null);
-            setSession(null);
-            setProfile(null);
-            setAuthChecked(true);
-            
-            // On mobile, if we have an active session flag but couldn't get the session,
-            // try refreshing the page once to fix potential cookie issues
-            if (isDetectedAsMobile && localStorage.getItem('auth_session_active') === 'true') {
-              const refreshCount = parseInt(localStorage.getItem('auth_refresh_count') || '0');
-              if (refreshCount < 1) {
-                console.log('Mobile session flag active but session check failed, refreshing page');
-                localStorage.setItem('auth_refresh_count', '1');
-                
-                // Force a refresh after a small delay
-                setTimeout(() => {
-                  window.location.reload();
-                }, 500);
-              } else {
-                // We've already tried refreshing once, clear the flags
-                localStorage.removeItem('auth_session_active');
-                localStorage.removeItem('auth_refresh_count');
-              }
-            }
-            
-            // Reset retry counter after a timeout
-            setTimeout(() => {
-              localStorage.setItem('auth_retry_count', '0');
-            }, 30000);
-            return;
-          }
-        } else {
-          currentSession = await sessionPromise;
-        }
-        
-        if (currentSession) {
-          console.log('Current auth session found for user:', currentSession.user.id);
-          
-          // If on mobile, reset the retry counter since we succeeded
-          if (isDetectedAsMobile) {
-            localStorage.setItem('auth_retry_count', '0');
-            localStorage.setItem('auth_session_active', 'true');
-            localStorage.setItem('auth_user_id', currentSession.user.id);
-            localStorage.removeItem('auth_refresh_count');
-          }
-          
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        if (currentSession && currentSession.user) {
           setSession(currentSession);
           setUser(currentSession.user);
           
-          // Fetch or create profile
-          const userProfile = await createOrUpdateProfile(currentSession.user);
-          setProfile(userProfile);
-        } else {
-          console.log('No current auth session found');
-          
-          // On mobile, check if we thought we had a session before
-          if (isDetectedAsMobile && localStorage.getItem('auth_session_active') === 'true') {
-            console.log('Mobile device believed session was active but none found');
-            localStorage.removeItem('auth_session_active');
+          // Make sure we have the user's profile
+          const userProfile = await fetchProfile(currentSession.user.id);
+          if (userProfile) {
+            setProfile(userProfile);
+          } else {
+            // Try to create a profile if one doesn't exist
+            const createdProfile = await createOrUpdateProfile(currentSession.user);
+            setProfile(createdProfile);
           }
-          
-          setUser(null);
-          setSession(null);
-          setProfile(null);
         }
-        
-        setAuthChecked(true);
       } catch (err) {
-        console.error('Error checking authentication:', err);
-        setError('Failed to check authentication status');
-        setUser(null);
-        setSession(null);
-        setProfile(null);
-        setAuthChecked(true);
+        console.error('Error checking current auth state:', err);
       } finally {
         setLoading(false);
+        setAuthChecked(true);
       }
     };
     
     checkCurrentAuth();
     
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
-        console.log('Auth state change event:', event);
-        
-        if (event === 'SIGNED_IN' && currentSession) {
-          setUser(currentSession.user);
-          setSession(currentSession);
-          
-          // If we have a user, fetch or create their profile
-          if (currentSession.user) {
-            const userProfile = await createOrUpdateProfile(currentSession.user);
-            setProfile(userProfile);
-          }
-        } else if (event === 'SIGNED_OUT') {
-          setUser(null);
-          setProfile(null);
-          setSession(null);
-        } else if (event === 'TOKEN_REFRESHED' && currentSession) {
-          setSession(currentSession);
-        }
-        
-        setAuthChecked(true);
-        setLoading(false);
-      }
-    );
-    
     return () => {
-      subscription.unsubscribe();
+      authListener.data.subscription.unsubscribe();
     };
-  }, []);
+  }, [authChecked]);
   
   // Auth methods
   const loginWithDiscord = async (redirectPath = '/profile') => {
@@ -653,206 +535,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     }
   };
-
-  // Inside the AuthProvider component, add a useEffect for token refreshing on mobile
-  useEffect(() => {
-    // Only run this on mobile devices and when we have a session
-    const isMobileDevice = typeof window !== 'undefined' && 
-      /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    
-    if (!isMobileDevice || !session || !user) return;
-    
-    console.log('Setting up periodic token refresh for mobile device');
-    
-    // Set up periodic token refresh (every 5 minutes)
-    const refreshInterval = setInterval(async () => {
-      try {
-        console.log('Performing periodic token refresh for mobile');
-        
-        // Update last interaction time in localStorage
-        localStorage.setItem('auth_last_active', Date.now().toString());
-        
-        // Refresh the token
-        const { data, error } = await supabase.auth.refreshSession();
-        
-        if (error) {
-          console.error('Error refreshing token in interval:', error);
-          return;
-        }
-        
-        if (data.session) {
-          console.log('Token refreshed successfully');
-          setSession(data.session);
-          // Update auth_session_active flag
-          localStorage.setItem('auth_session_active', 'true');
-          localStorage.setItem('auth_session_refreshed', Date.now().toString());
-        }
-      } catch (err) {
-        console.error('Unexpected error during token refresh:', err);
-      }
-    }, 5 * 60 * 1000); // 5 minutes
-    
-    return () => {
-      clearInterval(refreshInterval);
-    };
-  }, [session, user]);
-
-  // Add Visibility change detection to refresh token when tab becomes visible again on mobile
-  useEffect(() => {
-    const isMobileDevice = typeof window !== 'undefined' && 
-      /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    
-    if (!isMobileDevice || typeof document === 'undefined') return;
-    
-    const handleVisibilityChange = async () => {
-      if (document.visibilityState === 'visible' && session && user) {
-        console.log('Tab became visible on mobile, refreshing token');
-        try {
-          // Check if we should refresh based on time since last refresh
-          const lastRefresh = localStorage.getItem('auth_session_refreshed');
-          const now = Date.now();
-          
-          // Only refresh if it's been more than 1 minute since last refresh
-          if (!lastRefresh || now - parseInt(lastRefresh) > 60 * 1000) {
-            const { data, error } = await supabase.auth.refreshSession();
-            
-            if (error) {
-              console.error('Error refreshing token on visibility change:', error);
-              return;
-            }
-            
-            if (data.session) {
-              console.log('Token refreshed on visibility change');
-              setSession(data.session);
-              localStorage.setItem('auth_session_active', 'true');
-              localStorage.setItem('auth_session_refreshed', now.toString());
-            }
-          }
-        } catch (err) {
-          console.error('Error in visibility change token refresh:', err);
-        }
-      }
-    };
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [session, user]);
-
-  // Add a new useEffect for checking Chrome on mobile authentication issues
-
-  // For Chrome mobile, add extra refresh mechanism
-  useEffect(() => {
-    // Check if on Chrome mobile
-    const isMobileChrome = typeof window !== 'undefined' && 
-      /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) &&
-      /Chrome/i.test(navigator.userAgent) && 
-      !/Edge|Edg/i.test(navigator.userAgent);
-    
-    if (!isMobileChrome || !session || !user) return;
-    
-    console.log('Setting up Chrome mobile-specific session maintenance');
-    
-    // Special handling for Chrome on mobile - more aggressive token refresh
-    const chromeRefreshInterval = setInterval(async () => {
-      try {
-        console.log('Chrome mobile: Performing aggressive token refresh');
-        
-        // Add special flag that Chrome mobile session is being maintained
-        localStorage.setItem('chrome_mobile_auth_active', 'true');
-        localStorage.setItem('chrome_mobile_last_refresh', Date.now().toString());
-        
-        // Store critical user info in multiple places for Chrome
-        localStorage.setItem('chrome_auth_user_id', user.id);
-        sessionStorage.setItem('chrome_auth_user_id', user.id);
-        document.cookie = `chrome_auth_user_id=${user.id};path=/;max-age=${60*60*24*7};samesite=lax`;
-        
-        // Special flag that can be checked on page load
-        document.cookie = `chrome_mobile_auth_active=true;path=/;max-age=${60*60*24*7};samesite=lax`;
-        
-        // Use the API endpoint for refreshing - this creates proper cookies
-        const refreshResponse = await fetch('/api/auth/refresh', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include'
-        });
-        
-        if (!refreshResponse.ok) {
-          throw new Error('Failed to refresh Chrome mobile session');
-        }
-        
-        const refreshData = await refreshResponse.json();
-        console.log('Chrome mobile refresh result:', refreshData);
-        
-        // Only update the session if the API call was successful
-        if (refreshData.success) {
-          // Force a session refresh through Supabase library as well
-          const { data } = await supabase.auth.refreshSession();
-          if (data.session) {
-            setSession(data.session);
-          }
-        }
-      } catch (err) {
-        console.error('Error in Chrome mobile token refresh:', err);
-      }
-    }, 2 * 60 * 1000); // Every 2 minutes for Chrome mobile
-    
-    return () => {
-      clearInterval(chromeRefreshInterval);
-    };
-  }, [session, user]);
-
-  // Add another effect to check auth on visibility change for Chrome mobile
-  useEffect(() => {
-    const isMobileChrome = typeof window !== 'undefined' && 
-      /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) &&
-      /Chrome/i.test(navigator.userAgent) && 
-      !/Edge|Edg/i.test(navigator.userAgent);
-    
-    if (!isMobileChrome || typeof document === 'undefined') return;
-    
-    const handleChromeVisibilityChange = async () => {
-      if (document.visibilityState === 'visible') {
-        console.log('Chrome mobile: Tab became visible, checking auth status');
-        
-        // Check if we had an active session before
-        const hadActiveSession = localStorage.getItem('chrome_mobile_auth_active') === 'true';
-        if (hadActiveSession) {
-          // We should have a session, let's verify and refresh if needed
-          try {
-            // Try to get current session
-            const { data } = await supabase.auth.getSession();
-            
-            if (data.session) {
-              console.log('Chrome mobile: Session found after visibility change');
-              setSession(data.session);
-              setUser(data.session.user);
-              
-              // Also refresh via API for cookie reinforcement
-              fetch('/api/auth/refresh', {
-                method: 'POST',
-                credentials: 'include'
-              }).catch(err => console.log('Background refresh error:', err));
-            } else if (localStorage.getItem('chrome_auth_user_id')) {
-              // We have user ID but no session - try to force reload
-              console.log('Chrome mobile: No session but user ID exists, forcing page reload');
-              window.location.reload();
-            }
-          } catch (err) {
-            console.error('Error checking Chrome mobile session on visibility change:', err);
-          }
-        }
-      }
-    };
-    
-    document.addEventListener('visibilitychange', handleChromeVisibilityChange);
-    
-    return () => {
-      document.removeEventListener('visibilitychange', handleChromeVisibilityChange);
-    };
-  }, []);
 
   const value = {
     user,

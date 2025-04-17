@@ -65,44 +65,11 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, redirectPath =
           if (storedRedirect) {
             localStorage.removeItem('auth_redirect_after_login');
           }
-          
-          // For mobile devices, force a page reload to ensure we have a clean state
-          const isMobileDevice = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-          if (isMobileDevice) {
-            // Close the modal first to prevent it from showing on reload
-            handleClose();
-            
-            // Set active session flag before navigating
-            localStorage.setItem('auth_session_active', 'true');
-            localStorage.setItem('auth_user_id', profile.id);
-            
-            // Use location.href instead of router for a full page reload
-            window.location.href = targetPath;
-          } else {
-            // On desktop, we can use the router
-            router.replace(targetPath);
-          }
+          router.replace(targetPath);
         }
       }
     }
   }, [profile, redirectPath, router, isOpen]);
-
-  // Add Chrome-specific mobile detection
-  useEffect(() => {
-    // Check if we're on Chrome mobile specifically
-    const isMobileChrome = typeof window !== 'undefined' && 
-      /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) &&
-      /Chrome/i.test(navigator.userAgent) && 
-      !/Edge|Edg/i.test(navigator.userAgent);
-    
-    if (isMobileChrome) {
-      console.log('Chrome mobile detected in login modal, adding special handling');
-      // Set flag for auth callback to detect
-      localStorage.setItem('is_chrome_mobile', 'true');
-      
-      // Additional handling for Chrome mobile can be implemented here
-    }
-  }, [isOpen]);
 
   if (!isOpen) return null;
   
@@ -121,46 +88,9 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, redirectPath =
     try {
       // Ensure redirectPath is stored for auth callback
       if (typeof window !== 'undefined') {
-        // Check if on mobile
-        const isMobileDevice = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        // Check specifically for Chrome on mobile
-        const isMobileChrome = isMobileDevice && 
-          /Chrome/i.test(navigator.userAgent) && 
-          !/Edge|Edg/i.test(navigator.userAgent);
-        
         // Always store the current redirectPath (from props) before login
         console.log('LoginModal: Setting redirect for Discord login:', redirectPath);
         localStorage.setItem('auth_redirect_after_login', redirectPath);
-        
-        // Add a timestamp to detect potential loops
-        localStorage.setItem('auth_login_timestamp', Date.now().toString());
-        
-        // If on mobile, set a flag for special handling
-        if (isMobileDevice) {
-          localStorage.setItem('auth_on_mobile', 'true');
-          localStorage.setItem('auth_provider', 'discord');
-          
-          // Clear any previous session data
-          localStorage.removeItem('auth_error');
-          localStorage.removeItem('auth_retry_count');
-          
-          // Set a cookie as another way to remember login state
-          document.cookie = `auth_in_progress=discord; path=/; max-age=300; samesite=lax; ${
-            window.location.protocol === 'https:' ? 'secure;' : ''
-          }`;
-          
-          // Additional Chrome mobile specific settings
-          if (isMobileChrome) {
-            localStorage.setItem('chrome_auth_in_progress', 'true');
-            localStorage.setItem('chrome_auth_provider', 'discord');
-            localStorage.setItem('chrome_auth_redirect', redirectPath);
-            
-            // Set super-persistent cookie for Chrome
-            document.cookie = `chrome_auth_in_progress=discord; path=/; max-age=86400; samesite=lax; ${
-              window.location.protocol === 'https:' ? 'secure;' : ''
-            }`;
-          }
-        }
       }
       
       await loginWithDiscord(redirectPath);
@@ -176,46 +106,9 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, redirectPath =
     try {
       // Ensure redirectPath is stored for auth callback
       if (typeof window !== 'undefined') {
-        // Check if on mobile
-        const isMobileDevice = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        // Check specifically for Chrome on mobile
-        const isMobileChrome = isMobileDevice && 
-          /Chrome/i.test(navigator.userAgent) && 
-          !/Edge|Edg/i.test(navigator.userAgent);
-        
         // Always store the current redirectPath (from props) before login
         console.log('LoginModal: Setting redirect for Google login:', redirectPath);
         localStorage.setItem('auth_redirect_after_login', redirectPath);
-        
-        // Add a timestamp to detect potential loops
-        localStorage.setItem('auth_login_timestamp', Date.now().toString());
-        
-        // If on mobile, set a flag for special handling
-        if (isMobileDevice) {
-          localStorage.setItem('auth_on_mobile', 'true');
-          localStorage.setItem('auth_provider', 'google');
-          
-          // Clear any previous session data
-          localStorage.removeItem('auth_error');
-          localStorage.removeItem('auth_retry_count');
-          
-          // Set a cookie as another way to remember login state
-          document.cookie = `auth_in_progress=google; path=/; max-age=300; samesite=lax; ${
-            window.location.protocol === 'https:' ? 'secure;' : ''
-          }`;
-          
-          // Additional Chrome mobile specific settings
-          if (isMobileChrome) {
-            localStorage.setItem('chrome_auth_in_progress', 'true');
-            localStorage.setItem('chrome_auth_provider', 'google');
-            localStorage.setItem('chrome_auth_redirect', redirectPath);
-            
-            // Set super-persistent cookie for Chrome
-            document.cookie = `chrome_auth_in_progress=google; path=/; max-age=86400; samesite=lax; ${
-              window.location.protocol === 'https:' ? 'secure;' : ''
-            }`;
-          }
-        }
       }
       
       await loginWithGoogle(redirectPath);
@@ -308,20 +201,9 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, redirectPath =
     try {
       // Ensure redirectPath is stored for auth callback
       if (typeof window !== 'undefined') {
-        // Check if on mobile
-        const isMobileDevice = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        
         // Always store the current redirectPath before login
         console.log('LoginModal: Setting redirect for email login:', redirectPath);
         localStorage.setItem('auth_redirect_after_login', redirectPath);
-        
-        // Add a timestamp to detect potential loops
-        localStorage.setItem('auth_login_timestamp', Date.now().toString());
-        
-        // If on mobile, set a flag for special handling
-        if (isMobileDevice) {
-          localStorage.setItem('auth_on_mobile', 'true');
-        }
       }
       
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -335,49 +217,17 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, redirectPath =
       }
 
       if (data?.user) {
-        // On mobile devices, use a different approach to prevent redirect loops
-        const isMobileDevice = typeof window !== 'undefined' && 
-          /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        // Pass the redirectPath to the auth callback to ensure proper redirection
+        window.location.href = `/auth/callback?redirectTo=${encodeURIComponent(redirectPath)}`;
         
-        if (isMobileDevice) {
-          // For mobile devices, we'll handle everything here without redirecting to the callback
-          console.log('Mobile email login successful, handling directly');
-          
-          // Store authentication state in localStorage
-          localStorage.setItem('auth_session_active', 'true');
-          localStorage.setItem('auth_user_id', data.user.id);
-          
-          // Check if the user has completed onboarding
-          try {
-            const { data: profileData } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', data.user.id)
-              .single();
-            
-            // Close the modal first
-            handleClose();
-            
-            if (profileData) {
-              if (!profileData.has_completed_onboarding) {
-                // Redirect to onboarding if not completed
-                window.location.href = '/onboarding';
-              } else {
-                // Otherwise redirect to the requested path
-                window.location.href = redirectPath;
-              }
-            } else {
-              // If no profile exists, redirect to onboarding
-              window.location.href = '/onboarding';
-            }
-          } catch (profileError) {
-            console.error('Error fetching profile after mobile login:', profileError);
-            // Default redirect
-            window.location.href = redirectPath;
-          }
-        } else {
-          // For desktop: use the original callback approach
-          window.location.href = `/auth/callback?redirectTo=${encodeURIComponent(redirectPath)}`;
+        // Manually update context if needed (triggering a refresh)
+        try {
+          // Force a page refresh after a short delay to ensure auth is recognized
+          setTimeout(() => {
+            window.location.reload();
+          }, 500);
+        } catch (refreshError) {
+          console.error('Error refreshing auth state:', refreshError);
         }
       }
     } catch (error) {
