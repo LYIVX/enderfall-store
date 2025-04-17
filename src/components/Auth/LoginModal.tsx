@@ -88,9 +88,20 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, redirectPath =
     try {
       // Ensure redirectPath is stored for auth callback
       if (typeof window !== 'undefined') {
+        // Check if on mobile
+        const isMobileDevice = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
         // Always store the current redirectPath (from props) before login
         console.log('LoginModal: Setting redirect for Discord login:', redirectPath);
         localStorage.setItem('auth_redirect_after_login', redirectPath);
+        
+        // Add a timestamp to detect potential loops
+        localStorage.setItem('auth_login_timestamp', Date.now().toString());
+        
+        // If on mobile, set a flag for special handling
+        if (isMobileDevice) {
+          localStorage.setItem('auth_on_mobile', 'true');
+        }
       }
       
       await loginWithDiscord(redirectPath);
@@ -106,9 +117,20 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, redirectPath =
     try {
       // Ensure redirectPath is stored for auth callback
       if (typeof window !== 'undefined') {
+        // Check if on mobile
+        const isMobileDevice = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
         // Always store the current redirectPath (from props) before login
         console.log('LoginModal: Setting redirect for Google login:', redirectPath);
         localStorage.setItem('auth_redirect_after_login', redirectPath);
+        
+        // Add a timestamp to detect potential loops
+        localStorage.setItem('auth_login_timestamp', Date.now().toString());
+        
+        // If on mobile, set a flag for special handling
+        if (isMobileDevice) {
+          localStorage.setItem('auth_on_mobile', 'true');
+        }
       }
       
       await loginWithGoogle(redirectPath);
@@ -201,9 +223,20 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, redirectPath =
     try {
       // Ensure redirectPath is stored for auth callback
       if (typeof window !== 'undefined') {
+        // Check if on mobile
+        const isMobileDevice = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
         // Always store the current redirectPath before login
         console.log('LoginModal: Setting redirect for email login:', redirectPath);
         localStorage.setItem('auth_redirect_after_login', redirectPath);
+        
+        // Add a timestamp to detect potential loops
+        localStorage.setItem('auth_login_timestamp', Date.now().toString());
+        
+        // If on mobile, set a flag for special handling
+        if (isMobileDevice) {
+          localStorage.setItem('auth_on_mobile', 'true');
+        }
       }
       
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -217,17 +250,26 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, redirectPath =
       }
 
       if (data?.user) {
-        // Pass the redirectPath to the auth callback to ensure proper redirection
-        window.location.href = `/auth/callback?redirectTo=${encodeURIComponent(redirectPath)}`;
+        // On mobile devices, use a different approach to prevent redirect loops
+        const isMobileDevice = typeof window !== 'undefined' && 
+          /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         
-        // Manually update context if needed (triggering a refresh)
-        try {
-          // Force a page refresh after a short delay to ensure auth is recognized
+        if (isMobileDevice) {
+          // Close the modal first
+          handleClose();
+          
+          // For mobile: use router instead of location.href to prevent potential loops
+          router.push(redirectPath);
+          
+          // Force a refresh after navigation completes (with a delay)
           setTimeout(() => {
-            window.location.reload();
-          }, 500);
-        } catch (refreshError) {
-          console.error('Error refreshing auth state:', refreshError);
+            if (window.location.pathname === redirectPath) {
+              window.location.reload();
+            }
+          }, 1000);
+        } else {
+          // For desktop: use the original approach
+          window.location.href = `/auth/callback?redirectTo=${encodeURIComponent(redirectPath)}`;
         }
       }
     } catch (error) {

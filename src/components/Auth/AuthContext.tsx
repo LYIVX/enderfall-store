@@ -252,78 +252,141 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Initialize authentication state
   useEffect(() => {
-    if (authChecked) return; // Skip if auth is already initialized
-    
-    const authListener = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
-        console.log('Auth state changed:', event);
-        
-        // Update session whenever it changes
-        if (newSession !== session) {
-          setSession(newSession);
-        }
-        
-        if (event === 'SIGNED_IN' && newSession?.user) {
-          console.log('User signed in:', newSession.user.id);
-          setUser(newSession.user);
-          
-          // Create or update profile when user logs in
-          const userProfile = await createOrUpdateProfile(newSession.user);
-          setProfile(userProfile);
-          
-          if (!userProfile) {
-            setError('Your account was created, but we had trouble setting up your profile. Try refreshing the page.');
-          }
-        } else if (event === 'SIGNED_OUT') {
-          console.log('User signed out');
-          setUser(null);
-          setProfile(null);
-          setSession(null);
-        } else if (event === 'TOKEN_REFRESHED' && newSession?.user) {
-          console.log('Token refreshed for user:', newSession.user.id);
-          setUser(newSession.user);
-        } else if (event === 'USER_UPDATED' && newSession?.user) {
-          console.log('User updated:', newSession.user.id);
-          setUser(newSession.user);
-          // Refresh profile after user update
-          const userProfile = await fetchProfile(newSession.user.id);
-          setProfile(userProfile);
-        }
-      }
-    );
-    
-    // Also perform a manual check to ensure the current session is recognized
     const checkCurrentAuth = async () => {
       try {
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        if (currentSession && currentSession.user) {
+        setLoading(true);
+        
+        // Check if we're on a mobile device using user agent
+        const isMobileDevice = typeof window !== 'undefined' && 
+          /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+          
+        // Get device type from middleware headers if available
+        const deviceType = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('X-Device-Type='))
+          ?.split('=')[1];
+          
+        const isDetectedAsMobile = deviceType === 'mobile' || isMobileDevice;
+        
+        if (isDetectedAsMobile) {
+          console.log('Running on mobile device, using optimized auth check strategy');
+        }
+        
+        // Check if we've attempted auth too many times
+        const authRetryCount = parseInt(localStorage.getItem('auth_retry_count') || '0');
+        
+        // If we're on mobile and have tried too many times, skip the session check
+        if (isDetectedAsMobile && authRetryCount > 5) {
+          console.log('Too many auth retries on mobile, skipping supabase session check');
+          localStorage.setItem('auth_retry_count', '0');
+          setLoading(false);
+          setUser(null);
+          setSession(null);
+          setProfile(null);
+          setAuthChecked(true);
+          return;
+        }
+        
+        // Increment retry counter
+        if (isDetectedAsMobile) {
+          localStorage.setItem('auth_retry_count', (authRetryCount + 1).toString());
+        }
+        
+        // Try to get the current session with a timeout for mobile devices
+        const sessionPromise = getCurrentSession();
+        
+        // If on mobile, use a timeout to prevent hanging
+        let currentSession: Session | null = null;
+        if (isDetectedAsMobile) {
+          const timeoutPromise = new Promise<null>((_, reject) => 
+            setTimeout(() => reject(new Error('Auth session check timed out')), 5000)
+          );
+          try {
+            currentSession = await Promise.race([sessionPromise, timeoutPromise]);
+          } catch (error) {
+            console.error('Session check timed out or failed:', error);
+            setLoading(false);
+            setUser(null);
+            setSession(null);
+            setProfile(null);
+            setAuthChecked(true);
+            // Reset retry counter after a timeout
+            setTimeout(() => {
+              localStorage.setItem('auth_retry_count', '0');
+            }, 30000);
+            return;
+          }
+        } else {
+          currentSession = await sessionPromise;
+        }
+        
+        if (currentSession) {
+          console.log('Current auth session found for user:', currentSession.user.id);
+          
+          // If on mobile, reset the retry counter since we succeeded
+          if (isDetectedAsMobile) {
+            localStorage.setItem('auth_retry_count', '0');
+          }
+          
           setSession(currentSession);
           setUser(currentSession.user);
           
-          // Make sure we have the user's profile
-          const userProfile = await fetchProfile(currentSession.user.id);
-          if (userProfile) {
-            setProfile(userProfile);
-          } else {
-            // Try to create a profile if one doesn't exist
-            const createdProfile = await createOrUpdateProfile(currentSession.user);
-            setProfile(createdProfile);
-          }
+          // Fetch or create profile
+          const userProfile = await createOrUpdateProfile(currentSession.user);
+          setProfile(userProfile);
+        } else {
+          console.log('No current auth session found');
+          setUser(null);
+          setSession(null);
+          setProfile(null);
         }
+        
+        setAuthChecked(true);
       } catch (err) {
-        console.error('Error checking current auth state:', err);
+        console.error('Error checking authentication:', err);
+        setError('Failed to check authentication status');
+        setUser(null);
+        setSession(null);
+        setProfile(null);
+        setAuthChecked(true);
       } finally {
         setLoading(false);
-        setAuthChecked(true);
       }
     };
     
     checkCurrentAuth();
     
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, currentSession) => {
+        console.log('Auth state change event:', event);
+        
+        if (event === 'SIGNED_IN' && currentSession) {
+          setUser(currentSession.user);
+          setSession(currentSession);
+          
+          // If we have a user, fetch or create their profile
+          if (currentSession.user) {
+            const userProfile = await createOrUpdateProfile(currentSession.user);
+            setProfile(userProfile);
+          }
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+          setProfile(null);
+          setSession(null);
+        } else if (event === 'TOKEN_REFRESHED' && currentSession) {
+          setSession(currentSession);
+        }
+        
+        setAuthChecked(true);
+        setLoading(false);
+      }
+    );
+    
     return () => {
-      authListener.data.subscription.unsubscribe();
+      subscription.unsubscribe();
     };
-  }, [authChecked]);
+  }, []);
   
   // Auth methods
   const loginWithDiscord = async (redirectPath = '/profile') => {

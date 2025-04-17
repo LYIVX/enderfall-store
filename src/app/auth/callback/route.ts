@@ -7,15 +7,26 @@ export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
   const redirectTo = requestUrl.searchParams.get('redirectTo') || '/profile';
+  const userAgent = request.headers.get('user-agent') || '';
+  const isMobileDevice = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
 
   console.log('==== AUTH CALLBACK RECEIVED ====');
   console.log('URL:', request.url);
   console.log('Has code:', !!code);
   console.log('Received redirectTo:', redirectTo);
+  console.log('Is mobile device:', isMobileDevice);
   console.log('================================');
 
+  // Set a cookie to indicate this is a mobile device
+  const cookieStore = cookies();
+  if (isMobileDevice) {
+    cookieStore.set('is_mobile_device', 'true', { 
+      path: '/',
+      maxAge: 3600 // 1 hour
+    });
+  }
+
   if (code) {
-    const cookieStore = cookies();
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
     
     try {
@@ -24,6 +35,19 @@ export async function GET(request: NextRequest) {
       
       if (error) {
         console.error('Error during code exchange:', error);
+        
+        // Special handling for mobile devices to prevent loops
+        if (isMobileDevice) {
+          // Set a cookie to indicate auth failed on mobile
+          cookieStore.set('mobile_auth_failed', 'true', { 
+            path: '/',
+            maxAge: 60 // 1 minute
+          });
+          
+          // Redirect to a special mobile auth error page
+          return NextResponse.redirect(new URL('/login?mobile_error=auth', request.url));
+        }
+        
         return NextResponse.redirect(new URL('/login?error=auth', request.url));
       }
       
@@ -142,6 +166,15 @@ export async function GET(request: NextRequest) {
             }
             
             console.log('New profile created:', newProfile);
+            
+            // For mobile devices, set additional cookies to help client-side
+            if (isMobileDevice) {
+              cookieStore.set('new_user_created', 'true', { 
+                path: '/',
+                maxAge: 300 // 5 minutes
+              });
+            }
+            
             console.log('Redirecting new user to onboarding page');
             return NextResponse.redirect(new URL('/onboarding', request.url));
           }
@@ -155,13 +188,31 @@ export async function GET(request: NextRequest) {
           // If user has completed onboarding, redirect to requested page or profile
           console.log('User has completed onboarding, redirecting to:', redirectTo);
           console.log('Final redirect URL:', new URL(redirectTo, request.url).toString());
-          // Ensure we don't have redirect loops by storing last redirect in session storage
-          // This isn't implemented here in server component but client-side should check it
+          
+          // For mobile, set an auth success cookie
+          if (isMobileDevice) {
+            cookieStore.set('mobile_auth_success', 'true', { 
+              path: '/',
+              maxAge: 60 // 1 minute
+            });
+          }
+          
+          // Redirect to the requested page
           return NextResponse.redirect(new URL(redirectTo, request.url));
         }
       }
     } catch (error) {
       console.error('Error in auth callback:', error);
+      
+      // Special handling for mobile
+      if (isMobileDevice) {
+        cookieStore.set('mobile_auth_error', 'true', { 
+          path: '/',
+          maxAge: 60 // 1 minute
+        });
+        return NextResponse.redirect(new URL('/login?error=mobile_unknown', request.url));
+      }
+      
       return NextResponse.redirect(new URL('/login?error=unknown', request.url));
     }
   }
