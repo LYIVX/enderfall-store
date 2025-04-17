@@ -65,7 +65,23 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, redirectPath =
           if (storedRedirect) {
             localStorage.removeItem('auth_redirect_after_login');
           }
-          router.replace(targetPath);
+          
+          // For mobile devices, force a page reload to ensure we have a clean state
+          const isMobileDevice = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+          if (isMobileDevice) {
+            // Close the modal first to prevent it from showing on reload
+            handleClose();
+            
+            // Set active session flag before navigating
+            localStorage.setItem('auth_session_active', 'true');
+            localStorage.setItem('auth_user_id', profile.id);
+            
+            // Use location.href instead of router for a full page reload
+            window.location.href = targetPath;
+          } else {
+            // On desktop, we can use the router
+            router.replace(targetPath);
+          }
         }
       }
     }
@@ -255,20 +271,43 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, redirectPath =
           /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         
         if (isMobileDevice) {
-          // Close the modal first
-          handleClose();
+          // For mobile devices, we'll handle everything here without redirecting to the callback
+          console.log('Mobile email login successful, handling directly');
           
-          // For mobile: use router instead of location.href to prevent potential loops
-          router.push(redirectPath);
+          // Store authentication state in localStorage
+          localStorage.setItem('auth_session_active', 'true');
+          localStorage.setItem('auth_user_id', data.user.id);
           
-          // Force a refresh after navigation completes (with a delay)
-          setTimeout(() => {
-            if (window.location.pathname === redirectPath) {
-              window.location.reload();
+          // Check if the user has completed onboarding
+          try {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', data.user.id)
+              .single();
+            
+            // Close the modal first
+            handleClose();
+            
+            if (profileData) {
+              if (!profileData.has_completed_onboarding) {
+                // Redirect to onboarding if not completed
+                window.location.href = '/onboarding';
+              } else {
+                // Otherwise redirect to the requested path
+                window.location.href = redirectPath;
+              }
+            } else {
+              // If no profile exists, redirect to onboarding
+              window.location.href = '/onboarding';
             }
-          }, 1000);
+          } catch (profileError) {
+            console.error('Error fetching profile after mobile login:', profileError);
+            // Default redirect
+            window.location.href = redirectPath;
+          }
         } else {
-          // For desktop: use the original approach
+          // For desktop: use the original callback approach
           window.location.href = `/auth/callback?redirectTo=${encodeURIComponent(redirectPath)}`;
         }
       }

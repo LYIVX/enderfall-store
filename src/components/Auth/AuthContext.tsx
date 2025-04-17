@@ -270,7 +270,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (isDetectedAsMobile) {
           console.log('Running on mobile device, using optimized auth check strategy');
+          
+          // Check if we have a successful auth flag from the callback page
+          if (localStorage.getItem('auth_session_active') === 'true') {
+            console.log('Found active session flag in localStorage for mobile');
+            
+            // We'll attempt to use the session but won't get stuck in a loop
+            // The timeout approach below will still protect us
+            localStorage.setItem('auth_retry_count', '0');
+          }
+          
+          // Check for auth errors from callback
+          if (localStorage.getItem('auth_error') === 'true') {
+            console.log('Found auth error in localStorage, skipping session check');
+            setLoading(false);
+            setUser(null);
+            setSession(null);
+            setProfile(null);
+            setAuthChecked(true);
+            
+            // Clear the error after reading it
+            localStorage.removeItem('auth_error');
+            return;
+          }
         }
+        
+        // Continue with the rest of the auth check logic...
         
         // Check if we've attempted auth too many times
         const authRetryCount = parseInt(localStorage.getItem('auth_retry_count') || '0');
@@ -310,6 +335,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setSession(null);
             setProfile(null);
             setAuthChecked(true);
+            
+            // On mobile, if we have an active session flag but couldn't get the session,
+            // try refreshing the page once to fix potential cookie issues
+            if (isDetectedAsMobile && localStorage.getItem('auth_session_active') === 'true') {
+              const refreshCount = parseInt(localStorage.getItem('auth_refresh_count') || '0');
+              if (refreshCount < 1) {
+                console.log('Mobile session flag active but session check failed, refreshing page');
+                localStorage.setItem('auth_refresh_count', '1');
+                
+                // Force a refresh after a small delay
+                setTimeout(() => {
+                  window.location.reload();
+                }, 500);
+              } else {
+                // We've already tried refreshing once, clear the flags
+                localStorage.removeItem('auth_session_active');
+                localStorage.removeItem('auth_refresh_count');
+              }
+            }
+            
             // Reset retry counter after a timeout
             setTimeout(() => {
               localStorage.setItem('auth_retry_count', '0');
@@ -326,6 +371,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // If on mobile, reset the retry counter since we succeeded
           if (isDetectedAsMobile) {
             localStorage.setItem('auth_retry_count', '0');
+            localStorage.setItem('auth_session_active', 'true');
+            localStorage.setItem('auth_user_id', currentSession.user.id);
+            localStorage.removeItem('auth_refresh_count');
           }
           
           setSession(currentSession);
@@ -336,6 +384,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setProfile(userProfile);
         } else {
           console.log('No current auth session found');
+          
+          // On mobile, check if we thought we had a session before
+          if (isDetectedAsMobile && localStorage.getItem('auth_session_active') === 'true') {
+            console.log('Mobile device believed session was active but none found');
+            localStorage.removeItem('auth_session_active');
+          }
+          
           setUser(null);
           setSession(null);
           setProfile(null);
