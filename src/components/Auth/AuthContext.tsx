@@ -63,7 +63,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isRedirecting, setIsRedirecting] = useState(false);
-  const [isLoading, setIsLoading] = useState(true); 
+  const [isLoading, setIsLoading] = useState(false); 
   const router = useRouter();
 
   // Compute isAuthenticated based on user state
@@ -223,34 +223,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [supabase, fetchProfile]); // Keep dependencies stable
 
-  // Effect to initialize auth state and listen for changes
+  // Effect to initialize auth state and handle session changes
   useEffect(() => {
     let isMounted = true;
-    console.log("Auth Effect: Running initial check...");
+    console.log("Auth Effect: Running initial session check...");
+    // Start loading only when this effect runs
+    // We avoid setting it true initially to prevent flicker if session is immediately available
+    const timer = setTimeout(() => {
+      if (isMounted && !session) { // Only set loading if session hasn't arrived quickly
+        setIsLoading(true);
+      }
+    }, 150); // Small delay to avoid flicker
 
-    supabase.auth.getSession().then(async ({ data: { session: initialSession } }) => {
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      clearTimeout(timer); // Clear the timer if session arrives quickly
       if (!isMounted) return;
       console.log("Auth Effect: getSession() resolved. Session found:", !!initialSession);
       setSession(initialSession);
-      const initialUser = initialSession?.user ?? null;
-      setUser(initialUser);
-
-      if (initialUser) {
-        try {
-          // Fetch or create profile as part of initial check
-          const profileResult = await createOrUpdateProfile(initialUser);
-          if (isMounted) setProfile(profileResult);
-        } catch (err) {
-          console.error("Auth Effect: Error processing profile during initial check:", err);
-          // Handle error appropriately, maybe set an error state
-        }
-      }
+      setUser(initialSession?.user ?? null);
+      // REMOVED profile fetching from here
     }).catch((err) => {
+        clearTimeout(timer);
         console.error("Auth Effect: Error in getSession():", err);
+        // Optionally set an error state here if needed
     }).finally(() => {
-        // Set loading false after initial check completes
+        // CRITICAL: Set loading false *after* session check completes, regardless of outcome
         if (isMounted) {
-            console.log("Auth Effect: Initial check finished. Setting isLoading=false");
+            clearTimeout(timer);
+            console.log("Auth Effect: Initial session check finished. Setting isLoading=false");
             setIsLoading(false);
         }
     });
@@ -259,31 +259,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       async (_event, currentSession) => {
         if (!isMounted) return;
         console.log(`Auth Effect: onAuthStateChange event: ${_event}`);
-        const currentUser = currentSession?.user ?? null;
 
-        // Update session and user state
+        // Update session and user state immediately
+        const currentUser = currentSession?.user ?? null;
+        const previousUser = user; // Capture previous user for comparison
+
         setSession(currentSession);
         setUser(currentUser);
 
-        // Handle profile based on user state and event
-        if (currentUser && (_event === 'SIGNED_IN' || _event === 'TOKEN_REFRESHED' || _event === 'USER_UPDATED')) {
-          try {
-             console.log(`Auth Effect: ${_event}, processing profile...`);
-             const profileResult = await createOrUpdateProfile(currentUser);
-             if (isMounted) setProfile(profileResult);
-          } catch (err) {
-             console.error(`Auth Effect: Error processing profile during ${_event}:`, err);
-          }
-        } else if (_event === 'SIGNED_OUT') {
-          if (isMounted) setProfile(null); // Clear profile on sign out
-        } else if (!currentUser) {
-           // Ensure profile is null if user becomes null for other reasons
-           if (isMounted) setProfile(null);
+        // Clear profile if signed out or user becomes null
+        if (!currentUser || _event === 'SIGNED_OUT') {
+            if (isMounted) setProfile(null);
         }
 
-        // *** FALLBACK MECHANISM ***
-        // If isLoading is still true when a significant auth event occurs,
-        // set it to false here to prevent getting stuck.
+        // Explicitly set loading false on sign-in/out events if it somehow got stuck
         if (isLoading && (_event === 'SIGNED_IN' || _event === 'INITIAL_SESSION' || _event === 'SIGNED_OUT')) {
             if (isMounted) {
                 console.log(`Auth Effect: onAuthStateChange (${_event}) setting isLoading=false as fallback.`);
@@ -295,10 +284,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => {
       isMounted = false;
+      clearTimeout(timer);
       console.log("Auth Effect: Unsubscribing auth listener");
       authListener?.subscription.unsubscribe();
     };
-  }, [supabase, fetchProfile, createOrUpdateProfile]);
+  // Only depend on supabase client itself for this effect
+  }, [supabase]);
+
+  // Effect to handle profile fetching/creation when user changes or on specific events
+  useEffect(() => {
+    let isMounted = true;
+    console.log("Profile Effect: Running. User ID:", user?.id);
+
+    if (user) {
+      // Consider if profile needs fetching/creating
+      // Fetch profile if user exists but profile doesn't, or if profile might be stale
+      // We might not need to call createOrUpdateProfile on *every* user change if profile exists
+      // But for simplicity and robustness on initial load/refresh, we call it.
+      console.log("Profile Effect: User found, processing profile...");
+      createOrUpdateProfile(user).then(profileResult => {
+        if (isMounted) {
+            console.log("Profile Effect: Profile processed, result:", profileResult ? 'Exists' : 'null');
+            setProfile(profileResult);
+        }
+      }).catch(err => {
+         console.error("Profile Effect: Error processing profile:", err);
+         // Handle error appropriately, maybe set an error state in context
+         if (isMounted) setProfile(null); // Ensure profile is null on error
+      }).finally(() => {
+          console.log("Profile Effect: Finished processing for user:", user?.id);
+          // If using a separate profile loading state, set it false here
+      });
+    } else {
+      // If user becomes null, ensure profile is also null
+      if (isMounted) setProfile(null);
+      console.log("Profile Effect: User is null, ensuring profile is null.");
+    }
+
+    return () => {
+        isMounted = false;
+        console.log("Profile Effect: Cleanup.");
+    };
+    // Depend on user object identity and the creation function
+  }, [user, createOrUpdateProfile]);
 
   // Auth methods 
   const loginWithDiscord = async (redirectPath = '/profile') => {
