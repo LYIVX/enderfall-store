@@ -48,8 +48,8 @@ const LinkDiscordModal: React.FC<LinkDiscordModalProps> = ({ isOpen, onClose, on
     
     try {
       console.log('Starting Discord account linking flow');
-      // Use the same loginWithDiscord function, but with a special redirect path
-      // that will handle the account linking process
+      // Use the same loginWithDiscord function, but with link=discord parameter
+      // that will signal to the callback handler that this is a linking flow
       await loginWithDiscord('/profile?link=discord');
       
       // Note: The actual linking will happen in the callback handler

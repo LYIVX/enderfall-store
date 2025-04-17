@@ -75,141 +75,235 @@ export async function POST(request: NextRequest) {
 }
 
 async function handleUnlinking(provider: string, userId: string, supabase: any, adminClient: any) {
-  console.log(`Unlinking ${provider} for user ${userId}`);
+  console.log(`Handling unlink request for ${provider} user ${userId}`);
 
-  // First, get the current profile
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .single();
-
-  if (profileError || !profile) {
-    console.error('Error fetching profile:', profileError);
-    return NextResponse.json(
-      { error: 'Failed to fetch profile' },
-      { status: 500 }
-    );
-  }
-
-  // Check if the provider is linked
-  const providerIdField = `${provider}_id` as 'discord_id' | 'google_id';
-  if (!profile[providerIdField]) {
-    return NextResponse.json(
-      { error: `No ${provider} account linked` },
-      { status: 400 }
-    );
-  }
-
-  // Step 1: Get user details with identities using admin API
-  const { data: userData, error: userError } = await adminClient.auth.admin.getUserById(userId);
-  
-  if (userError) {
-    console.error('Error fetching user data:', userError);
-    return NextResponse.json(
-      { error: 'Failed to fetch user authentication data' },
-      { status: 500 }
-    );
-  }
-  
-  let authUnlinked = false;
-
-  // Step 2: Find the identity to unlink
-  if (userData?.user?.identities) {
-    const identity = userData.user.identities.find((i: UserIdentity) => i.provider === provider);
+  try {
+    // Get the user's identities to check if unlinking is possible
+    const { data: identitiesData, error: identitiesError } = await adminClient.auth.admin.getUserById(userId);
     
-    if (identity) {
-      console.log(`Found identity to unlink: ${identity.id} (${provider})`);
-
-      // Check if this is the only identity (prevent lockout)
-      if (userData.user.identities.length <= 1) {
-        console.log(`Cannot unlink the only identity provider. User would be locked out.`);
+    if (identitiesError) {
+      console.error('Error getting user data:', identitiesError);
+      return NextResponse.json({ error: 'Failed to fetch user identities' }, { status: 500 });
+    }
+    
+    if (!identitiesData?.user?.identities) {
+      console.error('No identities found for user');
+      return NextResponse.json({ error: 'No identities found for user' }, { status: 404 });
+    }
+    
+    const identities = identitiesData.user.identities;
+    console.log(`Found ${identities.length} identities for user ${userId}`);
+    
+    // Prevent account lockout
+    if (identities.length < 2) {
+      console.error('Cannot unlink the only identity - would cause account lockout');
+      return NextResponse.json({
+        error: 'Cannot unlink your only login method. This would lock you out of your account.'
+      }, { status: 400 });
+    }
+    
+    // Find the specific identity linked to the user
+    const targetIdentity = identities.find((identity: UserIdentity) => identity.provider === provider);
+    
+    if (!targetIdentity) {
+      console.error(`No ${provider} identity found for user`);
+      return NextResponse.json({ error: `No ${provider} account linked to this user` }, { status: 404 });
+    }
+    
+    console.log(`Found identity to unlink: ${targetIdentity.id} (${provider})`);
+    
+    // FIRST: Try to unlink the auth identity - critical that this succeeds before updating profiles
+    let authUnlinkSuccess = false;
+    let authError = null;
+    
+    // Approach 1: Try with a modified RPC call that avoids the ambiguous column issue
+    try {
+      console.log('Attempting unlink_identity with explicit parameters to avoid ambiguity');
+      
+      // Use a modified approach to avoid column ambiguity
+      const { data, error } = await adminClient.rpc('execute_sql', {
+        sql_query: `
+          DO $$
+          DECLARE
+            target_id TEXT;
+            op_success BOOLEAN := FALSE;
+          BEGIN
+            -- First find the identity ID to avoid ambiguity issues
+            SELECT i.id INTO target_id
+            FROM auth.identities i
+            WHERE i.provider = '${provider}'
+            AND i.user_id = '${userId}';
+            
+            IF target_id IS NULL THEN
+              RAISE EXCEPTION 'Identity not found';
+            END IF;
+            
+            -- Now delete by ID to avoid ambiguity
+            DELETE FROM auth.identities
+            WHERE id = target_id;
+            
+            op_success := TRUE;
+            
+            -- Return result
+            RAISE NOTICE 'Operation result: %', op_success;
+          END
+          $$;
+        `
+      });
+      
+      if (error) {
+        console.error('SQL execution failed:', error);
+        authError = error;
       } else {
-        try {
-          // Step 3: Try both unlinking methods
+        console.log('SQL execution may have succeeded');
+        
+        // Verify if the identity was actually deleted
+        const { data: verifyData, error: verifyError } = await adminClient.auth.admin.getUserById(userId);
+        
+        if (verifyError) {
+          console.error('Error verifying unlinking:', verifyError);
+        } else if (verifyData?.user?.identities) {
+          const stillExists = verifyData.user.identities.some(
+            (identity: UserIdentity) => identity.provider === provider
+          );
           
-          // Method 1: Try RPC function first (if it exists)
-          try {
-            console.log('Attempting to unlink using RPC function...');
-            const { data: rpcData, error: rpcError } = await adminClient.rpc('unlink_identity', {
-              user_id: userId,
-              identity_provider: provider
-            });
-            
-            if (!rpcError && rpcData?.success) {
-              console.log('Successfully unlinked using RPC function:', rpcData);
-              authUnlinked = true;
-            } else if (rpcError) {
-              console.log('RPC function not available or error:', rpcError);
-              throw new Error('RPC not available');
-            }
-          } catch (rpcError) {
-            console.log('Falling back to direct DB method');
-            
-            // Method 2: Attempt direct database operation using service role
-            try {
-              console.log('Attempting direct database operation...');
-              // Direct database operation - delete from auth.identities table
-              const { error: deleteError } = await adminClient
-                .from('auth.identities')
-                .delete()
-                .eq('id', identity.id)
-                .eq('user_id', userId);
-                
-              if (deleteError) {
-                console.error('Error directly deleting identity:', deleteError);
-                console.log('Falling back to profile-only unlinking');
-              } else {
-                console.log(`Successfully unlinked ${provider} identity from auth`);
-                authUnlinked = true;
-              }
-            } catch (dbError) {
-              console.error('Database error during identity deletion:', dbError);
-              console.log('Unable to directly access auth tables. Using profile-only unlinking.');
-            }
+          if (stillExists) {
+            console.error('Identity still exists after unlinking attempt');
+          } else {
+            console.log('Successfully verified identity was unlinked!');
+            authUnlinkSuccess = true;
           }
-        } catch (error) {
-          console.error(`Error during identity unlinking:`, error);
         }
       }
-    } else {
-      console.log(`No ${provider} identity found for user ${userId}`);
+    } catch (e) {
+      console.error('Error with SQL execution:', e);
+      authError = e;
     }
-  }
-  
-  // Step 4: Always update the profile in our database
-  console.log(`Removing ${provider} ID from profiles table.`);
-
-  // Update the profile to remove the provider ID
-  const updateData = {
-    [providerIdField]: null,
-    updated_at: new Date().toISOString()
-  };
-
-  const { error: updateError } = await supabase
-    .from('profiles')
-    .update(updateData)
-    .eq('id', userId);
-
-  if (updateError) {
-    console.error(`Error unlinking ${provider} from profile:`, updateError);
-    return NextResponse.json(
-      { error: `Failed to unlink ${provider} from profile` },
-      { status: 500 }
-    );
-  }
-
-  // Return appropriate message based on what was successful
-  if (authUnlinked) {
+    
+    // Approach 2: Try using auth.admin functions if available
+    if (!authUnlinkSuccess && typeof adminClient.auth.admin.unlinkIdentity === 'function') {
+      try {
+        console.log('Trying auth.admin.unlinkIdentity method');
+        
+        const { error } = await adminClient.auth.admin.unlinkIdentity(userId, {
+          identityId: targetIdentity.id
+        });
+        
+        if (error) {
+          console.error('Admin unlinkIdentity failed:', error);
+          authError = error;
+        } else {
+          console.log('Successfully unlinked using admin.unlinkIdentity');
+          authUnlinkSuccess = true;
+        }
+      } catch (e) {
+        console.error('Error with admin.unlinkIdentity:', e);
+        authError = e;
+      }
+    }
+    
+    // If auth unlinking failed, return an error without updating profiles
+    if (!authUnlinkSuccess) {
+      console.error('Failed to unlink auth identity');
+      return NextResponse.json({
+        success: false,
+        error: 'Failed to unlink from authentication system',
+        message: authError?.message || 'Unknown error',
+        need_client_unlinking: true,
+        frontend_code: `
+        // IMPORTANT: Since server-side unlinking failed, you must run this code on the client
+        import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+        
+        async function completeUnlinking() {
+          try {
+            const supabase = createClientComponentClient();
+            
+            // First get user identities
+            const { data, error } = await supabase.auth.getUserIdentities();
+            
+            if (error) {
+              console.error('Error getting identities:', error);
+              return false;
+            }
+            
+            if (!data || !data.identities) {
+              console.error('No identities found');
+              return false;
+            }
+            
+            // Find the ${provider} identity
+            const identity = data.identities.find(i => i.provider === '${provider}');
+            
+            if (!identity) {
+              console.log('${provider} identity not found - might already be unlinked');
+              return true;
+            }
+            
+            // Unlink the identity
+            const { error: unlinkError } = await supabase.auth.unlinkIdentity(identity);
+            
+            if (unlinkError) {
+              console.error('Error unlinking identity:', unlinkError);
+              return false;
+            }
+            
+            console.log('Successfully unlinked ${provider} identity!');
+            
+            // After successful unlinking, update the profile in the database
+            const { error: updateError } = await supabase
+              .from('profiles')
+              .update({
+                ${provider}_id: null,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', '${userId}');
+              
+            if (updateError) {
+              console.error('Error updating profile:', updateError);
+            }
+            
+            return true;
+          } catch (e) {
+            console.error('Error in completeUnlinking:', e);
+            return false;
+          }
+        }
+        `
+      });
+    }
+    
+    // If auth unlinking succeeded, now update the profiles table
+    console.log('Auth unlinking succeeded! Now updating profiles table');
+    
+    const providerIdField = `${provider}_id` as 'discord_id' | 'google_id';
+    const { error: updateError } = await adminClient
+      .from('profiles')
+      .update({
+        [providerIdField]: null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', userId);
+    
+    if (updateError) {
+      console.error(`Error updating profile:`, updateError);
+      return NextResponse.json({ 
+        success: true, 
+        auth_unlinked: true,
+        profile_updated: false,
+        message: `${provider} account unlinked from authentication, but there was an error updating your profile.`
+      });
+    }
+    
+    console.log(`Successfully updated profile to remove ${provider} ID`);
+    
     return NextResponse.json({
       success: true,
-      message: `${provider} account completely unlinked from your profile and authentication.`
+      auth_unlinked: true,
+      profile_updated: true,
+      message: `${provider} account has been successfully unlinked from your profile.`
     });
-  } else {
-    return NextResponse.json({
-      success: true, 
-      message: `${provider} ID removed from profile. Note: You may still be able to login with this provider.`,
-      partial: true
-    });
+  } catch (error) {
+    console.error('Error in unlinking process:', error);
+    return NextResponse.json({ error: 'Failed to process unlinking request' }, { status: 500 });
   }
-} 
+}

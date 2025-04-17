@@ -48,8 +48,8 @@ const LinkGoogleModal: React.FC<LinkGoogleModalProps> = ({ isOpen, onClose, onSu
     
     try {
       console.log('Starting Google account linking flow');
-      // Use the same loginWithGoogle function, but with a special redirect path
-      // that will handle the account linking process
+      // Use the same loginWithGoogle function, but with link=google parameter
+      // that will signal to the callback handler that this is a linking flow
       await loginWithGoogle('/profile?link=google');
       
       // Note: The actual linking will happen in the callback handler

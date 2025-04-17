@@ -7,11 +7,17 @@ export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
   const redirectTo = requestUrl.searchParams.get('redirectTo') || '/profile';
+  
+  // Check for direct linking parameters in the callback URL
+  const linking = requestUrl.searchParams.get('linking') === 'true';
+  const provider = requestUrl.searchParams.get('provider');
 
   console.log('==== AUTH CALLBACK RECEIVED ====');
   console.log('URL:', request.url);
   console.log('Has code:', !!code);
   console.log('Received redirectTo:', redirectTo);
+  console.log('Linking:', linking);
+  console.log('Provider:', provider);
   console.log('================================');
 
   if (code) {
@@ -33,10 +39,10 @@ export async function GET(request: NextRequest) {
         const user = session.user;
         const userMetadata = user.user_metadata || {};
         const appMetadata = user.app_metadata || {};
-        const provider = appMetadata.provider;
+        const authProvider = appMetadata.provider;
         
         console.log('==================== AUTH DEBUG INFO ====================');
-        console.log('Auth provider:', provider);
+        console.log('Auth provider:', authProvider);
         console.log('App metadata:', JSON.stringify(appMetadata, null, 2));
         console.log('User metadata:', JSON.stringify(userMetadata, null, 2));
         console.log('User:', JSON.stringify({
@@ -63,15 +69,43 @@ export async function GET(request: NextRequest) {
         }
         
         // Use the most reliable provider information
-        const effectiveProvider = identityProvider || provider || 'unknown';
+        const effectiveProvider = identityProvider || authProvider || 'unknown';
         
-        // Check if this is an account linking flow
-        const isLinking = requestUrl.searchParams.get('link') === 'true';
-        const linkProvider = requestUrl.searchParams.get('provider');
+        // Determine if this is an account linking flow
+        // Check both direct parameters and the redirectTo path
+        const isRedirectLinking = redirectTo.includes('link=discord') || redirectTo.includes('link=google');
+        const isLinking = linking || isRedirectLinking;
         
-        if (isLinking && linkProvider) {
+        // Determine which provider to link
+        let linkProvider = provider;
+        if (!linkProvider && redirectTo.includes('link=discord')) {
+          linkProvider = 'discord';
+        } else if (!linkProvider && redirectTo.includes('link=google')) {
+          linkProvider = 'google';
+        }
+        
+        console.log('Linking status:', { isLinking, linkProvider, redirectLinking: isRedirectLinking });
+        
+        if (isLinking && linkProvider && ['discord', 'google'].includes(linkProvider)) {
           // Handle account linking flow
           console.log(`Linking ${linkProvider} account to existing profile`);
+          
+          // Check if this provider account is already linked to another user
+          const { data: existingLinkedProfiles, error: existingProfileError } = await supabase
+            .from('profiles')
+            .select('id, username')
+            .eq(`${linkProvider}_id`, identityId);
+            
+          if (existingProfileError) {
+            console.error('Error checking for existing linked profiles:', existingProfileError);
+          } else if (existingLinkedProfiles && existingLinkedProfiles.length > 0) {
+            // This provider account is already linked to another user
+            const existingProfile = existingLinkedProfiles[0];
+            if (existingProfile.id !== user.id) {
+              console.error(`This ${linkProvider} account is already linked to user ${existingProfile.id}`);
+              return NextResponse.redirect(new URL(`/profile?error=already_linked&provider=${linkProvider}`, request.url));
+            }
+          }
           
           // Get the existing profile
           const { data: existingProfile, error: profileError } = await supabase
@@ -82,7 +116,7 @@ export async function GET(request: NextRequest) {
             
           if (profileError) {
             console.error('Error fetching profile for linking:', profileError);
-            return NextResponse.redirect(new URL(`${redirectTo}?error=profile_fetch`, request.url));
+            return NextResponse.redirect(new URL(`/profile?error=profile_fetch`, request.url));
           }
           
           if (existingProfile) {
@@ -97,14 +131,14 @@ export async function GET(request: NextRequest) {
             
             if (updateError) {
               console.error('Error updating profile with linked account:', updateError);
-              return NextResponse.redirect(new URL(`${redirectTo}?error=link_failed`, request.url));
+              return NextResponse.redirect(new URL(`/profile?error=link_failed&provider=${linkProvider}`, request.url));
             }
             
             console.log(`Successfully linked ${linkProvider} account to profile ${existingProfile.id}`);
-            return NextResponse.redirect(new URL(`${redirectTo}?link_success=true`, request.url));
+            return NextResponse.redirect(new URL(`/profile?link_success=true&provider=${linkProvider}`, request.url));
           } else {
             console.error('No profile found for linking');
-            return NextResponse.redirect(new URL(`${redirectTo}?error=no_profile`, request.url));
+            return NextResponse.redirect(new URL(`/profile?error=no_profile`, request.url));
           }
         } else {
           // Normal authentication flow (not linking)

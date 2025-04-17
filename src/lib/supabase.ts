@@ -185,10 +185,18 @@ export const signInWithDiscord = async (redirectPath = '/profile') => {
   try {
     console.log('Initiating Discord sign in...', { redirectPath });
     
+    // Check if this is an account linking flow
+    const isLinking = redirectPath.includes('link=discord');
+    
     // Always store the redirect path before login to ensure we return to the right page
     if (typeof window !== 'undefined') {
       console.log('Storing Discord redirect path in localStorage:', redirectPath);
       localStorage.setItem('auth_redirect_after_login', redirectPath);
+      
+      // Store linking state in a separate item for backup
+      if (isLinking) {
+        localStorage.setItem('auth_linking_provider', 'discord');
+      }
       
       // Debug: Log all auth-related localStorage items
       console.log('Current localStorage auth items:');
@@ -199,10 +207,17 @@ export const signInWithDiscord = async (redirectPath = '/profile') => {
       });
     }
     
+    // For linking flow, use a different approach with explicit linking parameters
+    const callbackUrl = isLinking
+      ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?linking=true&provider=discord&redirectTo=${encodeURIComponent('/profile')}`
+      : `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?redirectTo=${encodeURIComponent(redirectPath)}`;
+    
+    console.log('Using callback URL:', callbackUrl);
+    
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'discord',
       options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?redirectTo=${encodeURIComponent(redirectPath)}`
+        redirectTo: callbackUrl
       }
     });
     
@@ -223,10 +238,18 @@ export const signInWithGoogle = async (redirectPath = '/profile') => {
   try {
     console.log('Initiating Google sign in...', { redirectPath });
     
+    // Check if this is an account linking flow
+    const isLinking = redirectPath.includes('link=google');
+    
     // Always store the redirect path before login to ensure we return to the right page
     if (typeof window !== 'undefined') {
       console.log('Storing Google redirect path in localStorage:', redirectPath);
       localStorage.setItem('auth_redirect_after_login', redirectPath);
+      
+      // Store linking state in a separate item for backup
+      if (isLinking) {
+        localStorage.setItem('auth_linking_provider', 'google');
+      }
       
       // Debug: Log all auth-related localStorage items
       console.log('Current localStorage auth items:');
@@ -237,10 +260,17 @@ export const signInWithGoogle = async (redirectPath = '/profile') => {
       });
     }
     
+    // For linking flow, use a different approach with explicit linking parameters
+    const callbackUrl = isLinking
+      ? `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?linking=true&provider=google&redirectTo=${encodeURIComponent('/profile')}`
+      : `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?redirectTo=${encodeURIComponent(redirectPath)}`;
+    
+    console.log('Using callback URL:', callbackUrl);
+    
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?redirectTo=${encodeURIComponent(redirectPath)}`
+        redirectTo: callbackUrl
       }
     });
     
