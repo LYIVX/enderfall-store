@@ -53,7 +53,21 @@ export async function GET(request: NextRequest) {
 
   // Set a cookie to indicate this is a mobile device
   const cookieStore = cookies();
+
+  // Check if this is a mobile Chrome device
+  const isMobileChrome = isMobileDevice && /Chrome/i.test(userAgent) && !/Edge|Edg/i.test(userAgent);
+
   if (isMobileDevice) {
+    console.log('Mobile device detected, using mobile auth flow');
+    
+    if (isMobileChrome) {
+      console.log('Chrome on mobile detected, using specialized auth flow');
+      cookieStore.set('is_chrome_mobile', 'true', { 
+        path: '/',
+        maxAge: 3600 * 24 * 7 // 7 days
+      });
+    }
+    
     cookieStore.set('is_mobile_device', 'true', { 
       path: '/',
       maxAge: 3600 // 1 hour
@@ -335,6 +349,47 @@ export async function GET(request: NextRequest) {
           
           // For mobile, use client-side redirect with localStorage
           if (isMobileDevice) {
+            // Special script for Chrome on mobile with enhanced persistence
+            const chromeScript = isMobileChrome ? `
+              // Chrome-specific storage handling
+              localStorage.setItem('chrome_mobile_auth_active', 'true');
+              localStorage.setItem('chrome_auth_user_id', '${user.id}');
+              localStorage.setItem('chrome_auth_timestamp', '${Date.now()}');
+              sessionStorage.setItem('chrome_mobile_auth_active', 'true');
+              sessionStorage.setItem('chrome_auth_user_id', '${user.id}');
+              
+              // Add Chrome-specific cookies with longer expiration
+              document.cookie = 'chrome_mobile_auth_active=true;path=/;max-age=${60*60*24*30};samesite=lax;${
+                process.env.NODE_ENV === 'production' ? 'secure;' : ''
+              }';
+              document.cookie = 'chrome_auth_user_id=${user.id};path=/;max-age=${60*60*24*30};samesite=lax;${
+                process.env.NODE_ENV === 'production' ? 'secure;' : ''
+              }';
+              
+              // Extra check to restore session on Chrome
+              function ensureChromeMobileSession() {
+                if (!localStorage.getItem('supabase.auth.token')) {
+                  console.log('Trying to restore Chrome mobile session...');
+                  const attemptRefresh = async () => {
+                    try {
+                      const response = await fetch('/api/auth/refresh', {
+                        method: 'POST',
+                        credentials: 'include'
+                      });
+                      return response.ok;
+                    } catch (e) {
+                      return false;
+                    }
+                  };
+                  attemptRefresh();
+                }
+              }
+              
+              // Run now and also set an interval
+              ensureChromeMobileSession();
+              setInterval(ensureChromeMobileSession, 60000); // Every minute
+            ` : '';
+            
             return new Response(
               `<!DOCTYPE html>
               <html>
@@ -349,19 +404,27 @@ export async function GET(request: NextRequest) {
                   // Add successful auth indicator
                   localStorage.setItem('mobile_auth_success', 'true');
                   
+                  ${chromeScript}
+                  
                   // Force token refresh before redirecting to ensure best persistence
                   setTimeout(async function() {
                     try {
                       // Attempt to refresh session to improve persistence
-                      await fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' })
-                        .catch(err => console.log('Refresh attempt error:', err));
+                      await fetch('/api/auth/refresh', { 
+                        method: 'POST', 
+                        credentials: 'include',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Cache-Control': 'no-cache, no-store'
+                        }
+                      }).catch(err => console.log('Refresh attempt error:', err));
                     } catch (e) {
                       console.log('Refresh attempt failed:', e);
                     }
                     
                     // Redirect regardless of refresh success
                     window.location.href = "${redirectTo}";
-                  }, 500);
+                  }, ${isMobileChrome ? 800 : 500});
                 </script>
               </head>
               <body>
@@ -372,6 +435,9 @@ export async function GET(request: NextRequest) {
                 status: 200,
                 headers: {
                   'Content-Type': 'text/html',
+                  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+                  'Pragma': 'no-cache',
+                  'Expires': '0',
                 },
               }
             );

@@ -741,6 +741,119 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [session, user]);
 
+  // Add a new useEffect for checking Chrome on mobile authentication issues
+
+  // For Chrome mobile, add extra refresh mechanism
+  useEffect(() => {
+    // Check if on Chrome mobile
+    const isMobileChrome = typeof window !== 'undefined' && 
+      /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) &&
+      /Chrome/i.test(navigator.userAgent) && 
+      !/Edge|Edg/i.test(navigator.userAgent);
+    
+    if (!isMobileChrome || !session || !user) return;
+    
+    console.log('Setting up Chrome mobile-specific session maintenance');
+    
+    // Special handling for Chrome on mobile - more aggressive token refresh
+    const chromeRefreshInterval = setInterval(async () => {
+      try {
+        console.log('Chrome mobile: Performing aggressive token refresh');
+        
+        // Add special flag that Chrome mobile session is being maintained
+        localStorage.setItem('chrome_mobile_auth_active', 'true');
+        localStorage.setItem('chrome_mobile_last_refresh', Date.now().toString());
+        
+        // Store critical user info in multiple places for Chrome
+        localStorage.setItem('chrome_auth_user_id', user.id);
+        sessionStorage.setItem('chrome_auth_user_id', user.id);
+        document.cookie = `chrome_auth_user_id=${user.id};path=/;max-age=${60*60*24*7};samesite=lax`;
+        
+        // Special flag that can be checked on page load
+        document.cookie = `chrome_mobile_auth_active=true;path=/;max-age=${60*60*24*7};samesite=lax`;
+        
+        // Use the API endpoint for refreshing - this creates proper cookies
+        const refreshResponse = await fetch('/api/auth/refresh', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include'
+        });
+        
+        if (!refreshResponse.ok) {
+          throw new Error('Failed to refresh Chrome mobile session');
+        }
+        
+        const refreshData = await refreshResponse.json();
+        console.log('Chrome mobile refresh result:', refreshData);
+        
+        // Only update the session if the API call was successful
+        if (refreshData.success) {
+          // Force a session refresh through Supabase library as well
+          const { data } = await supabase.auth.refreshSession();
+          if (data.session) {
+            setSession(data.session);
+          }
+        }
+      } catch (err) {
+        console.error('Error in Chrome mobile token refresh:', err);
+      }
+    }, 2 * 60 * 1000); // Every 2 minutes for Chrome mobile
+    
+    return () => {
+      clearInterval(chromeRefreshInterval);
+    };
+  }, [session, user]);
+
+  // Add another effect to check auth on visibility change for Chrome mobile
+  useEffect(() => {
+    const isMobileChrome = typeof window !== 'undefined' && 
+      /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) &&
+      /Chrome/i.test(navigator.userAgent) && 
+      !/Edge|Edg/i.test(navigator.userAgent);
+    
+    if (!isMobileChrome || typeof document === 'undefined') return;
+    
+    const handleChromeVisibilityChange = async () => {
+      if (document.visibilityState === 'visible') {
+        console.log('Chrome mobile: Tab became visible, checking auth status');
+        
+        // Check if we had an active session before
+        const hadActiveSession = localStorage.getItem('chrome_mobile_auth_active') === 'true';
+        if (hadActiveSession) {
+          // We should have a session, let's verify and refresh if needed
+          try {
+            // Try to get current session
+            const { data } = await supabase.auth.getSession();
+            
+            if (data.session) {
+              console.log('Chrome mobile: Session found after visibility change');
+              setSession(data.session);
+              setUser(data.session.user);
+              
+              // Also refresh via API for cookie reinforcement
+              fetch('/api/auth/refresh', {
+                method: 'POST',
+                credentials: 'include'
+              }).catch(err => console.log('Background refresh error:', err));
+            } else if (localStorage.getItem('chrome_auth_user_id')) {
+              // We have user ID but no session - try to force reload
+              console.log('Chrome mobile: No session but user ID exists, forcing page reload');
+              window.location.reload();
+            }
+          } catch (err) {
+            console.error('Error checking Chrome mobile session on visibility change:', err);
+          }
+        }
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleChromeVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleChromeVisibilityChange);
+    };
+  }, []);
+
   const value = {
     user,
     profile,

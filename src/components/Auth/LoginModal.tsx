@@ -87,6 +87,23 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, redirectPath =
     }
   }, [profile, redirectPath, router, isOpen]);
 
+  // Add Chrome-specific mobile detection
+  useEffect(() => {
+    // Check if we're on Chrome mobile specifically
+    const isMobileChrome = typeof window !== 'undefined' && 
+      /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) &&
+      /Chrome/i.test(navigator.userAgent) && 
+      !/Edge|Edg/i.test(navigator.userAgent);
+    
+    if (isMobileChrome) {
+      console.log('Chrome mobile detected in login modal, adding special handling');
+      // Set flag for auth callback to detect
+      localStorage.setItem('is_chrome_mobile', 'true');
+      
+      // Additional handling for Chrome mobile can be implemented here
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
   
   const handleClose = () => {
@@ -106,6 +123,10 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, redirectPath =
       if (typeof window !== 'undefined') {
         // Check if on mobile
         const isMobileDevice = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        // Check specifically for Chrome on mobile
+        const isMobileChrome = isMobileDevice && 
+          /Chrome/i.test(navigator.userAgent) && 
+          !/Edge|Edg/i.test(navigator.userAgent);
         
         // Always store the current redirectPath (from props) before login
         console.log('LoginModal: Setting redirect for Discord login:', redirectPath);
@@ -127,6 +148,18 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, redirectPath =
           document.cookie = `auth_in_progress=discord; path=/; max-age=300; samesite=lax; ${
             window.location.protocol === 'https:' ? 'secure;' : ''
           }`;
+          
+          // Additional Chrome mobile specific settings
+          if (isMobileChrome) {
+            localStorage.setItem('chrome_auth_in_progress', 'true');
+            localStorage.setItem('chrome_auth_provider', 'discord');
+            localStorage.setItem('chrome_auth_redirect', redirectPath);
+            
+            // Set super-persistent cookie for Chrome
+            document.cookie = `chrome_auth_in_progress=discord; path=/; max-age=86400; samesite=lax; ${
+              window.location.protocol === 'https:' ? 'secure;' : ''
+            }`;
+          }
         }
       }
       
@@ -145,6 +178,10 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, redirectPath =
       if (typeof window !== 'undefined') {
         // Check if on mobile
         const isMobileDevice = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        // Check specifically for Chrome on mobile
+        const isMobileChrome = isMobileDevice && 
+          /Chrome/i.test(navigator.userAgent) && 
+          !/Edge|Edg/i.test(navigator.userAgent);
         
         // Always store the current redirectPath (from props) before login
         console.log('LoginModal: Setting redirect for Google login:', redirectPath);
@@ -166,6 +203,18 @@ const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose, redirectPath =
           document.cookie = `auth_in_progress=google; path=/; max-age=300; samesite=lax; ${
             window.location.protocol === 'https:' ? 'secure;' : ''
           }`;
+          
+          // Additional Chrome mobile specific settings
+          if (isMobileChrome) {
+            localStorage.setItem('chrome_auth_in_progress', 'true');
+            localStorage.setItem('chrome_auth_provider', 'google');
+            localStorage.setItem('chrome_auth_redirect', redirectPath);
+            
+            // Set super-persistent cookie for Chrome
+            document.cookie = `chrome_auth_in_progress=google; path=/; max-age=86400; samesite=lax; ${
+              window.location.protocol === 'https:' ? 'secure;' : ''
+            }`;
+          }
         }
       }
       

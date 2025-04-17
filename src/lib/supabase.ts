@@ -174,6 +174,124 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Check if we're in a browser and on a mobile device
 const isBrowser = typeof window !== 'undefined';
 const isMobileDevice = isBrowser && /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+// Check specifically for Chrome on mobile
+const isMobileChrome = isBrowser && isMobileDevice && /Chrome/i.test(navigator.userAgent) && !/Edge|Edg/i.test(navigator.userAgent);
+
+if (isBrowser && isMobileChrome) {
+  console.log('Mobile Chrome detected, using special auth storage strategy');
+}
+
+// For Chrome on mobile, we'll use a special combination of storages
+// to work around Chrome's specific storage behaviors
+const chromeMobileStorage = {
+  getItem: (key: string): string | null => {
+    try {
+      // First try session storage - Chrome sometimes maintains it better across reloads
+      const sessionValue = sessionStorage.getItem(key);
+      if (sessionValue) {
+        console.log(`[Mobile Chrome] Retrieved ${key} from sessionStorage`);
+        // Copy to localStorage for redundancy
+        try { localStorage.setItem(key, sessionValue); } catch (e) {}
+        return sessionValue;
+      }
+      
+      // Then try localStorage
+      const localValue = localStorage.getItem(key);
+      if (localValue) {
+        console.log(`[Mobile Chrome] Retrieved ${key} from localStorage`);
+        // Copy to sessionStorage for redundancy
+        try { sessionStorage.setItem(key, localValue); } catch (e) {}
+        return localValue;
+      }
+      
+      // Finally try cookies
+      const cookieValue = getCookie(key);
+      if (cookieValue) {
+        console.log(`[Mobile Chrome] Retrieved ${key} from cookies`);
+        // Copy to storages for redundancy
+        try { 
+          localStorage.setItem(key, cookieValue);
+          sessionStorage.setItem(key, cookieValue);
+        } catch (e) {}
+        return cookieValue;
+      }
+      
+      return null;
+    } catch (e) {
+      console.error('[Mobile Chrome] Error accessing storage:', e);
+      return null;
+    }
+  },
+  setItem: (key: string, value: string): void => {
+    try {
+      console.log(`[Mobile Chrome] Setting ${key} in all storages`);
+      
+      // Store in all storages for maximum redundancy
+      // Chrome mobile can be unpredictable with which storage persists
+      try { sessionStorage.setItem(key, value); } catch (e) {}
+      try { localStorage.setItem(key, value); } catch (e) {}
+      
+      // Store in cookies with special parameters for Chrome mobile
+      setChromeSpecificCookie(key, value);
+      
+      // Set additional flags specific to session tracking
+      if (key.includes('supabase.auth.token')) {
+        try {
+          localStorage.setItem('chrome_mobile_auth_active', 'true');
+          localStorage.setItem('chrome_auth_timestamp', Date.now().toString());
+          sessionStorage.setItem('chrome_mobile_auth_active', 'true');
+          document.cookie = `chrome_mobile_auth_active=true;path=/;max-age=${60*60*24*7};samesite=lax`;
+        } catch (e) {}
+      }
+    } catch (e) {
+      console.error('[Mobile Chrome] Error setting storage:', e);
+    }
+  },
+  removeItem: (key: string): void => {
+    try {
+      console.log(`[Mobile Chrome] Removing ${key} from all storages`);
+      
+      // Remove from all storages
+      try { localStorage.removeItem(key); } catch (e) {}
+      try { sessionStorage.removeItem(key); } catch (e) {}
+      
+      // Remove cookies
+      document.cookie = `${key}=;path=/;max-age=0;samesite=lax`;
+      
+      // Clear additional flags
+      if (key.includes('supabase.auth.token')) {
+        try {
+          localStorage.removeItem('chrome_mobile_auth_active');
+          sessionStorage.removeItem('chrome_mobile_auth_active');
+          document.cookie = 'chrome_mobile_auth_active=;path=/;max-age=0;samesite=lax';
+        } catch (e) {}
+      }
+    } catch (e) {
+      console.error('[Mobile Chrome] Error removing from storage:', e);
+    }
+  }
+};
+
+// Set a cookie specifically configured for Chrome mobile
+function setChromeSpecificCookie(name: string, value: string): void {
+  if (!isBrowser) return;
+  
+  // Chrome Mobile requires certain cookie settings
+  const maxAge = 60 * 60 * 24 * 7; // 7 days
+  
+  // Set the cookie with Chrome-specific settings
+  document.cookie = `${name}=${encodeURIComponent(value)};path=/;max-age=${maxAge};samesite=lax;${
+    window.location.protocol === 'https:' ? 'secure;' : ''
+  }`;
+  
+  // Also set a shorter version if the value is very long
+  if (value.length > 500) {
+    // Just set a flag that we have the auth token
+    document.cookie = `${name}_exists=true;path=/;max-age=${maxAge};samesite=lax;${
+      window.location.protocol === 'https:' ? 'secure;' : ''
+    }`;
+  }
+}
 
 // Create and export the Supabase client with optimized settings
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -183,7 +301,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true,
     storageKey: 'supabase.auth.token',
     storage: isBrowser
-      ? {
+      ? (isMobileChrome ? chromeMobileStorage : {
           getItem: (key) => {
             try {
               // Try localStorage first (most reliable)
@@ -233,7 +351,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
               console.error('Error removing item from storage:', e);
             }
           }
-        }
+        })
       : undefined
   },
   // Force longer sessions for better persistence

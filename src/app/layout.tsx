@@ -12,6 +12,8 @@ import QuickMessageBubble from '@/components/Social/QuickMessageBubble';
 import { headers } from 'next/headers';
 import '../styles/fonts.css';
 import { Toaster } from 'react-hot-toast';
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -70,6 +72,8 @@ export default function RootLayout({
             </ChatPreferencesProvider>
           </ThemeProvider>
         </AuthProvider>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
