@@ -148,30 +148,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('Creating new profile for user:', currentUser.id);
         
         // Construct profile data
+        const isSocialLogin = effectiveProvider === 'google' || effectiveProvider === 'discord';
         const profileData: Partial<Profile> = {
           id: currentUser.id,
-          email: currentUser.email || '',
+          email: currentUser.email || 'No Email Provided',
           username: userMetadata.full_name || 
                    userMetadata.name || 
                    userMetadata.user_name || 
                    userMetadata.preferred_username || 
-                   currentUser.email?.split('@')[0] || 
-                   `user_${Date.now().toString().slice(-6)}`,
+                   `User_${currentUser.id.substring(0, 8)}`,
           avatar_url: userMetadata.avatar_url || null,
-          minecraft_username: null,
-          has_completed_onboarding: false,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
+          has_completed_onboarding: isSocialLogin,
+          google_id: effectiveProvider === 'google' ? userMetadata.provider_id : null,
+          discord_id: effectiveProvider === 'discord' ? userMetadata.provider_id : null
         };
-        
-        // Add provider-specific details
-        if (effectiveProvider === 'discord') {
-          profileData.discord_id = identityId || userMetadata.provider_id || userMetadata.sub;
-          console.log(`Setting Discord ID in new profile: ${profileData.discord_id}`);
-        } else if (effectiveProvider === 'google') {
-          profileData.google_id = identityId || userMetadata.provider_id || userMetadata.sub;
-          console.log(`Setting Google ID in new profile: ${profileData.google_id}`);
-        }
         
         // Log the profile data we're about to insert
         console.log('Profile data to insert:', JSON.stringify(profileData, null, 2));
