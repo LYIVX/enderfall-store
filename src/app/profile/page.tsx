@@ -23,8 +23,8 @@ const LoadingSpinner = dynamic(() => import('@/components/UI/LoadingSpinner'), {
 });
 
 export default function ProfilePage() {
-  const { user, profile, logout, loading, error, supabase } = useAuth(); // Get supabase from context
-  console.log('Auth Context State on component mount:', { user, profile, loading, error });
+  const { user, profile, logout, isLoading, error, supabase } = useAuth(); // Get supabase from context
+  console.log('Auth Context State on component mount:', { user, profile, isLoading, error });
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -93,14 +93,14 @@ export default function ProfilePage() {
   
   // Prevent getting stuck in loading state
   useEffect(() => {
-    if (loading) {
+    if (isLoading) {
       const timer = setTimeout(() => {
         setLoadingTimeout(true);
       }, 5000); // 5 second timeout
       
       return () => clearTimeout(timer);
     }
-  }, [loading]);
+  }, [isLoading]);
   
   // Helper function to check if the page is being refreshed
   const isPageRefresh = () => {
@@ -115,15 +115,15 @@ export default function ProfilePage() {
   // Redirect to login page if not authenticated
   useEffect(() => {
     // Only redirect if we've completed the auth check and user is not authenticated
-    if ((!loading || loadingTimeout) && !user) {
+    if ((!isLoading || loadingTimeout) && !user) {
       console.log('User not authenticated, redirecting to login page');
       
       // Use replace instead of push to avoid redirect loops in browser history
       router.replace('/login');
     }
-  }, [loading, loadingTimeout, user, router]);
+  }, [isLoading, loadingTimeout, user, router]);
   
-  if (loading && !loadingTimeout) {
+  if (isLoading && !loadingTimeout) {
     return (
       <div className={styles.loadingContainer}>
         <LoadingSpinner />
