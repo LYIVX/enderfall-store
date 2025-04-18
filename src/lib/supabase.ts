@@ -3,6 +3,7 @@ import { type Session, type User } from '@supabase/supabase-js';
 
 // Define the database schema types
 export interface Profile {
+  minecraft_uuid: any;
   id: string;
   username: string | null;
   avatar_url: string | null;
