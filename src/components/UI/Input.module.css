@@ -101,3 +101,18 @@
 .nineSliceBase:disabled {
   border-image: var(--theme-nine-slice-input-disabled) !important;
 } 
+
+.inputContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: row;
+  gap: var(--spacing-sm);
+}
+
+.buttonContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+

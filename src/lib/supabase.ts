@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { type Session, type User } from '@supabase/supabase-js';
 
 // Define the database schema types
@@ -8,7 +7,6 @@ export interface Profile {
   username: string | null;
   avatar_url: string | null;
   minecraft_username: string | null;
-  minecraft_uuid: string | null;
   discord_id: string | null;
   google_id: string | null;
   email: string | null;
@@ -173,11 +171,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Missing Supabase environment variables. Check your .env.local file.');
 }
 
-// Create and export the Supabase client for browser usage
-// Use createClientComponentClient for client-side operations to ensure proper cookie handling
-export const supabase = createClientComponentClient({ 
-  supabaseUrl,
-  supabaseKey: supabaseAnonKey
+// Create and export the Supabase client
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  },
 });
 
 // Helper functions for authentication

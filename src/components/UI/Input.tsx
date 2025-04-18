@@ -8,6 +8,7 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   error?: string;
   layout?: 'vertical' | 'horizontal';
   nineSlice?: boolean;
+  button?: React.ReactNode;
 }
 
 const Input: React.FC<InputProps> = ({ 
@@ -16,15 +17,19 @@ const Input: React.FC<InputProps> = ({
   className, 
   layout = 'vertical',
   nineSlice = true,
+  button,
   ...props 
 }) => {
   return (
     <div className={`${styles.inputWrapper} ${layout === 'horizontal' ? styles.horizontal : ''}`}>
       <label className={styles.label}>{label}</label>
-      <input
-        className={`${styles.input} ${error ? styles.error : ''} ${nineSlice ? styles.nineSliceBase : ''} ${className || ''}`}
-        {...props}
-      />
+      <div className={styles.inputContainer}>
+        <input
+          className={`${styles.input} ${error ? styles.error : ''} ${nineSlice ? styles.nineSliceBase : ''} ${className || ''}`}
+          {...props}
+        />
+        {button && <div className={styles.buttonContainer}>{button}</div>}
+      </div>
       {error && <span className={styles.errorMessage}>{error}</span>}
     </div>
   );

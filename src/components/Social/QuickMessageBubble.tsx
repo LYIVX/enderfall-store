@@ -841,15 +841,15 @@ const QuickMessageBubble = () => {
                       onKeyDown={handleKeyDown}
                       className={styles.messageInput}
                       label=""
-                    />
-                    <Button 
+                      button={<Button 
                       type="submit" 
                       variant="primary"
                       className={styles.sendButton}
                       disabled={sending || !newMessage.trim()}
                     >
                       <FaPaperPlane />
-                    </Button>
+                    </Button>}
+                    />
                   </NineSliceContainer>
                 </div>
               )}

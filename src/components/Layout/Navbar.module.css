@@ -391,8 +391,8 @@
     z-index: 1001;
     flex-direction: column;
     justify-content: space-between;
-    width: 21px;
-    height: 21px;
+    width: 40px !important;
+    height:40px !important;
     background-color: transparent;
     cursor: pointer;
   }
@@ -511,9 +511,13 @@
   }
 
   .loginButton {
+    margin: 0 !important;
     width: 100%;
     text-align: center;
     padding: var(--spacing-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .loginButton:hover {

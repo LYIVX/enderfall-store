@@ -6,8 +6,8 @@
 }
 
 .bubbleButton {
-  width: 50px !important;
-  height: 50px !important;
+  width: 40px !important;
+  height:40px !important;
   display: flex !important;
   align-items: center;
   justify-content: center;
@@ -77,8 +77,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 40px !important;
+  height:40px !important;
   border-radius: var(--spacing-sm);
   padding: 0;
 }
@@ -319,7 +319,8 @@
 .messageForm {
   display: flex;
   gap: 10px;
-  padding: 12px;
+  padding: var(--spacing-md) !important;
+  align-items: center;
 }
 
 .messageInput {
@@ -330,6 +331,7 @@
   background-color: var(--background-secondary);
   color: var(--theme-text-primary);
   font-size: 0.9rem;
+  flex-direction: unset !important;
 }
 
 .messageInput:focus {
@@ -345,6 +347,9 @@
     height: 52px !important;
     transition: all 0.3s ease;
     transform: scale(0.9);
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: var(--button-font-size-large) !important;
 }
 
 .sendActive {

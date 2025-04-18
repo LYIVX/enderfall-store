@@ -9,14 +9,15 @@
   transition: all 0.2s ease;
   background-color: var(--theme-tab-background);
   width: 38px !important;
+  height: 38px !important;
   padding: 0 !important;
   margin: 0 !important;
 
 }
 
 .themeToggle svg {
-  padding-top: 4px !important;
-  padding-bottom: 2px !important;
+  padding-top: 2px !important;
+  padding-bottom: 4px !important;
   height: 30px;
   width: 30px;
 }

@@ -86,7 +86,6 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({
               <div className={styles.accountActions}>
                 <Button
                   onClick={onOpenMinecraftModal}
-                  className={styles.editButton} 
                   size='medium' 
                 >
                   Edit
@@ -107,7 +106,6 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({
                 <div className={styles.accountActions}>
                   <Button
                     onClick={onOpenMinecraftModal}
-                    className={styles.linkButton} 
                     size='medium' 
                   >
                     Link Account
@@ -140,7 +138,6 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({
                   variant='danger'
                   onClick={() => onUnlinkAccount('discord')}
                   disabled={unlinking === 'discord'}  
-                  className={styles.unlinkButton}
                   size='medium' 
                 >
                   {unlinking === 'discord' ? 'Unlinking...' : 'Unlink'}
@@ -148,7 +145,6 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({
               ) : (
                 <Button
                   onClick={onLinkDiscord}
-                  className={styles.linkButton}
                   size='medium' 
                 >
                   Link Account
@@ -180,7 +176,6 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({
                   variant='danger'
                   onClick={() => onUnlinkAccount('google')}
                   disabled={unlinking === 'google'}
-                  className={styles.unlinkButton}
                   size='medium' 
                 >
                   {unlinking === 'google' ? 'Unlinking...' : 'Unlink'}
@@ -188,7 +183,6 @@ const ProfileInfo: React.FC<ProfileInfoProps> = ({
               ) : (
                 <Button
                   onClick={onLinkGoogle}
-                  className={styles.linkButton}
                   size='medium' 
                 >
                   Link Account
