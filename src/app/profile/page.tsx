@@ -272,7 +272,6 @@ export default function ProfilePage() {
       icon: <FaUser />,
       content: (
         <div className={styles.profileContent}>
-          {console.log('ProfilePage: Rendering ProfileInfo with profile:', JSON.stringify(safeProfile))}
           <ProfileInfo
             profile={safeProfile}
             onOpenMinecraftModal={() => setIsMinecraftModalOpen(true)}
