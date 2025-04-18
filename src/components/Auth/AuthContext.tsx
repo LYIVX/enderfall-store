@@ -91,6 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email,
           username,
           avatar_url,
+          is_admin,
           created_at,
           updated_at,
           has_completed_onboarding,

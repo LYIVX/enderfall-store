@@ -20,7 +20,6 @@
   width: 100%;
 }
 
-
 .statusInfo {
   display: flex;
   align-items: center;
@@ -104,6 +103,15 @@
   z-index: 2;
   font-family: 'MinecraftSeven', 'Courier New', monospace;
 }
+
+@media (max-width: 1200px) {
+  .statusOption{
+    text-align: center;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+  }
+}
+
 
 .statusOption:hover {
   background-color: rgba(255, 255, 255, 0.1);

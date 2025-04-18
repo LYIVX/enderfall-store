@@ -432,7 +432,7 @@
 
 .messageForm {
   display: flex;
-  padding: var(--spacing-md);
+  padding: var(--spacing-sm) !important;
   border-radius: var(--spacing-md);
   background-color: var(--theme-tab-background);
   margin-bottom: 0;
@@ -469,6 +469,9 @@
   height: 52px !important;
   transition: all 0.3s ease;
   transform: scale(0.9);
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: var(--button-font-size-large) !important;
 }
 
 .sendActive {
@@ -487,22 +490,7 @@
   opacity: 0;
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .conversationPage {
-    padding: 0.5rem;
-    height: calc(100vh - 100px);
-  }
-  
-  .messageItem {
-    max-width: 90%;
-  }
-  
-  /* Add responsive adjustment for the action buttons */
-  .messageActionButtons {
-    right: -40px;
-  }
-}
+
 
 @media (max-width: 576px) {
   .conversationTitle {

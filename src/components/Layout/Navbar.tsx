@@ -7,7 +7,7 @@ import { useAuth } from '@/components/Auth/AuthContext';
 import LoginModal from '@/components/Auth/LoginModal';
 import ThemeToggle from '@/components/Theme/ThemeToggle';
 import Button from '../UI/Button';
-import { FaChevronDown } from 'react-icons/fa';
+import { FaBars, FaChevronDown, FaTimes } from 'react-icons/fa';
 import styles from './Navbar.module.css';
 import StatusSwitcher from '@/components/UI/StatusSwitcher';
 import AvatarWithStatus from '@/components/UI/AvatarWithStatus';
@@ -174,9 +174,7 @@ const Navbar: React.FC<NavbarProps> = ({ navLinks }) => {
           data-active={isOpen ? "true" : "false"}
         >
           <div className={styles.hamburgerIcon}>
-            <span></span>
-            <span></span>
-            <span></span>
+            {isOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
           </div>
         </Button>
 

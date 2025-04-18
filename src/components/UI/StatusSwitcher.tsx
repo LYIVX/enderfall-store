@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useUserStatus } from '@/components/Auth/UserStatusContext';
 import { UserStatusValue } from '@/types/user-status';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaCircle, FaMinusCircle, FaPowerOff, FaChevronDown, FaQuestionCircle, FaClock, FaTimesCircle, FaPlusCircle } from 'react-icons/fa';
+import { FaCircle, FaMinusCircle, FaPowerOff, FaChevronDown, FaQuestionCircle, FaClock, FaTimesCircle, FaPlusCircle, FaDotCircle } from 'react-icons/fa';
 import styles from './StatusSwitcher.module.css';
 import Button from './Button';
 
@@ -35,15 +35,15 @@ const StatusSwitcher: React.FC<StatusSwitcherProps> = ({ className = '' }) => {
   const getStatusIcon = (status: UserStatusValue) => {
     switch (status) {
       case 'online':
-        return <FaPlusCircle className={styles.onlineIcon} />;
+        return <FaCircle className={styles.onlineIcon} />;
       case 'do_not_disturb':
         return <FaMinusCircle className={styles.dndIcon} />;
       case 'away': 
         return <FaClock className={styles.awayIcon} />; 
       case 'offline':
-        return <FaTimesCircle className={styles.offlineIcon} />;
+        return <FaDotCircle className={styles.offlineIcon} />;
       default: 
-        return <FaQuestionCircle className={styles.offlineIcon} />;
+        return <FaDotCircle className={styles.offlineIcon} />;
     }
   };
   
@@ -100,7 +100,7 @@ const StatusSwitcher: React.FC<StatusSwitcherProps> = ({ className = '' }) => {
                 className={`${styles.statusOption} ${currentStatusValue === 'online' ? styles.active : ''}`}
                 onClick={() => handleStatusChange('online')}
               >
-                <FaPlusCircle className={styles.onlineIcon} />
+                <FaCircle className={styles.onlineIcon} />
                 <span>Online</span>
               </button>
               
@@ -124,7 +124,7 @@ const StatusSwitcher: React.FC<StatusSwitcherProps> = ({ className = '' }) => {
                 className={`${styles.statusOption} ${currentStatusValue === 'offline' ? styles.active : ''}`}
                 onClick={() => handleStatusChange('offline')}
               >
-                <FaTimesCircle className={styles.offlineIcon} />
+                <FaDotCircle className={styles.offlineIcon} />
                 <span>Offline</span>
               </button>
             </div>

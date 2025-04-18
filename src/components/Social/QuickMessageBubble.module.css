@@ -6,8 +6,8 @@
 }
 
 .bubbleButton {
-  width: 40px !important;
-  height:40px !important;
+  width: 50px !important;
+  height: 50px !important;
   display: flex !important;
   align-items: center;
   justify-content: center;
@@ -42,7 +42,8 @@
   bottom: 60px !important;
   right: 0 !important;
   width: 400px !important;
-  max-height: 700px !important;
+  padding: var(--spacing-sm) !important;
+  max-height: calc(100vh - 200px) !important;
   background-color: var(--theme-tab-background) !important;
   border-radius: 12px !important;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important;
@@ -52,14 +53,8 @@
   gap: var(--spacing-lg) !important;
 }
 
-@media (max-width: 450px) {
-  .messagePanel {
-    width: 295px !important;
-  }
-}
-
 .messagePanelHeader {
-  padding: 12px 15px;
+  padding: 0 !important;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -80,7 +75,7 @@
   width: 40px !important;
   height:40px !important;
   border-radius: var(--spacing-sm);
-  padding: 0;
+  padding: 0 !important;
 }
 
 .messagePanelContent {
@@ -88,6 +83,13 @@
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
+  gap: var(--spacing-sm) !important;
+}
+
+.conversationList{
+  display: flex !important;
+  flex-direction: column !important;
+  gap: var(--spacing-sm) !important;
 }
 
 .loading, .emptyState {
@@ -104,7 +106,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden !important;
-  gap: var(--spacing-md) !important;
+  gap: var(--spacing-sm) !important;
 }
 
 .messagesContainer {
@@ -319,7 +321,7 @@
 .messageForm {
   display: flex;
   gap: 10px;
-  padding: var(--spacing-md) !important;
+  padding: var(--spacing-sm) !important;
   align-items: center;
 }
 
@@ -332,6 +334,7 @@
   color: var(--theme-text-primary);
   font-size: 0.9rem;
   flex-direction: unset !important;
+  width: 100% !important;
 }
 
 .messageInput:focus {
@@ -496,3 +499,39 @@
 .bgColorOption10, .otherMessageGradient10 { 
   background: #7f0080 !important; 
 } 
+
+
+
+@media (max-width: 450px) {
+  .messagePanel {
+    max-height: unset !important;
+    height: calc(100vh - var(--nav-height)) !important;
+    width: 100vw !important;
+    right: -25px !important;
+    bottom: -25px !important;
+  }
+
+  .messagePanelHeader{
+    margin-top: var(--spacing-xl) !important;
+  }
+}
+
+@media (max-width: 1200px) and (orientation: landscape) {
+  .messagePanel {
+    width: calc(100vw - 100px)   !important;
+    height: calc(100vh - var(--nav-height)) !important;
+    right: 60px !important;
+    bottom: -25px !important;
+    max-height: unset !important;
+    overflow-y: auto !important;
+    gap: var(--spacing-xs) !important;
+  }
+
+  .messagePanelHeader{
+    margin-top: var(--spacing-xl) !important;
+  }
+
+  .closeButton, .backButton {
+    margin: 0 !important;
+  }
+}

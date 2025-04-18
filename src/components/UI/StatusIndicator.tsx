@@ -3,7 +3,7 @@
 import React from 'react';
 import { UserStatusValue } from '@/types/user-status';
 import styles from './StatusIndicator.module.css';
-import { FaCircle, FaMinusCircle, FaPowerOff, FaClock, FaTimesCircle, FaPlusCircle } from 'react-icons/fa';
+import { FaCircle, FaMinusCircle, FaPowerOff, FaClock, FaTimesCircle, FaPlusCircle, FaDotCircle } from 'react-icons/fa';
 
 interface StatusIndicatorProps {
   status: UserStatusValue;
@@ -55,7 +55,7 @@ const StatusIndicator: React.FC<StatusIndicatorProps> = ({
 
   switch (status) {
     case 'online':
-      icon = <FaPlusCircle />;
+      icon = <FaCircle />;
       statusClass = styles.online;
       break;
     case 'do_not_disturb':
@@ -68,7 +68,7 @@ const StatusIndicator: React.FC<StatusIndicatorProps> = ({
       break;
     case 'offline':
     default:
-      icon = <FaTimesCircle />;
+      icon = <FaDotCircle />;
       statusClass = styles.offline;
       break;
   }

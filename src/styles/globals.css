@@ -123,7 +123,7 @@ input, textarea, select {
 }
 
 /* Responsive utilities */
-@media (max-width: 768px) {
+/*@media (max-width: 768px) {
   .container {
     padding: 0 var(--spacing-sm);
   }
@@ -136,7 +136,7 @@ input, textarea, select {
   .main-content {
     padding-top: calc(var(--nav-height) - 10px);
   }
-}
+}*/
 
 /* Button Font Sizes */
 :root {

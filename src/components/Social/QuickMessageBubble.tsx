@@ -61,10 +61,11 @@ const QuickMessageBubble = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [conversations, setConversations] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [selectedConversation, setSelectedConversation] = useState<any>(null);
+  const [selectedConversation, setSelectedConversation] = useState<any | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [messagesLoading, setMessagesLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [recipientIsTyping, setRecipientIsTyping] = useState(false);
@@ -72,6 +73,17 @@ const QuickMessageBubble = () => {
   const bubbleRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const typingRecordsMapRef = useRef<{[recordId: string]: string}>({});
+  
+  // --- Pagination State ---
+  const [messageLimit] = useState(10);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const [isScrollListenerActive, setIsScrollListenerActive] = useState(false);
+  const isLoadingMoreRef = useRef(false);
+  const initialScrollPerformedRef = useRef(false);
+  const [windowWidth, setWindowWidth] = useState(0);
 
   // Load conversations when the component mounts
   useEffect(() => {
@@ -115,7 +127,7 @@ const QuickMessageBubble = () => {
                 if (sender) {
                   toast(`New message from ${sender.username || 'User'}`, {
                     icon: '💬',
-                    position: 'bottom-right'
+                    position: 'bottom-left'
                   });
                 }
               });
@@ -186,6 +198,23 @@ const QuickMessageBubble = () => {
     
     setLoading(true);
     try {
+      // Fetch conversation IDs where the current user is a participant
+      const { data: userConvIdsData, error: userConvIdsError } = await supabase
+        .from('conversation_participants')
+        .select('conversation_id')
+        .eq('user_id', user.id);
+
+      if (userConvIdsError) throw userConvIdsError;
+      if (!userConvIdsData || userConvIdsData.length === 0) {
+        setConversations([]);
+        setUnreadCount(0);
+        setLoading(false);
+        return;
+      }
+
+      const userConversationIds = userConvIdsData.map(c => c.conversation_id);
+
+      // Fetch conversations based on the IDs found
       const { data: conversationsData, error } = await supabase
         .from('conversations')
         .select(`
@@ -197,7 +226,7 @@ const QuickMessageBubble = () => {
             user_id,
             profiles(id, username, avatar_url)
           ),
-          last_message:messages(
+          messages(
             id,
             content,
             created_at,
@@ -206,6 +235,7 @@ const QuickMessageBubble = () => {
             sender:profiles!sender_id(id, username, avatar_url)
           )
         `)
+        .in('id', userConversationIds) // Filter by user's conversation IDs
         .order('updated_at', { ascending: false });
       
       if (error) throw error;
@@ -221,9 +251,9 @@ const QuickMessageBubble = () => {
 
         // Get the most recent message
         let lastMessage = null;
-        if (conversation.last_message && conversation.last_message.length > 0) {
-          // Sort messages by created_at
-          const sortedMessages = [...conversation.last_message].sort(
+        if (conversation.messages && conversation.messages.length > 0) {
+          // Sort messages by created_at descending to get the latest
+          const sortedMessages = [...conversation.messages].sort(
             (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
           );
           
@@ -240,6 +270,7 @@ const QuickMessageBubble = () => {
           
           // Add username if available from sender relationship
           if (latestMessage.sender) {
+            // Ensure sender is not an array (handle potential Supabase inconsistencies)
             const sender = Array.isArray(latestMessage.sender) ? latestMessage.sender[0] : latestMessage.sender;
             if (sender && sender.username) {
               lastMessage.username = sender.username;
@@ -248,7 +279,7 @@ const QuickMessageBubble = () => {
         }
 
         // Count unread messages - messages that aren't from the current user and aren't read
-        const unreadCount = (conversation.last_message || []).filter(
+        const unreadCount = (conversation.messages || []).filter(
           (msg: any) => !msg.is_read && msg.sender_id !== user.id
         ).length;
 
@@ -272,6 +303,10 @@ const QuickMessageBubble = () => {
       setUnreadCount(totalUnread);
     } catch (error) {
       console.error('Error fetching conversations:', error);
+      // Handle the error gracefully, maybe show a toast or message
+      toast.error('Could not load your conversations.');
+      setConversations([]); // Clear conversations on error
+      setUnreadCount(0);
     } finally {
       setLoading(false);
     }
@@ -286,23 +321,101 @@ const QuickMessageBubble = () => {
     setIsOpen(!isOpen);
   };
 
-  // Mark a conversation as read when viewing it
-  const viewConversation = (conversation: any) => {
+  // Select a conversation and load its messages
+  const handleSelectConversation = (conversation: any) => {
+    setMessages([]);
+    setInitialLoadComplete(false);
+    setIsScrollListenerActive(false);
+    setHasMoreMessages(true);
+    initialScrollPerformedRef.current = false;
     setSelectedConversation(conversation);
     fetchMessages(conversation.id);
   };
 
-  // Select a conversation and load its messages
-  const handleSelectConversation = (conversation: any) => {
-    viewConversation(conversation);
-  };
-
-  // Fetch messages for a specific conversation
+  // Fetch messages for a specific conversation (Implement Pagination)
   const fetchMessages = async (conversationId: string) => {
     if (!user) return;
-    
+    setMessagesLoading(true);
+    setHasMoreMessages(true);
+    setInitialLoadComplete(false);
+
     try {
-      const { data: messagesData, error } = await supabase
+      const { data: messagesData, error, count } = await supabase
+        .from('messages')
+        .select(`
+          id,
+          conversation_id,
+          sender_id,
+          content,
+          is_read,
+          created_at,
+          sender:profiles!sender_id(id, username, avatar_url)
+        `, { count: 'exact' })
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: false })
+        .range(0, messageLimit - 1);
+
+      if (error) throw error;
+
+      const formattedMessages = messagesData
+        ? messagesData.map(message => {
+            const sender = message.sender as any;
+            return {
+              id: message.id,
+              conversation_id: message.conversation_id,
+              sender_id: message.sender_id,
+              content: message.content,
+              is_read: message.is_read,
+              created_at: message.created_at,
+              username: sender?.username || 'Unknown User',
+              avatar_url: sender?.avatar_url || null
+            };
+          }).reverse()
+        : [];
+
+      setMessages(formattedMessages);
+
+      if (!messagesData || messagesData.length < messageLimit || formattedMessages.length === count) {
+        setHasMoreMessages(false);
+      }
+
+      // Mark messages as read (consider only visible ones if needed)
+      const unreadMessages = formattedMessages.filter(
+        message => !message.is_read && message.sender_id !== user.id
+      );
+      if (unreadMessages.length > 0) {
+        markConversationAsRead(unreadMessages.map(msg => msg.id));
+      }
+
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+      toast.error('Could not load messages.');
+      setMessages([]);
+      setHasMoreMessages(false);
+    } finally {
+      setMessagesLoading(false);
+      setInitialLoadComplete(true);
+      // Initial scroll handled by useEffect below
+    }
+  };
+
+  // --- Function to load older messages ---
+  const loadMoreMessages = async () => {
+    if (loadingMore || !hasMoreMessages || !user || !selectedConversation) return;
+
+    // Store scroll position *before* fetching and changing height
+    const container = messagesContainerRef.current;
+    const previousScrollHeight = container ? container.scrollHeight : 0;
+    const previousScrollTop = container ? container.scrollTop : 0;
+
+    isLoadingMoreRef.current = true;
+    setLoadingMore(true);
+    const currentMessageCount = messages.length;
+    const conversationId = selectedConversation.id;
+
+    try {
+      console.log(`[loadMoreMessages] Loading more messages, offset: ${currentMessageCount}, limit: ${messageLimit}`);
+      const { data: olderMessagesData, error } = await supabase
         .from('messages')
         .select(`
           id,
@@ -314,43 +427,193 @@ const QuickMessageBubble = () => {
           sender:profiles!sender_id(id, username, avatar_url)
         `)
         .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true });
-      
+        .order('created_at', { ascending: false })
+        .range(currentMessageCount, currentMessageCount + messageLimit - 1);
+
       if (error) throw error;
 
-      // Format messages
-      const formattedMessages = messagesData ? messagesData.map(message => {
-        const sender = message.sender as any;
-        return {
-          id: message.id,
-          conversation_id: message.conversation_id,
-          sender_id: message.sender_id,
-          content: message.content, 
-          is_read: message.is_read,
-          created_at: message.created_at,
-          username: sender?.username || 'Unknown User',
-          avatar_url: sender?.avatar_url || null
-        };
-      }) : [];
+      if (olderMessagesData && olderMessagesData.length > 0) {
+        const formattedOlderMessages = olderMessagesData.map(message => {
+          const sender = message.sender as any;
+          return {
+            id: message.id,
+            conversation_id: message.conversation_id,
+            sender_id: message.sender_id,
+            content: message.content,
+            is_read: message.is_read,
+            created_at: message.created_at,
+            username: sender?.username || 'Unknown User',
+            avatar_url: sender?.avatar_url || null
+          };
+        }).reverse();
+        
+        // Prepend messages AND adjust scroll immediately after state update
+        setMessages(prevMessages => [...formattedOlderMessages, ...prevMessages]);
+        
+        // Adjust scroll position immediately after prepending messages
+        if (container) {
+            // Need a micro-delay for the DOM to update scrollHeight after setMessages
+            requestAnimationFrame(() => { 
+                const newScrollHeight = container.scrollHeight;
+                const newScrollTop = newScrollHeight - previousScrollHeight + previousScrollTop;
+                console.log(`[loadMoreMessages] Adjusting scroll immediately. PrevHeight: ${previousScrollHeight}, NewHeight: ${newScrollHeight}, PrevTop: ${previousScrollTop}, NewScrollTop: ${newScrollTop}`);
+                container.scrollTop = newScrollTop;
+            });
+        }
 
-      setMessages(formattedMessages);
-      
-      // Find unread messages that aren't from the current user
-      const unreadMessages = formattedMessages.filter(
-        message => !message.is_read && message.sender_id !== user.id
-      );
-
-      // Mark messages as read immediately when viewing
-      if (unreadMessages.length > 0) {
-        markConversationAsRead(unreadMessages.map(msg => msg.id));
+        if (olderMessagesData.length < messageLimit) {
+          setHasMoreMessages(false);
+        }
+      } else {
+        setHasMoreMessages(false);
       }
-
-      // Scroll to the bottom after messages load
-      setTimeout(scrollToBottom, 100);
     } catch (error) {
-      console.error('Error fetching messages:', error);
+      console.error('Error loading more messages:', error);
+      toast.error('Could not load older messages.');
+    } finally {
+      setLoadingMore(false);
+      isLoadingMoreRef.current = false;
     }
   };
+
+  // --- Scroll handler for infinite loading ---
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (!isScrollListenerActive) return;
+    
+    const container = e.currentTarget;
+    console.log(`[Scroll Check] scrollTop: ${container.scrollTop}, hasMore: ${hasMoreMessages}, loadingMore: ${loadingMore}, messagesLoading: ${messagesLoading}`);
+    
+    // Only trigger loading, don't adjust scroll here
+    if (container.scrollTop < 50 && hasMoreMessages && !loadingMore && !messagesLoading) {
+      console.log("[handleScroll] Threshold reached, calling loadMoreMessages...");
+      // const previousScrollHeight = container.scrollHeight; // No longer needed here
+      // const previousScrollTop = container.scrollTop; // No longer needed here
+      // console.log(`[handleScroll] Before load - scrollHeight: ${previousScrollHeight}, scrollTop: ${previousScrollTop}`);
+      
+      loadMoreMessages(); // Just call loadMore
+      
+      // Remove the .then() and setTimeout logic for scroll adjustment
+      /*
+      loadMoreMessages().then(() => {
+        console.log("[handleScroll] loadMoreMessages finished.");
+        setTimeout(() => {
+           if (messagesContainerRef.current) { 
+              const currentScrollHeight = messagesContainerRef.current.scrollHeight;
+              const newScrollTop = currentScrollHeight - previousScrollHeight + previousScrollTop;
+              console.log(`[handleScroll] After load (in timeout) - prevHeight: ${previousScrollHeight}, currentHeight: ${currentScrollHeight}, prevTop: ${previousScrollTop}, newTop Calc: ${newScrollTop}`);
+              messagesContainerRef.current.scrollTop = newScrollTop;
+              console.log(`[handleScroll] ScrollTop set to: ${newScrollTop}`);
+           }
+        }, 50); 
+      });
+      */
+    }
+  };
+
+  // Function to scroll to bottom of messages
+  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+    console.log(`[scrollToBottom] Called with behavior: ${behavior}`);
+    if (messagesContainerRef.current) {
+        const targetScrollTop = messagesContainerRef.current.scrollHeight;
+        console.log(`[scrollToBottom] Container found. Current height: ${messagesContainerRef.current.scrollHeight}, Target scroll top: ${targetScrollTop}`);
+        if (behavior === 'smooth') {
+            messagesContainerRef.current.scrollTo({
+                top: targetScrollTop,
+                behavior: 'smooth'
+            });
+        } else {
+            messagesContainerRef.current.scrollTop = targetScrollTop;
+        }
+        console.log(`[scrollToBottom] Scroll attempt finished. Current scrollTop: ${messagesContainerRef.current.scrollTop}`);
+    } else if (messagesEndRef.current) { 
+        console.log("[scrollToBottom] Container ref not found, using messagesEndRef fallback.");
+        // Fallback if container ref is not ready? Less ideal.
+        messagesEndRef.current.scrollIntoView({ behavior });
+    }
+  };
+
+  // Initial scroll to bottom effect - Run ONCE after initial load per conversation
+  useEffect(() => {
+    if (initialLoadComplete && !initialScrollPerformedRef.current) {
+      console.log('[useEffect initialScroll] Running initial scroll and activating listener.');
+      if (messages.length > 0) {
+         scrollToBottom('auto'); 
+      }
+      const timer = setTimeout(() => {
+        setIsScrollListenerActive(true);
+        console.log('[useEffect initialScroll] Scroll listener activated.');
+      }, 100);
+      initialScrollPerformedRef.current = true; // Mark as done for this conversation load
+      return () => clearTimeout(timer);
+    }
+    // Depend only on initialLoadComplete and selectedConversation to trigger this check once per load
+  }, [initialLoadComplete, selectedConversation]);
+
+  // Effect for new message appending and auto-scroll (from subscriptions)
+  useEffect(() => {
+    if (!user || !selectedConversation) return; // Guard clause
+
+    const channelName = `quick-messages-${selectedConversation.id}-${user.id}`;
+    console.log(`[useEffect realtime] Setting up subscription on ${channelName}`);
+    
+    const messageSubscription = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes' as any,
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${selectedConversation.id}`
+        },
+        async (payload) => {
+           console.log('[useEffect realtime] Received INSERT payload:', payload.new?.id);
+           if (payload.new.sender_id === user.id) { 
+             console.log('[useEffect realtime] Ignoring self-sent message via subscription.');
+             return; 
+           }
+           
+           const messageExists = messages.some(m => m.id === payload.new.id);
+           if (messageExists) { 
+             console.log(`[useEffect realtime] Message ${payload.new.id} already exists, ignoring.`);
+             return; 
+           }
+
+           // Use 'any' for participant type in find as a workaround
+           const sender = selectedConversation.participants.find((p: any) => p.id === payload.new.sender_id);
+           // Explicitly include id and define as any to bypass inference issue
+           const newMessage: any = {
+                ...payload.new,
+                id: payload.new.id, // Ensure id is explicitly included
+                username: sender?.username || 'User',
+                avatar_url: sender?.avatar_url || null
+            };
+
+           // Check scroll position before adding
+           const container = messagesContainerRef.current;
+           const shouldScroll = !container || (container.scrollHeight - container.scrollTop <= container.clientHeight + 150); 
+           console.log(`[useEffect realtime] Message ${newMessage.id}. ShouldScroll: ${shouldScroll}, isLoadingMore: ${isLoadingMoreRef.current}`);
+
+           setMessages(prev => [...prev, newMessage]);
+           markMessageAsRead(newMessage.id); // Mark received message as read
+
+           // Only scroll if loading more is NOT in progress and user is near bottom.
+           if (shouldScroll && !isLoadingMoreRef.current) { 
+                console.log(`[useEffect realtime] Scrolling for new message ${newMessage.id}`);
+                setTimeout(() => scrollToBottom('smooth'), 100);
+           }
+        }
+      )
+       // Consider adding UPDATE/DELETE handlers if needed in quick bubble
+      .subscribe();
+      
+    return () => {
+      console.log(`[useEffect realtime] Unsubscribing from ${channelName}`);
+      supabase.removeChannel(messageSubscription);
+    }
+
+    // Rerun ONLY if user or selectedConversation changes
+  }, [user, selectedConversation]); 
 
   // Mark a message as read
   const markMessageAsRead = async (messageId: string) => {
@@ -548,30 +811,12 @@ const QuickMessageBubble = () => {
     };
   }, []);
 
-  // Function to scroll to bottom of messages
-  const scrollToBottom = () => {
-    if (messagesEndRef.current) {
-      const messagesContainer = document.querySelector(`.${styles.messagesList}`);
-      if (messagesContainer) {
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-      }
-    }
-  };
-
-  // Add this effect to ensure scrolling happens when the message panel appears
-  useEffect(() => {
-    if (isOpen && selectedConversation && messages.length > 0) {
-      // Use multiple timeouts to ensure scrolling happens after rendering
-      setTimeout(scrollToBottom, 50);
-      setTimeout(scrollToBottom, 150);
-      setTimeout(scrollToBottom, 300);
-    }
-  }, [isOpen, selectedConversation, messages.length]);
-
   // Add back the effect for typing indicators
   useEffect(() => {
-    if (selectedConversation && recipientIsTyping) {
-      setTimeout(scrollToBottom, 100);
+    // Only scroll if not loading older messages
+    if (selectedConversation && recipientIsTyping && !isLoadingMoreRef.current) { 
+      console.log("[useEffect typing] Scrolling due to typing indicator");
+      setTimeout(() => scrollToBottom('smooth'), 100);
     }
   }, [recipientIsTyping, selectedConversation]);
 
@@ -589,11 +834,8 @@ const QuickMessageBubble = () => {
     if (!newMessage.trim() || sending || !user || !selectedConversation) return;
     
     setSending(true);
-    
-    // Reset typing status
     updateTypingStatus(selectedConversation.id, false);
     
-    // Create a temporary message
     const tempId = `temp-${Date.now()}`;
     const tempMessage = {
       id: tempId,
@@ -608,15 +850,13 @@ const QuickMessageBubble = () => {
       temp: true
     };
     
-    // Add to messages immediately
+    // Append temporary message
     setMessages(prev => [...prev, tempMessage]);
-    scrollToBottom();
+    setTimeout(() => scrollToBottom('smooth'), 50); // Scroll after adding temp message
     
-    // Clear the input
     setNewMessage('');
     
     try {
-      // Send to server
       const { data, error } = await supabase
         .from('messages')
         .insert({
@@ -638,8 +878,6 @@ const QuickMessageBubble = () => {
           temp: false
         } : msg
       ));
-      
-      // Refresh conversations to update last message
       fetchConversations();
     } catch (error) {
       console.error('Error sending message:', error);
@@ -676,27 +914,46 @@ const QuickMessageBubble = () => {
   const handleBackToList = () => {
     setSelectedConversation(null);
     setMessages([]);
-    // Refresh conversation list to show updated unread counts
+    setInitialLoadComplete(false);
+    setIsScrollListenerActive(false);
     fetchConversations();
   };
+
+  // Effect to track window width
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+
+    // Set initial width
+    handleResize();
+
+    // Add resize listener
+    window.addEventListener('resize', handleResize);
+
+    // Cleanup listener on unmount
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   if (!user) return null;
 
   return (
     <div className={styles.bubbleContainer} ref={bubbleRef}>
-      {/* Bubble Button */}
-      <Button 
-        className={styles.bubbleButton}
-        onClick={toggleBubble}
-        aria-label="Messages"
-        variant="primary"
-        size="large"
-      >
-        <FaComment />
-        {unreadCount > 0 && (
-          <span className={styles.unreadBadge}>{unreadCount}</span>
-        )}
-      </Button>
+      {/* Bubble Button - Conditionally Rendered based on isOpen and windowWidth */}
+      {(!isOpen || windowWidth > 450) && (
+        <Button
+          className={styles.bubbleButton}
+          onClick={toggleBubble}
+          aria-label="Messages"
+          variant="primary"
+          size="large"
+        >
+          <FaComment />
+          {unreadCount > 0 && (
+            <span className={styles.unreadBadge}>{unreadCount}</span>
+          )}
+        </Button>
+      )}
 
       {/* Message Panel */}
       <AnimatePresence>
@@ -752,106 +1009,124 @@ const QuickMessageBubble = () => {
                 </div>
               ) : (
                 /* Message View */
-                <div className={styles.messageView}>
-                  <NineSliceContainer className={`${styles.messagesContainer} ${styles[getChatBackgroundClass()]} ${styles[getTextSizeClass()]}`}>
-                    {messages.length === 0 ? (
-                      <div className={styles.emptyState}>No messages yet. Start the conversation!</div>
-                    ) : (
-                      <div className={styles.messagesList}>
-                        {messages.map((message, index) => {
-                          const isOwnMessage = message.sender_id === user.id;
-                          const showAuthor = index === 0 || messages[index - 1].sender_id !== message.sender_id;
-                          const messageDate = getMessageDateGroup(message.created_at);
-                          const showDateDivider = index === 0 || 
-                            getMessageDateGroup(messages[index - 1].created_at) !== messageDate;
-                            
-                          // Get the message style class
-                          const messageStyleClass = styles[getMessageStyleClass(isOwnMessage)];
-                          
-                          return (
-                            <React.Fragment key={message.id}>
-                              {showDateDivider && (
-                                <div className={styles.dateDivider}>
-                                  <span>{new Date(messageDate).toLocaleDateString(undefined, { 
-                                    weekday: 'long',
-                                    month: 'short', 
-                                    day: 'numeric',
-                                    year: new Date(messageDate).getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
-                                  })}</span>
-                                </div>
-                              )}
+                (() => {
+                  const recipient = selectedConversation.participants.find((p: any) => p.id !== user.id);
+                  const recipientName = recipient?.username || 'User';
+
+                  return (
+                    <div className={styles.messageView}>
+                      <NineSliceContainer 
+                        className={`${styles.messagesContainer} ${styles[getChatBackgroundClass()]} ${styles[getTextSizeClass()]}`}
+                        ref={messagesContainerRef}
+                        onScroll={isScrollListenerActive ? handleScroll : undefined}
+                      >
+                        {messagesLoading && messages.length === 0 && (
+                           <div className={styles.loading}>Loading messages...</div>
+                        )}
+                        
+                        {loadingMore && (
+                           <div className={styles.loadingMoreIndicator}>Loading older messages...</div>
+                        )}
+                        
+                        {!messagesLoading && messages.length === 0 && !hasMoreMessages ? (
+                          <div className={styles.emptyState}>No messages yet. Start the conversation!</div>
+                        ) : (
+                          <div className={styles.messagesList}>
+                            {messages.map((message, index) => {
+                              const isOwnMessage = message.sender_id === user.id;
+                              const showAuthor = index === 0 || messages[index - 1].sender_id !== message.sender_id;
+                              const messageDate = getMessageDateGroup(message.created_at);
+                              const showDateDivider = index === 0 || 
+                                getMessageDateGroup(messages[index - 1].created_at) !== messageDate;
+                                
+                              // Get the message style class
+                              const messageStyleClass = styles[getMessageStyleClass(isOwnMessage)];
                               
-                              <div className={`${styles.messageItem} ${isOwnMessage ? styles.ownMessage : ''}`}>
-                                {showAuthor && !isOwnMessage && (
-                                  <div className={styles.messageAuthor}>
-                                    <AvatarWithStatus
-                                      userId={message.sender_id}
-                                      avatarUrl={message.avatar_url}
-                                      username={message.username || 'User'}
-                                      size="small"
-                                      className={styles.messageAvatarContainer}
-                                    />
-                                    <span className={styles.messageUsername}>{message.username}</span>
+                              return (
+                                <React.Fragment key={message.id}>
+                                  {showDateDivider && (
+                                    <div className={styles.dateDivider}>
+                                      <span>{new Date(messageDate).toLocaleDateString(undefined, { 
+                                        weekday: 'long',
+                                        month: 'short', 
+                                        day: 'numeric',
+                                        year: new Date(messageDate).getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+                                      })}</span>
+                                    </div>
+                                  )}
+                                  
+                                  <div className={`${styles.messageItem} ${isOwnMessage ? styles.ownMessage : ''}`}>
+                                    {showAuthor && !isOwnMessage && (
+                                      <div className={styles.messageAuthor}>
+                                        <AvatarWithStatus
+                                          userId={message.sender_id}
+                                          avatarUrl={message.avatar_url}
+                                          username={message.username || 'User'}
+                                          size="small"
+                                          className={styles.messageAvatarContainer}
+                                        />
+                                        <span className={styles.messageUsername}>{message.username}</span>
+                                      </div>
+                                    )}
+                                    
+                                    {showAuthor && isOwnMessage && (
+                                      <div className={styles.ownMessageIndicator}>You</div>
+                                    )}
+                                    
+                                    <NineSliceContainer variant="ghost" className={styles.messageContent + ' ' + (isOwnMessage ? styles.ownMessageContent : '') + ' ' + messageStyleClass}>
+                                      <p className={styles.messageText}>{message.content}</p>
+                                      <span className={styles.messageTime}>
+                                        {formatMessageTime(message.created_at)}
+                                        {getMessageStatusIcon(message)}
+                                      </span>
+                                    </NineSliceContainer>
                                   </div>
-                                )}
-                                
-                                {showAuthor && isOwnMessage && (
-                                  <div className={styles.ownMessageIndicator}>You</div>
-                                )}
-                                
-                                <NineSliceContainer variant="ghost" className={styles.messageContent + ' ' + (isOwnMessage ? styles.ownMessageContent : '') + ' ' + messageStyleClass}>
-                                  <p className={styles.messageText}>{message.content}</p>
-                                  <span className={styles.messageTime}>
-                                    {formatMessageTime(message.created_at)}
-                                    {getMessageStatusIcon(message)}
+                                </React.Fragment>
+                              );
+                            })}
+                            
+                            {recipientIsTyping && (
+                              <div className={`${styles.typingIndicator}`}>
+                                <NineSliceContainer variant="ghost" className={`${styles.typingIndicatorContent} ${styles[getMessageStyleClass(false)]}`}>
+                                  <div className={styles.typingDots}>
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                  </div>
+                                  <span className={styles.typingText}>
+                                    {recipientName} is typing...
                                   </span>
                                 </NineSliceContainer>
                               </div>
-                            </React.Fragment>
-                          );
-                        })}
-                        
-                        {/* Typing indicator */}
-                        {recipientIsTyping && (
-                          <div className={`${styles.typingIndicator}`}>
-                            <NineSliceContainer variant="ghost" className={`${styles.typingIndicatorContent} ${styles[getMessageStyleClass(false)]}`}>
-                              <div className={styles.typingDots}>
-                                <span></span>
-                                <span></span>
-                                <span></span>
-                              </div>
-                              <span className={styles.typingText}>
-                                {selectedConversation.participants.find((p: any) => p.id !== user.id)?.username || 'User'} is typing...
-                              </span>
-                            </NineSliceContainer>
+                            )}
+                            
+                            <div ref={messagesEndRef} />
                           </div>
                         )}
-                        
-                        <div ref={messagesEndRef} />
-                      </div>
-                    )}
-                  </NineSliceContainer>
-                  
-                  <NineSliceContainer className={styles.messageForm} onSubmit={handleSendMessage}>
-                    <Input
-                      type="text"
-                      placeholder="Type a message..."
-                      value={newMessage}
-                      onChange={handleTyping}
-                      onKeyDown={handleKeyDown}
-                      className={styles.messageInput}
-                      label=""
-                      button={<Button 
-                      type="submit" 
-                      variant="primary"
-                      className={styles.sendButton}
-                      disabled={sending || !newMessage.trim()}
-                    >
-                      <FaPaperPlane />
-                    </Button>}
-                    />
-                  </NineSliceContainer>
-                </div>
+                      </NineSliceContainer>
+                      
+                      <NineSliceContainer className={styles.messageForm} onSubmit={handleSendMessage}>
+                        <Input
+                          type="text"
+                          placeholder={`Message ${recipientName}...`}
+                          value={newMessage}
+                          onChange={handleTyping}
+                          onKeyDown={handleKeyDown}
+                          className={styles.messageInput}
+                          label=""
+                          button={<Button 
+                          type="submit" 
+                          variant="primary"
+                          className={styles.sendButton}
+                          disabled={sending || !newMessage.trim()}
+                        >
+                          <FaPaperPlane />
+                        </Button>}
+                        />
+                      </NineSliceContainer>
+                    </div>
+                  );
+                })()
               )}
             </div>
           </NineSliceContainer>

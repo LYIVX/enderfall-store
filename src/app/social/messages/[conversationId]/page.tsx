@@ -20,12 +20,6 @@ import { NineSliceContainer } from '@/components/UI';
 
 export default function ConversationPage() {
   const params = useParams();
-  const senderUsername = Array.isArray(params?.senderUsername) 
-    ? params.senderUsername[0] 
-    : params?.senderUsername || '';
-  const recipientUsername = Array.isArray(params?.recipientUsername) 
-    ? params.recipientUsername[0] 
-    : params?.recipientUsername || '';
   const conversationId = Array.isArray(params?.conversationId) 
     ? params.conversationId[0] 
     : params?.conversationId || '';
@@ -42,11 +36,18 @@ export default function ConversationPage() {
   const [isTyping, setIsTyping] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState<{[key: string]: boolean}>({});
   const [recipientUser, setRecipientUser] = useState<any>(null);
+  const [conversationName, setConversationName] = useState<string | null>(null);
   const [activeMessageId, setActiveMessageId] = useState<string | null>(null);
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editMessageContent, setEditMessageContent] = useState('');
+  const [messageLimit] = useState(10);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [showDateDividers, setShowDateDividers] = useState<{[key: string]: boolean}>({});
+  const isLoadingMoreRef = useRef(false);
   
   // Chat preferences dropdown state
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -88,101 +89,170 @@ export default function ConversationPage() {
     [key: string]: any;
   };
   
+  const [isScrollListenerActive, setIsScrollListenerActive] = useState(false);
+
   useEffect(() => {
     if (!user) {
       router.push('/login');
       return;
     }
     
-    if (!conversationId || !recipientUsername) {
+    if (!conversationId) {
+      console.error("Conversation ID is missing");
+      toast.error('Invalid conversation link.');
       router.push('/social');
       return;
     }
     
-    // First, get the user ID from the recipient username
-    fetchRecipientByUsername();
-  }, [user, conversationId, recipientUsername, router]);
+    // Fetch conversation data directly using conversationId
+    fetchConversationData(); 
+    
+  }, [user, conversationId, router]);
 
-  const fetchRecipientByUsername = async () => {
+  const fetchConversationData = async () => {
+    setLoading(true);
+    if (!user || !conversationId) {
+      setLoading(false);
+      return;
+    }
+
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('username', recipientUsername)
+      // 1. Fetch conversation details including participants
+      const { data: conversationData, error: conversationError } = await supabase
+        .from('conversations')
+        .select(`
+          id,
+          name,
+          participants:conversation_participants(
+            user_id,
+            profiles(id, username, avatar_url)
+          )
+        `)
+        .eq('id', conversationId)
         .single();
-      
-      if (error) throw error;
-      
-      if (!data) {
-        toast.error('User not found');
+
+      if (conversationError) throw conversationError;
+      if (!conversationData) {
+        toast.error('Conversation not found.');
+        router.push('/social');
+        return;
+      }
+
+      // 2. Check if current user is a participant
+      const isParticipant = conversationData.participants.some(
+        (p: any) => p.user_id === user.id
+      );
+
+      if (!isParticipant) {
+        toast.error('You do not have access to this conversation.');
         router.push('/social');
         return;
       }
       
-      setRecipientUser(data);
-      
-      // Once we have the user, check if current user has access to this conversation 
-      checkUserAccess();
-      fetchConversationData();
-    } catch (error) {
-      console.error('Error fetching user by username:', error);
-      toast.error('User not found');
-      router.push('/social');
-    }
-  };
-  
-  const checkUserAccess = async () => {
-    try {
-      const { data: participantData, error: participantError } = await supabase
-        .from('conversation_participants')
-        .select('user_id')
-        .eq('conversation_id', conversationId)
-        .eq('user_id', user?.id);
-      
-      if (participantError) throw participantError;
-      
-      // If the user is not a participant in this conversation, redirect them
-      if (!participantData || participantData.length === 0) {
-        toast.error('You do not have access to this conversation');
-        router.push('/social');
+      // 3. Determine recipient(s) and set state
+      const otherParticipants = conversationData.participants
+        .filter((p: any) => p.user_id !== user.id)
+        .map((p: any) => p.profiles); // Get the profile info
+
+      setParticipants(otherParticipants); // Store all other participants
+
+      // For now, assume one recipient for display purposes (can be enhanced for group chat)
+      if (otherParticipants.length > 0) {
+        setRecipientUser(otherParticipants[0]); 
+      } else {
+        // Handle case where user is the only participant (e.g., notes to self)
+        setRecipientUser(user.user_metadata); // Or set to null/handle differently
       }
+
+      setConversationName(conversationData.name); // Set conversation name
+
+      // 4. Fetch messages for this conversation
+      fetchMessages(); 
+
     } catch (error) {
-      console.error('Error checking user access:', error);
+      console.error('Error fetching conversation data:', error);
+      toast.error('Failed to load conversation.');
       router.push('/social');
+    } finally {
+       setLoading(false); // Moved to fetchMessages
     }
   };
   
-  useEffect(() => {
-    if (!user || !conversationId || !recipientUser) return;
-    
-    // Initial scroll to bottom
-    if (messages.length > 0) {
-      scrollToBottom();
+  const fetchMessages = async () => {
+    if (!user || !conversationId) return;
+    setLoading(true);
+    setHasMoreMessages(true);
+    setInitialLoadComplete(false);
+
+    try {
+      const { data: messagesData, error, count } = await supabase
+        .from('messages')
+        .select(`
+          *,
+          sender:profiles!sender_id(id, username, avatar_url)
+        `, { count: 'exact' })
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: false })
+        .range(0, messageLimit - 1);
+
+      if (error) throw error;
+
+      const formattedMessages = messagesData 
+        ? messagesData.map(message => ({
+            ...message,
+            username: message.sender?.username || 'Unknown User',
+            avatar_url: message.sender?.avatar_url,
+          })).reverse()
+        : [];
+      
+      setMessages(formattedMessages);
+      
+      if (!messagesData || messagesData.length < messageLimit || formattedMessages.length === count) {
+        setHasMoreMessages(false);
+      }
+
+      markConversationAsRead();
+
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+      toast.error('Could not load messages.');
+      setMessages([]);
+      setHasMoreMessages(false);
+    } finally {
+       setLoading(false);
+       setInitialLoadComplete(true);
+       setTimeout(scrollToBottom, 100); 
     }
+  };
+
+  useEffect(() => {
+    // Remove the old useEffect that depended on recipientUser for initial setup
+    // Keep the interval if needed, but ensure recipientUser is set before using it
+    if (!user || !conversationId) return; // Basic check
     
-    // Add back refresh interval as a fallback while realtime is being set up
     const refreshInterval = setInterval(() => {
-      console.log('Performing periodic refresh of messages');
-      refreshMessages(false); // Don't scroll on auto-refresh
-    }, 5000); // Check every 5 seconds
+      if (document.visibilityState === 'visible') { // Only refresh if tab is active
+         console.log('Performing periodic refresh of messages');
+         refreshMessages(false); // Don't scroll on auto-refresh
+      }
+    }, 15000); // Check every 15 seconds
     
     return () => {
       clearInterval(refreshInterval);
     };
-  }, [user, conversationId, messages.length, recipientUser]);
+  }, [user, conversationId]); // Depends only on user and conversationId now
 
   useEffect(() => {
-    if (!user || !recipientUser) return;
-    
-    // Create a unique channel name including userId to prevent conflicts between different users
+    // Realtime subscription setup - ensure recipientUser is available if needed inside
+    if (!user || !conversationId) return;
+
     const channelName = `messages-channel-${conversationId}-${user.id}`;
     console.log(`Setting up real-time subscription on channel: ${channelName}`);
     
-    // Set up real-time subscription for new messages
     const messageSubscription = supabase
       .channel(channelName)
       .on(
-        'postgres_changes',
+        'postgres_changes' as any,
         {
           event: 'INSERT',
           schema: 'public',
@@ -192,72 +262,68 @@ export default function ConversationPage() {
         async (payload) => {
           console.log(`New message received in conversation ${conversationId}:`, payload.new);
           
-          // Check if this message is already in our state by ID or if we have a temp version
-          const messageExists = messages.some(m => 
-            m.id === payload.new.id || 
-            (m.temp && m.sender_id === payload.new.sender_id && m.content === payload.new.content)
-          );
-          
+          // Check if message already exists (including temporary)
+          const messageExists = messages.some(m => m.id === payload.new.id || (m.temp && m.id === `temp-${payload.new.created_at}`));
           if (messageExists) {
-            console.log(`Message ${payload.new.id} already exists or has a temp version, updating instead of adding`);
-            
-            // Update the message if it exists as a temp message
-            setMessages(prevMessages => {
-              return prevMessages.map(msg => {
-                if (msg.id === payload.new.id) {
-                  // This is the same message, keep it
-                  return msg;
-                } else if (msg.temp && msg.sender_id === payload.new.sender_id && msg.content === payload.new.content) {
-                  // This is a temp version of the same message, replace it
+             console.log('Message already exists, updating or ignoring.');
+             // Update logic remains mostly the same, ensure status updates correctly
+             setMessages(prevMessages => prevMessages.map(msg => {
+                // If it's the confirmed message matching the payload ID
+                if (msg.id === payload.new.id) return { ...msg, ...payload.new, temp: false };
+                // If it's a temp message matching content and sender (more reliable than timestamp)
+                if (msg.temp && msg.content === payload.new.content && msg.sender_id === payload.new.sender_id) {
+                  console.log(`Replacing temp message with confirmed message ${payload.new.id}`);
                   return {
                     ...payload.new,
-                    username: msg.username,
+                    username: msg.username, // Keep temp username/avatar if needed
                     avatar_url: msg.avatar_url,
                     temp: false
                   };
                 }
                 return msg;
-              });
-            });
+             }));
             return;
           }
-          
+
+          // Process and add the new message
           try {
-            const newMessage = await fetchMessageWithAuthor(payload.new.id);
-            if (!newMessage) return;
-            
-            // Add to messages state
-            setMessages(prevMessages => {
-              // Double check it's not already in the list (race condition)
-              if (prevMessages.some(m => m.id === newMessage.id)) {
-                return prevMessages;
-              }
-              
-              const updatedMessages = [...prevMessages, newMessage].sort(
-                (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-              );
-              
-              return updatedMessages;
-            });
-            
+            // Determine sender profile (check participants first, then current user)
+            const senderProfile = participants.find(p => p.id === payload.new.sender_id) ||
+                                  (payload.new.sender_id === user?.id ? user.user_metadata : null);
+
+            const newMessageData: any = {
+              ...payload.new,
+              username: senderProfile?.username || 'User',
+              avatar_url: senderProfile?.avatar_url,
+              temp: false,
+            };
+
+            // Check scroll position BEFORE adding the new message
+            const container = messagesContainerRef.current;
+            // Should scroll if near the bottom or container not yet available
+            const shouldScroll = !container || (container.scrollHeight - container.scrollTop <= container.clientHeight + 150); // Threshold can be adjusted
+            console.log(`[Realtime INSERT] Message ${newMessageData.id}. ShouldScroll: ${shouldScroll}, isLoadingMore: ${isLoadingMoreRef.current}`);
+
+            // Append the new message to the END of the array
+            setMessages(prevMessages => [...prevMessages, newMessageData]);
+
             // Mark as read if received from another user
-            if (newMessage.sender_id !== user.id) {
-              markMessageAsRead(newMessage.id);
+            if (newMessageData.sender_id !== user.id) {
+              markMessageAsRead(newMessageData.id);
             }
-            
-            scrollToBottom();
+
+            // Scroll down only if user was near the bottom AND not loading history
+            if (shouldScroll && !isLoadingMoreRef.current) {
+              console.log(`[Realtime INSERT] Scrolling for new message ${newMessageData.id}`);
+              setTimeout(() => scrollToBottom('smooth'), 50); // Delay slightly for render
+            }
+
           } catch (error) {
             console.error('Error processing new message:', error);
           }
         }
       )
-      .subscribe();
-      
-    console.log(`Subscription ${channelName} created and listening`);
-    
-    // Set up real-time subscription for message read status updates
-    const readStatusSubscription = supabase
-      .channel(`read-status-channel-${conversationId}-${user.id}`)
+      // Add listener for message updates (e.g., is_read changes)
       .on(
         'postgres_changes',
         {
@@ -267,147 +333,164 @@ export default function ConversationPage() {
           filter: `conversation_id=eq.${conversationId}`
         },
         (payload) => {
-          console.log('Message read status updated:', payload.new);
-          // Update the message in our state without duplicating
-          setMessages(prev => 
-            prev.map(msg => 
-              msg.id === payload.new.id 
-                ? { ...msg, is_read: payload.new.is_read }
-                : msg
+          console.log('Message update received:', payload);
+          setMessages(prevMessages => 
+            prevMessages.map(message => 
+              message.id === payload.new.id 
+                ? { ...message, ...payload.new } // Update the message with new data
+                : message
             )
+          );
+          // Potentially update read status display if needed
+        }
+      )
+      // Add listener for message deletions
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${conversationId}`
+        },
+        (payload) => {
+          console.log('Message delete received:', payload);
+          setMessages(prevMessages => 
+            prevMessages.filter(message => message.id !== payload.old.id)
           );
         }
       )
-      .subscribe();
-    
-    return () => {
-      console.log(`Cleaning up message subscriptions on ${channelName}`);
-      supabase.removeChannel(messageSubscription);
-      supabase.removeChannel(readStatusSubscription);
-    };
-  }, [user, conversationId, recipientUser, messages]);
+      .subscribe((status, err) => {
+        if (status === 'SUBSCRIBED') {
+          console.log(`Successfully subscribed to ${channelName}`);
+        }
+        if (status === 'CHANNEL_ERROR') {
+          console.error(`Subscription error on ${channelName}:`, err);
+          toast.error('Real-time connection error. Please refresh.');
+        }
+        if (status === 'TIMED_OUT') {
+          console.warn(`Subscription timed out on ${channelName}. Retrying maybe needed.`);
+          toast('Real-time connection timed out.', { icon: '⏳' });
+        }
+      });
 
-  useEffect(() => {
-    // Mark all messages as read when the conversation is opened
-    if (user && messages.length > 0) {
-      markConversationAsRead();
+    // Set up typing status subscription
+    let typingStatusSubscription: any = null;
+    if (recipientUser) { // Check if recipientUser is determined
+      const typingChannelName = `typing-channel-${conversationId}-${user.id}`;
+      console.log(`Setting up typing subscription on channel: ${typingChannelName}`);
+      typingStatusSubscription = supabase
+        .channel(typingChannelName) // Use a different channel name for typing
+        .on(
+          'postgres_changes' as any, // Use type assertion to bypass overload error
+          {
+            event: '*', // Listen for INSERT, UPDATE, DELETE
+            schema: 'public',
+            table: 'typing_status',
+            filter: `conversation_id=eq.${conversationId}`
+          },
+          (payload: TypingStatusPayload) => {
+             console.log('Typing status change received:', payload);
+
+            // Handle different event types
+            if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+              if (payload.new && payload.new.user_id && payload.new.user_id !== user.id) {
+                 // Store record ID for future reference if needed
+                 if (payload.new.id) typingRecordsMapRef.current[payload.new.id] = payload.new.user_id;
+                 setRecipientIsTyping(payload.new.is_typing);
+
+                 // Check scroll position and loading state BEFORE scrolling for typing
+                 const container = messagesContainerRef.current;
+                 const shouldScroll = !container || (container.scrollHeight - container.scrollTop <= container.clientHeight + 150);
+                 console.log(`[Typing Status] Recipient typing: ${payload.new.is_typing}. ShouldScroll: ${shouldScroll}, isLoadingMore: ${isLoadingMoreRef.current}`);
+
+                 // Scroll when recipient starts typing only if user is near bottom AND not loading history
+                 if (payload.new.is_typing && shouldScroll && !isLoadingMoreRef.current) {
+                     console.log("[Typing Status] Scrolling due to recipient typing");
+                     setTimeout(() => scrollToBottom('smooth'), 50); // Delay slightly
+                 }
+              }
+            }
+            else if (payload.eventType === 'DELETE') {
+               if (payload.old && payload.old.user_id && payload.old.user_id !== user.id) {
+                   const recordId = payload.old.id;
+                   // If this was the recipient's record, set typing to false
+                   // We might not need the map if we just check user_id != user.id
+                   setRecipientIsTyping(false); 
+                   // Clean up the mapping if used
+                   if (recordId) delete typingRecordsMapRef.current[recordId];
+               }
+            }
+          }
+        )
+        .subscribe((status, err) => {
+           if (status === 'SUBSCRIBED') {
+               console.log(`Successfully subscribed to typing status on ${typingChannelName}`);
+           }
+           if (status === 'CHANNEL_ERROR') {
+               console.error(`Typing subscription error on ${typingChannelName}:`, err);
+           }
+        });
     }
-  }, [messages, user]);
-  
-  const fetchConversationData = async () => {
-    setLoading(true);
-    
-    try {
-      // Fetch participants
-      const { data: participantsData, error: participantsError } = await supabase
-        .from('conversation_participants')
-        .select(`
-          user_id,
-          profiles(id, username, avatar_url)
-        `)
-        .eq('conversation_id', conversationId);
-      
-      if (participantsError) throw participantsError;
-      
-      // Format participant data
-      const formattedParticipants = (participantsData || []).map((p: any) => ({
-        id: p.profiles.id,
-        username: p.profiles.username,
-        avatar_url: p.profiles.avatar_url
-      }));
-      
-      setParticipants(formattedParticipants);
-      
-      await refreshMessages(true);
-    } catch (error) {
-      console.error('Error fetching conversation data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Function to refresh messages without full loading state
+
+    return () => {
+      console.log(`Unsubscribing from channel: ${channelName}`);
+      supabase.removeChannel(messageSubscription);
+      if (typingStatusSubscription) {
+         console.log(`Unsubscribing from typing status channel`);
+         supabase.removeChannel(typingStatusSubscription);
+         // Ensure typing status is cleared on unmount if user was typing
+         if (isTyping) {
+             updateTypingStatus(false);
+         }
+      }
+      // Clear typing timeout on unmount
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, [user, conversationId, recipientUser, messages, participants]);
+
   const refreshMessages = async (shouldScrollToBottom = false) => {
-    if (refreshing) return; // Prevent concurrent refreshes
+    if (!user || !conversationId || refreshing) return;
     
     setRefreshing(true);
     try {
-      // Fetch messages with author information directly
-      const { data: messagesData, error: messagesError } = await supabase
+      const { data: messagesData, error } = await supabase
         .from('messages')
         .select(`
-          id,
-          conversation_id,
-          sender_id,
-          content,
-          is_read,
-          created_at,
+          *,
           sender:profiles!sender_id(id, username, avatar_url)
         `)
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true });
       
-      if (messagesError) throw messagesError;
-      
-      // Format messages to include username and avatar_url at the top level
-      const formattedMessages = messagesData ? messagesData.map(message => {
-        const sender = message.sender as { id?: string, username?: string, avatar_url?: string };
-        return {
-          ...message,
-          username: sender?.username || 'Unknown User',
-          avatar_url: sender?.avatar_url || null
-        };
-      }) : [];
-      
-      console.log('Refreshed messages data:', formattedMessages);
-      
-      // Check if we have new messages
-      const hasNewMessages = formattedMessages.length > messages.length;
-      
-      // Use a simple replace strategy for refreshing, as this is a full refresh
-      setMessages(formattedMessages);
-      
-      if (shouldScrollToBottom || hasNewMessages) {
-        scrollToBottom();
-      }
-    } catch (error) {
-      console.error('Error refreshing messages:', error);
-    } finally {
-      setRefreshing(false);
-    }
-  };
-  
-  const fetchMessageWithAuthor = async (messageId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('messages')
-        .select(`
-          id,
-          conversation_id,
-          sender_id,
-          content,
-          is_read,
-          created_at,
-          sender:profiles!sender_id(id, username, avatar_url)
-        `)
-        .eq('id', messageId)
-        .single();
-      
       if (error) throw error;
       
-      if (data) {
-        const sender = data.sender as { id?: string, username?: string, avatar_url?: string };
-        return {
-          ...data,
-          username: sender?.username || 'Unknown User',
-          avatar_url: sender?.avatar_url || null
-        };
+      const formattedMessages = messagesData ? messagesData.map(message => ({
+        ...message,
+        username: message.sender?.username || 'Unknown User',
+        avatar_url: message.sender?.avatar_url,
+      })) : [];
+
+      // Basic reconciliation: Only update if length differs or last message ID differs
+      if (messages.length !== formattedMessages.length || 
+          (messages.length > 0 && messages[messages.length - 1].id !== formattedMessages[formattedMessages.length - 1].id)) {
+          setMessages(formattedMessages);
+          if (shouldScrollToBottom) {
+            setTimeout(scrollToBottom, 100);
+          }
       }
       
-      return null;
+      // Refresh participant data in case someone joined/left (less common)
+      // This might be better handled by a separate subscription if needed frequently
+      // await fetchConversationData(); // Re-fetching all data might be too heavy
+
     } catch (error) {
-      console.error(`Error fetching message ${messageId}:`, error);
-      return null;
+      console.error('Error refreshing messages:', error);
+      toast.error('Failed to refresh messages.');
+    } finally {
+      setRefreshing(false);
     }
   };
   
@@ -455,105 +538,6 @@ export default function ConversationPage() {
     }
   };
   
-  // Add this effect for typing status subscription
-  useEffect(() => {
-    if (!user || !recipientUser || !conversationId) return;
-    
-    console.log('🔄 Setting up typing status subscription for conversation:', conversationId);
-    console.log('🔄 Current user ID:', user?.id, 'Recipient user ID:', recipientUser?.id);
-    
-    // Use a direct channel name for the table 
-    const channelName = 'public:typing_status';
-    console.log(`🔄 Creating typing subscription channel: ${channelName}`);
-    
-    // First remove any existing channels with the same name to avoid duplicates
-    const existingChannel = supabase.getChannels().find(ch => 
-      ch.topic === channelName || ch.topic === `realtime:${channelName}`
-    );
-    
-    if (existingChannel) {
-      console.log('🔄 Removing existing channel with same name');
-      supabase.removeChannel(existingChannel);
-    }
-    
-    // Set up real-time subscription for typing status
-    const typingStatusSubscription = supabase
-      .channel(channelName)
-      .on(
-        'postgres_changes',
-        {
-          event: '*', // Listen for all events (INSERT, UPDATE, DELETE)
-          schema: 'public',
-          table: 'typing_status',
-          filter: `conversation_id=eq.${conversationId}`
-        },
-        (payload: any) => {
-          console.log('⚠️⚠️⚠️ TYPING STATUS CHANGED ⚠️⚠️⚠️');
-          console.log('⚠️ Full payload:', payload);
-          console.log('⚠️ Event:', payload.eventType);
-          
-          // Handle different event types
-          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-            // Store record ID for future reference
-            if (payload.new && payload.new.id && payload.new.user_id) {
-              typingRecordsMapRef.current[payload.new.id] = payload.new.user_id;
-              console.log(`⚠️ Stored record mapping: ${payload.new.id} -> ${payload.new.user_id}`);
-            }
-            
-            // Only update if it's the other user's typing status
-            if (payload.new && payload.new.user_id === recipientUser.id) {
-              console.log(`⚠️ Received typing status: ${payload.new.is_typing} from user: ${payload.new.user_id}`);
-              setRecipientIsTyping(payload.new.is_typing);
-            } else {
-              console.log('⚠️ Ignoring typing update for other user or self');
-            }
-          } 
-          else if (payload.eventType === 'DELETE') {
-            // For DELETE operations, the payload only contains minimal info in old_record
-            console.log('⚠️ Received DELETE operation for typing status');
-            
-            if (payload.old && payload.old.id) {
-              const recordId = payload.old.id;
-              const userId = typingRecordsMapRef.current[recordId];
-              
-              console.log(`⚠️ DELETE for record ID: ${recordId}, mapped user ID: ${userId}`);
-              
-              // If this was the recipient's record, set typing to false
-              if (userId === recipientUser.id) {
-                console.log(`⚠️ Recipient ${recipientUser.id} stopped typing (DELETE event)`);
-                setRecipientIsTyping(false);
-              }
-              
-              // Clean up the mapping
-              delete typingRecordsMapRef.current[recordId];
-            } else {
-              console.log('⚠️ DELETE event missing record ID information');
-            }
-          }
-        }
-      )
-      .subscribe((status: any) => {
-        console.log(`🔄 Subscription status for ${channelName}:`, status);
-        
-        // Check for successful subscription
-        if (status === 'SUBSCRIBED') {
-          console.log('🔄🔄🔄 SUCCESSFULLY SUBSCRIBED TO TYPING UPDATES 🔄🔄🔄');
-        }
-      });
-    
-    console.log('🔄 Subscription created and waiting for events');
-    
-    // Add a status change debug
-    supabase.getChannels().forEach(channel => {
-      console.log(`🔄 Current channel: ${channel.topic}, state: ${channel}`);
-    });
-    
-    return () => {
-      console.log('🔄 Cleaning up typing status subscription');
-      supabase.removeChannel(typingStatusSubscription);
-    };
-  }, [user, recipientUser, conversationId]);
-
   // Handle typing in the message input
   const handleTyping = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
@@ -734,32 +718,63 @@ export default function ConversationPage() {
     return date.toDateString();
   };
   
-  // Function to scroll to bottom with smooth behavior
-  const scrollToBottom = () => {
-    if (messagesEndRef.current) {
-      const messagesContainer = document.querySelector(`.${styles.messagesContainer}`);
-      if (messagesContainer) {
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  // Function to scroll to bottom with optional behavior
+  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+    // Use messagesContainerRef to scroll the container itself
+    if (messagesContainerRef.current) {
+      if (behavior === 'smooth') {
+        messagesContainerRef.current.scrollTo({
+          top: messagesContainerRef.current.scrollHeight,
+          behavior: 'smooth'
+        });
+      } else { // 'auto' or other
+        messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
       }
     }
+    /* 
+    // Previous method using scrollIntoView on a target element
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior });
+    }
+    */
   };
   
-  // Make sure to scroll to bottom on any message changes
+  // Initial scroll to bottom effect (only runs once after initial load)
   useEffect(() => {
-    if (messages.length > 0 || recipientIsTyping) {
-      setTimeout(scrollToBottom, 100); // Small delay to ensure DOM has updated
+    if (initialLoadComplete && messages.length > 0 && !initialScrollPerformedRef.current) {
+      console.log("[useEffect initialScroll] Performing initial scroll and activating listener.");
+      // Scroll first
+      scrollToBottom('auto'); // Use 'auto' for instant scroll on initial load
+
+      // Then activate the scroll listener after a short delay
+      const timer = setTimeout(() => {
+        setIsScrollListenerActive(true);
+        console.log("[useEffect initialScroll] Scroll listener activated.");
+      }, 100); // Adjust delay if needed
+
+      initialScrollPerformedRef.current = true; // Mark as done
+      return () => clearTimeout(timer);
     }
-  }, [messages.length, recipientIsTyping]);
-  
+    // Depend only on initialLoadComplete to trigger this check once per full load cycle
+  }, [initialLoadComplete]);
+
+  // Add this ref for initial scroll tracking
+  const initialScrollPerformedRef = useRef(false);
+
+  // Reset initial scroll flag when conversation changes (if applicable, depends on component structure)
+  // Assuming fetchConversationData is called when the conversationId param changes:
+  useEffect(() => {
+      initialScrollPerformedRef.current = false; // Reset on conversation change
+      // Any other state reset needed when conversation switches
+  }, [conversationId]);
+
   const getParticipantNames = () => {
-    // Filter out the current user
-    const otherParticipants = participants.filter(p => p.id !== user?.id);
-    
-    if (otherParticipants.length === 0) {
-      return 'No participants';
+    // Use the participants state which contains the other users' profiles
+    if (participants.length > 0) {
+      return participants.map(p => p.username || 'User').join(', ');
     }
-    
-    return otherParticipants.map(p => p.username).join(', ');
+    // Handle case with no other participants (e.g., notes to self)
+    return user?.user_metadata?.username || 'Conversation'; 
   };
 
   // Handle right click on message
@@ -934,6 +949,101 @@ export default function ConversationPage() {
     setRecipientIsTyping(isTyping);
   };
 
+  // --- Function to load older messages ---
+  const loadMoreMessages = async () => {
+    if (loadingMore || !hasMoreMessages || !user || !conversationId) return;
+
+    // Store scroll position *before* fetching and changing height
+    const container = messagesContainerRef.current;
+    const previousScrollHeight = container ? container.scrollHeight : 0;
+    const previousScrollTop = container ? container.scrollTop : 0;
+
+    isLoadingMoreRef.current = true; // <-- Set loading flag
+    setLoadingMore(true);
+    const currentMessageCount = messages.length;
+
+    try {
+      console.log(`[loadMoreMessages] Loading more messages, offset: ${currentMessageCount}, limit: ${messageLimit}`);
+      const { data: olderMessagesData, error } = await supabase
+        .from('messages')
+        .select(`
+          *,
+          sender:profiles!sender_id(id, username, avatar_url)
+        `)
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: false }) // Fetch latest first within the range
+        .range(currentMessageCount, currentMessageCount + messageLimit - 1);
+
+      if (error) throw error;
+
+      if (olderMessagesData && olderMessagesData.length > 0) {
+        const formattedOlderMessages = olderMessagesData.map(message => ({
+          ...message,
+          username: message.sender?.username || 'Unknown User',
+          avatar_url: message.sender?.avatar_url,
+        })).reverse(); // Reverse fetched batch to maintain chronological order when prepending
+
+        // Prepend messages AND adjust scroll immediately after state update
+        setMessages(prevMessages => [...formattedOlderMessages, ...prevMessages]);
+
+        // Adjust scroll position immediately after prepending messages
+        if (container) {
+            // Use requestAnimationFrame for immediate DOM update handling
+            requestAnimationFrame(() => {
+                const newScrollHeight = container.scrollHeight;
+                const scrollOffset = newScrollHeight - previousScrollHeight;
+                const newScrollTop = previousScrollTop + scrollOffset;
+                console.log(`[loadMoreMessages] Adjusting scroll. PrevHeight: ${previousScrollHeight}, NewHeight: ${newScrollHeight}, PrevTop: ${previousScrollTop}, Offset: ${scrollOffset}, NewScrollTop: ${newScrollTop}`);
+                container.scrollTop = newScrollTop;
+            });
+        }
+
+        // If we fetched fewer messages than the limit, we've reached the beginning
+        if (olderMessagesData.length < messageLimit) {
+          setHasMoreMessages(false);
+        }
+      } else {
+        // No more messages were returned
+        setHasMoreMessages(false);
+      }
+    } catch (error) {
+      console.error('Error loading more messages:', error);
+      toast.error('Could not load older messages.');
+    } finally {
+      setLoadingMore(false);
+      isLoadingMoreRef.current = false; // <-- Unset loading flag
+    }
+  };
+
+  // --- Scroll handler for infinite loading ---
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    if (!isScrollListenerActive) return; // Don't handle scroll if listener isn't active
+
+    const container = e.currentTarget;
+    console.log(`[Scroll Check] scrollTop: ${container.scrollTop}, hasMore: ${hasMoreMessages}, loadingMore: ${loadingMore}`);
+
+    // Load more when scrolled near the top - ONLY trigger loading here
+    if (container.scrollTop < 50 && hasMoreMessages && !loadingMore && !isLoadingMoreRef.current) { // Added isLoadingMoreRef check here too
+      console.log("[handleScroll] Scroll threshold reached, calling loadMoreMessages...");
+      loadMoreMessages(); // Just call loadMore, adjustment is inside it now
+
+      // REMOVED: Scroll adjustment logic moved to loadMoreMessages
+      /*
+      loadMoreMessages().then(() => {
+        // After loading, adjust scroll position to keep view stable
+        // Use setTimeout for a slightly longer delay than requestAnimationFrame
+        setTimeout(() => {
+           if (messagesContainerRef.current) { // Check ref still exists
+              const newScrollTop = messagesContainerRef.current.scrollHeight - previousScrollHeight;
+              console.log(`Adjusting scroll. PrevHeight: ${previousScrollHeight}, NewHeight: ${messagesContainerRef.current.scrollHeight}, NewScrollTop: ${newScrollTop}`);
+              messagesContainerRef.current.scrollTop = newScrollTop;
+           }
+        }, 50); // 50ms delay, adjust if necessary
+      });
+      */
+    }
+  };
+
   if (loading) {
     return (
       <div className={styles.loadingContainer}>
@@ -944,8 +1054,8 @@ export default function ConversationPage() {
   }
 
   // Get the avatar or default avatar for the recipient
-  const recipientAvatar = participants.find(p => p.id !== user?.id)?.avatar_url;
-  const recipientName = participants.find(p => p.id !== user?.id)?.username || recipientUsername;
+  const recipientAvatar = participants.length > 0 ? participants[0].avatar_url : null; // Simplified recipient logic assuming 1-on-1 for avatar
+  const recipientName = participants.length > 0 ? participants[0].username : (conversationName || 'Conversation'); // Use first participant or convo name
   
   // Compose class names for elements based on preferences
   const backgroundClass = styles[getChatBackgroundClass()];
@@ -1237,8 +1347,22 @@ export default function ConversationPage() {
       
       <NineSliceContainer 
         variant={chatBackground !== 1 ? "ghost" : undefined} 
-        className={`${styles.messagesContainer} ${styles.elevatedCard} ${backgroundClass} ${textSizeClass}`}>
-        {messages.length === 0 ? (
+        className={`${styles.messagesContainer} ${styles.elevatedCard} ${backgroundClass} ${textSizeClass}`}
+        ref={messagesContainerRef}
+        onScroll={isScrollListenerActive ? handleScroll : undefined}
+      >
+        {loadingMore && (
+          <div className={styles.loadingMoreIndicator}>
+             <div className={styles.loadingSpinnerSmall}></div> Loading older messages...
+          </div>
+        )}
+        
+        {loading && !loadingMore && messages.length === 0 ? (
+          <div className={styles.loadingContainer}>
+            <div className={styles.loadingSpinner}></div>
+            <div className={styles.loading}>Loading messages...</div>
+          </div>
+        ) : messages.length === 0 && !hasMoreMessages ? (
           <>
             <motion.div 
               className={styles.emptyState}
@@ -1252,7 +1376,6 @@ export default function ConversationPage() {
               </div>
             </motion.div>
             
-            {/* Show typing indicator even when no messages exist */}
             {recipientIsTyping && (
               <motion.div 
                 key="typing-indicator-empty"
@@ -1422,7 +1545,6 @@ export default function ConversationPage() {
                 );
               })}
               
-              {/* Typing indicator when messages exist */}
               {recipientIsTyping && (
                 <motion.div 
                   key="typing-indicator-main"
@@ -1446,6 +1568,7 @@ export default function ConversationPage() {
                 </motion.div>
               )}
             </AnimatePresence>
+            <div ref={messagesEndRef} />
           </div>
         )}
       </NineSliceContainer>
@@ -1469,28 +1592,16 @@ export default function ConversationPage() {
               className={styles.messageInput}
               autoComplete="off"
               label=""
+              button={<Button 
+                type="submit" 
+                variant="primary"
+                className={styles.sendButton}
+                disabled={sending || !newMessage.trim()}
+              >
+                <FaPaperPlane />
+              </Button>}
             />
-            <Button 
-              type="submit" 
-              variant="primary"
-              className={`${styles.sendButton} ${isTyping ? styles.sendActive : ''}`}
-              disabled={sending || !newMessage.trim()}
-            >
-              <FaPaperPlane />
-            </Button>
           </form>
-
-          {/* Debug buttons - uncomment for testing */}
-          {/* 
-          <div className={styles.debugButtons}>
-            <Button type="button" onClick={() => setTypingForTesting(true)} className={styles.debugButton}>
-              Test Typing On
-            </Button>
-            <Button type="button" onClick={() => setTypingForTesting(false)} className={styles.debugButton}>
-              Test Typing Off
-            </Button>
-          </div>
-          */}
         </NineSliceContainer>
       </motion.div>
     </motion.div>

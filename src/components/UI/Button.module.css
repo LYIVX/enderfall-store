@@ -480,6 +480,42 @@
   flex-direction: row;
 }
 
+.nineSlice-delete.small::before {
+  width: auto;
+  height: auto;
+}
+
+.nineSlice-delete.small span {
+  padding: var(--spacing-xs);
+}
+
+.nineSlice-edit.small::before {
+  width: auto;
+  height: auto;
+}
+
+.nineSlice-edit.small span {
+  padding: var(--spacing-xs);
+}
+
+.nineSlice-view.small::before {
+  width: auto;
+  height: auto;
+}
+
+.nineSlice-view.small span {
+  padding: var(--spacing-xs);
+}
+
+.nineSlice-friend.small::before {
+  width: auto;
+  height: auto;
+}
+
+.nineSlice-friend.small span {
+  padding: var(--spacing-xs);
+}
+
 .nineSliceBase.small::before {
   border-width: 6px 6px 8px 6px; /* Smaller borders for small buttons */
   border-image-width: 6px 6px 8px 6px;
@@ -497,6 +533,42 @@
   border-image-width: 7px 7px 9px 7px;
 }
 
+.nineSlice-delete.medium::before {
+  width: auto;
+  height: auto;
+}
+
+.nineSlice-delete.medium span {
+  padding: var(--spacing-xs);
+}
+
+.nineSlice-edit.medium::before {
+  width: auto;
+  height: auto;
+}
+
+.nineSlice-edit.medium span {
+  padding: var(--spacing-xs);
+}
+
+.nineSlice-view.medium::before {
+  width: auto;
+  height: auto;
+}
+
+.nineSlice-view.medium span {
+  padding: var(--spacing-xs);
+}
+
+.nineSlice-friend.medium::before {
+  width: auto;
+  height: auto;
+}
+
+.nineSlice-friend.medium span {
+  padding: var(--spacing-xs);
+}
+
 .nineSliceBase.large {
   height: 46px;
   font-size: var(--button-font-size-large);
@@ -507,4 +579,40 @@
 .nineSliceBase.large::before {
   border-width: 8px 8px 10px 8px; /* Original borders for large buttons */
   border-image-width: 8px 8px 10px 8px;
+}
+
+.nineSlice-delete.large::before {
+  width: auto;
+  height: auto;
+}
+
+.nineSlice-delete.large span {
+  padding: var(--spacing-xs);
+}
+
+.nineSlice-edit.large::before {
+  width: auto;
+  height: auto;
+}
+
+.nineSlice-edit.large span {
+  padding: var(--spacing-xs);
+}
+
+.nineSlice-view.large::before {
+  width: auto;
+  height: auto;
+}
+
+.nineSlice-view.large span {
+  padding: var(--spacing-xs);
+}
+
+.nineSlice-friend.large::before {
+  width: auto;
+  height: auto;
+}
+
+.nineSlice-friend.large span {
+  padding: var(--spacing-xs);
 }

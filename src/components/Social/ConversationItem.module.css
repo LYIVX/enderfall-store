@@ -14,15 +14,6 @@
   height: 150% !important;
 }
 
-.conversationItem:hover {
-  transform: scale(1.01);
-}
-
-.conversationItem.active {
-  background-color: var(--theme-tab-background);
-  border-left: 3px solid var(--theme-info-color);
-}
-
 .avatarWrapper {
   position: relative;
   top: 2px;

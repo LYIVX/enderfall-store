@@ -22,7 +22,7 @@ const Input: React.FC<InputProps> = ({
 }) => {
   return (
     <div className={`${styles.inputWrapper} ${layout === 'horizontal' ? styles.horizontal : ''}`}>
-      <label className={styles.label}>{label}</label>
+      {label && <label className={styles.label}>{label}</label>}
       <div className={styles.inputContainer}>
         <input
           className={`${styles.input} ${error ? styles.error : ''} ${nineSlice ? styles.nineSliceBase : ''} ${className || ''}`}
