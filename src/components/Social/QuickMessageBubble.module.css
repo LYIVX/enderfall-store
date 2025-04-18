@@ -217,6 +217,12 @@
   color: var(--theme-text-primary);
 }
 
+.messageTextContainer {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
 .messageText {
   margin: 0;
   word-break: break-word;
@@ -224,24 +230,37 @@
   color: var(--theme-text-primary);
   overflow: visible;
   font-size: 0.9rem;
+  flex-grow: 1;
 }
 
-.messageTime {
-  display: block;
+.revealedTimestamp {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
   font-size: 0.7rem;
   color: var(--theme-text-secondary);
-  margin-top: 0.25rem;
-  text-align: right;
+  background-color: var(--background-tertiary);
+  padding: 3px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.8;
 }
 
-.statusIcon, .statusIconRead {
-  margin-left: 5px;
-  font-size: 10px;
-  color: var(--theme-text-secondary);
+.messageWithActions {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
 }
 
-.statusIconRead {
-  color: var(--theme-primary-color);
+.messageWithActions > motion.div {
+   cursor: grab;
+}
+.messageWithActions > motion.div:active {
+   cursor: grabbing;
 }
 
 /* Typing indicator */
@@ -500,7 +519,79 @@
   background: #7f0080 !important; 
 } 
 
+/* NEW: Edit Message Styles */
+.editMessageContainer {
+  display: flex !important;
+  flex-direction: column;
+  width: 100%;
+  gap: var(--spacing-sm);
+}
 
+.editMessageInput {
+  width: 100%;
+  border-radius: 8px;
+  padding: 6px 8px;
+  background-color: var(--theme-background);
+  color: var(--theme-text-primary);
+}
+
+.editButtons {
+  display: flex !important;
+  gap: var(--spacing-sm);
+  justify-content: flex-end;
+  margin: 0 !important;
+}
+
+.editButton {
+  border-radius: 50%;
+  width: 40px !important;
+  height: 40px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 !important;
+}
+
+.editButton:hover {
+  background-color: var(--theme-secondary-hover);
+}
+
+/* NEW: Message Action Buttons (like edit/delete) */
+.messageActionButtons {
+  display: flex;
+  flex-direction: row;
+  gap: var(--spacing-sm);
+  position: absolute;
+  right: 0px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+}
+
+.actionButton {
+  width: 42px !important;
+  height: 42px !important;
+  margin: 0 !important;
+  border-radius: 50% !important;
+  background-color: var(--theme-background) !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: var(--theme-text-primary) !important;
+  opacity: 0.9;
+  transition: all 0.2s ease !important;
+}
+
+.actionButton:hover {
+  background-color: var(--theme-hover-background) !important;
+  opacity: 1;
+}
+
+.actionButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
 @media (max-width: 450px) {
   .messagePanel {
@@ -534,4 +625,46 @@
   .closeButton, .backButton {
     margin: 0 !important;
   }
+}
+
+/* Container for message text and inline status icon */
+.messageTextContainer {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+/* Message text adjustments (if needed) */
+.messageText {
+  flex-grow: 1;
+}
+
+/* Re-added: Inline status icon adjustments */
+.messageContent .statusIcon,
+.messageContent .statusIconRead {
+  font-size: 0.7rem;
+  color: var(--theme-text-secondary);
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.messageContent .statusIconRead {
+  color: var(--theme-primary-color);
+}
+
+/* Revealed Timestamp */
+.revealedTimestamp {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.7rem;
+  color: var(--theme-text-secondary);
+  background-color: var(--background-tertiary);
+  padding: 3px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.8;
 }

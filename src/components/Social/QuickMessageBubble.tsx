@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaComment, FaTimes, FaPaperPlane, FaArrowLeft, FaClock, FaCheck, FaCheckDouble } from 'react-icons/fa';
+import { FaComment, FaTimes, FaPaperPlane, FaArrowLeft, FaClock, FaCheck, FaCheckDouble, FaEdit, FaTrash } from 'react-icons/fa';
 import { Button, NineSliceContainer, Input } from '@/components/UI';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/Auth/AuthContext';
@@ -69,6 +69,7 @@ const QuickMessageBubble = () => {
   const [sending, setSending] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [recipientIsTyping, setRecipientIsTyping] = useState(false);
+  const [revealedMessageId, setRevealedMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const bubbleRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -84,6 +85,13 @@ const QuickMessageBubble = () => {
   const isLoadingMoreRef = useRef(false);
   const initialScrollPerformedRef = useRef(false);
   const [windowWidth, setWindowWidth] = useState(0);
+
+  // --- New state for editing --- 
+  const [activeMessageId, setActiveMessageId] = useState<string | null>(null); 
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editMessageContent, setEditMessageContent] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState<{[key: string]: boolean}>({}); // Added for consistency if delete is added later
+  // ---------------------------
 
   // Load conversations when the component mounts
   useEffect(() => {
@@ -338,7 +346,7 @@ const QuickMessageBubble = () => {
     setMessagesLoading(true);
     setHasMoreMessages(true);
     setInitialLoadComplete(false);
-
+    
     try {
       const { data: messagesData, error, count } = await supabase
         .from('messages')
@@ -354,27 +362,27 @@ const QuickMessageBubble = () => {
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: false })
         .range(0, messageLimit - 1);
-
+      
       if (error) throw error;
 
       const formattedMessages = messagesData
         ? messagesData.map(message => {
-            const sender = message.sender as any;
-            return {
-              id: message.id,
-              conversation_id: message.conversation_id,
-              sender_id: message.sender_id,
-              content: message.content,
-              is_read: message.is_read,
-              created_at: message.created_at,
-              username: sender?.username || 'Unknown User',
-              avatar_url: sender?.avatar_url || null
-            };
+        const sender = message.sender as any;
+        return {
+          id: message.id,
+          conversation_id: message.conversation_id,
+          sender_id: message.sender_id,
+          content: message.content, 
+          is_read: message.is_read,
+          created_at: message.created_at,
+          username: sender?.username || 'Unknown User',
+          avatar_url: sender?.avatar_url || null
+        };
           }).reverse()
         : [];
 
       setMessages(formattedMessages);
-
+      
       if (!messagesData || messagesData.length < messageLimit || formattedMessages.length === count) {
         setHasMoreMessages(false);
       }
@@ -797,19 +805,53 @@ const QuickMessageBubble = () => {
     };
   }, []);
 
-  // Close the bubble when clicked outside
+  // Close the bubble, revealed time, or editing state when clicked outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      let shouldCloseBubble = false;
+      let shouldCloseRevealed = false;
+      let shouldCloseActive = false;
+      
+      // Check if click is outside the main bubble container
       if (bubbleRef.current && !bubbleRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+        shouldCloseBubble = true;
       }
+
+      // Logic to close revealed/active states requires checking the target
+      const target = event.target as HTMLElement;
+      let clickedInsideMessageItem = !!target.closest(`.${styles.messageItem}`);
+      let clickedActionButton = !!target.closest(`.${styles.messageActionButtons}`);
+
+      // Close revealed time if clicking outside an action button or the message itself
+      if (revealedMessageId && !clickedInsideMessageItem && !clickedActionButton) {
+        shouldCloseRevealed = true;
+      }
+
+      // Close active buttons if clicking outside action buttons or the message itself
+      if (activeMessageId && !clickedInsideMessageItem && !clickedActionButton) {
+        shouldCloseActive = true;
+      }
+      
+      // Close the editing input if clicking anywhere outside the input/buttons
+      if (editingMessageId) {
+          if (!target.closest(`.${styles.editMessageContainer}`)) { 
+             // If click is outside the editing container, cancel edit
+             cancelEditing(); // Use the cancel function to reset state
+          }
+      }
+
+      // Apply closures
+      if (shouldCloseBubble) setIsOpen(false);
+      if (shouldCloseRevealed) setRevealedMessageId(null);
+      if (shouldCloseActive) setActiveMessageId(null);
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+    // Dependencies updated to include editing/active states
+  }, [revealedMessageId, activeMessageId, editingMessageId]); 
 
   // Add back the effect for typing indicators
   useEffect(() => {
@@ -890,7 +932,7 @@ const QuickMessageBubble = () => {
     }
   };
 
-  // Get the message status icon
+  // Get the message status icon (Reverted to CSS Modules)
   const getMessageStatusIcon = (message: any) => {
     if (message.sender_id === user?.id) {
       if (message.status === 'sending') {
@@ -935,24 +977,131 @@ const QuickMessageBubble = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // --- New Helper Functions for Editing/Deleting --- 
+  const isWithin15Minutes = (timestamp: string) => {
+    if (!timestamp) return false;
+    const messageTime = new Date(timestamp).getTime();
+    const currentTime = new Date().getTime();
+    const timeDifference = currentTime - messageTime;
+    const fifteenMinutesInMs = 15 * 60 * 1000;
+    return timeDifference <= fifteenMinutesInMs;
+  };
+
+  const handleMessageRightClick = (e: React.MouseEvent, messageId: string) => {
+    e.preventDefault();
+    if (revealedMessageId === messageId) setRevealedMessageId(null); // Hide revealed time if opening context menu
+    setActiveMessageId(prev => prev === messageId ? null : messageId); // Toggle active state
+  };
+
+  const handleEditMessage = (message: MessageType) => {
+    if (!message || message.sender_id !== user?.id || !isWithin15Minutes(message.created_at)) {
+      toast.error("Cannot edit this message.");
+      return;
+    }
+    setEditingMessageId(message.id);
+    setEditMessageContent(message.content);
+    setActiveMessageId(null); // Hide action buttons when editing starts
+    setRevealedMessageId(null); // Hide revealed time
+  };
+
+  const saveEditedMessage = async () => {
+    if (!editingMessageId || !editMessageContent.trim() || !user) return;
+
+    const originalMessage = messages.find(m => m.id === editingMessageId);
+    if (!originalMessage) return;
+
+    // Optimistically update local state
+    const updatedMessages = messages.map(msg => 
+      msg.id === editingMessageId ? { ...msg, content: editMessageContent } : msg
+    );
+    setMessages(updatedMessages);
+
+    const messageIdToUpdate = editingMessageId;
+    setEditingMessageId(null); // Exit editing mode immediately
+    setEditMessageContent('');
+
+    try {
+      const { error } = await supabase
+        .from('messages')
+        .update({ content: editMessageContent })
+        .eq('id', messageIdToUpdate)
+        .eq('sender_id', user.id); // Ensure user owns the message
+
+      if (error) throw error;
+      toast.success('Message updated');
+      fetchConversations(); // Refresh conversation list to show updated last message
+    } catch (error) {
+      console.error('Error updating message:', error);
+      toast.error('Failed to update message');
+      // Revert optimistic update on error
+      setMessages(messages.map(msg => msg.id === messageIdToUpdate ? originalMessage : msg));
+    }
+  };
+
+  const cancelEditing = () => {
+    setEditingMessageId(null);
+    setEditMessageContent('');
+    // setActiveMessageId(null); // Keep buttons hidden after cancelling
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!user) {
+      toast.error("You must be logged in to delete messages.");
+      return; 
+    }
+    const message = messages.find(m => m.id === messageId);
+    if (!message || message.sender_id !== user.id || !isWithin15Minutes(message.created_at)) {
+      toast.error("Cannot delete this message.");
+      return;
+    }
+
+    if (!confirm('Are you sure you want to delete this message?')) {
+      return;
+    }
+
+    setActiveMessageId(null); // Hide buttons
+    setDeleteLoading(prev => ({ ...prev, [messageId]: true }));
+
+    try {
+      const { error } = await supabase
+        .from('messages')
+        .delete()
+        .eq('id', messageId)
+        .eq('sender_id', user.id); // Ensure user owns the message
+
+      if (error) throw error;
+
+      // Update local state
+      setMessages(prev => prev.filter(msg => msg.id !== messageId));
+      toast.success('Message deleted');
+      fetchConversations(); // Refresh list to update last message preview
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      toast.error('Failed to delete message');
+    } finally {
+      setDeleteLoading(prev => ({ ...prev, [messageId]: false }));
+    }
+  };
+  // -------------------------------------
+
   if (!user) return null;
 
   return (
     <div className={styles.bubbleContainer} ref={bubbleRef}>
       {/* Bubble Button - Conditionally Rendered based on isOpen and windowWidth */}
       {(!isOpen || windowWidth > 450) && (
-        <Button
-          className={styles.bubbleButton}
-          onClick={toggleBubble}
-          aria-label="Messages"
-          variant="primary"
-          size="large"
-        >
-          <FaComment />
-          {unreadCount > 0 && (
-            <span className={styles.unreadBadge}>{unreadCount}</span>
-          )}
-        </Button>
+      <Button 
+        className={styles.bubbleButton}
+        onClick={toggleBubble}
+        aria-label="Messages"
+        variant="primary"
+        size="large"
+      >
+        <FaComment />
+        {unreadCount > 0 && (
+          <span className={styles.unreadBadge}>{unreadCount}</span>
+        )}
+      </Button>
       )}
 
       {/* Message Panel */}
@@ -1014,7 +1163,7 @@ const QuickMessageBubble = () => {
                   const recipientName = recipient?.username || 'User';
 
                   return (
-                    <div className={styles.messageView}>
+                <div className={styles.messageView}>
                       <NineSliceContainer 
                         className={`${styles.messagesContainer} ${styles[getChatBackgroundClass()]} ${styles[getTextSizeClass()]}`}
                         ref={messagesContainerRef}
@@ -1029,102 +1178,200 @@ const QuickMessageBubble = () => {
                         )}
                         
                         {!messagesLoading && messages.length === 0 && !hasMoreMessages ? (
-                          <div className={styles.emptyState}>No messages yet. Start the conversation!</div>
-                        ) : (
-                          <div className={styles.messagesList}>
-                            {messages.map((message, index) => {
-                              const isOwnMessage = message.sender_id === user.id;
-                              const showAuthor = index === 0 || messages[index - 1].sender_id !== message.sender_id;
-                              const messageDate = getMessageDateGroup(message.created_at);
-                              const showDateDivider = index === 0 || 
-                                getMessageDateGroup(messages[index - 1].created_at) !== messageDate;
+                      <div className={styles.emptyState}>No messages yet. Start the conversation!</div>
+                    ) : (
+                      <div className={styles.messagesList}>
+                        {messages.map((message, index) => {
+                          const isOwnMessage = message.sender_id === user.id;
+                          const showAuthor = index === 0 || messages[index - 1].sender_id !== message.sender_id;
+                          const messageDate = getMessageDateGroup(message.created_at);
+                          const showDateDivider = index === 0 || 
+                            getMessageDateGroup(messages[index - 1].created_at) !== messageDate;
+                          const messageStyleClass = styles[getMessageStyleClass(isOwnMessage)];
+                          const isRevealed = revealedMessageId === message.id;
+                          // --- Add editing checks --- 
+                          const isActive = activeMessageId === message.id;
+                          const isEditing = editingMessageId === message.id;
+                          const canModify = isOwnMessage && isWithin15Minutes(message.created_at);
+                          // ------------------------
+
+                          return (
+                            <React.Fragment key={message.id}>
+                              {showDateDivider && (
+                                <div className={styles.dateDivider}>
+                                  <span>{new Date(messageDate).toLocaleDateString(undefined, { 
+                                    weekday: 'long',
+                                    month: 'short', 
+                                    day: 'numeric',
+                                    year: new Date(messageDate).getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+                                  })}</span>
+                                </div>
+                              )}
+                              <div 
+                                className={`${styles.messageItem} ${isOwnMessage ? styles.ownMessage : ''}`}
+                                // Add context menu listener for own messages
+                                onContextMenu={isOwnMessage && canModify ? (e) => handleMessageRightClick(e, message.id) : undefined}
+                              >
+                                {showAuthor && !isOwnMessage && (
+                                  <div className={styles.messageAuthor}>
+                                    <AvatarWithStatus
+                                      userId={message.sender_id}
+                                      avatarUrl={message.avatar_url}
+                                      username={message.username || 'User'}
+                                      size="small"
+                                      className={styles.messageAvatarContainer}
+                                    />
+                                    <span className={styles.messageUsername}>{message.username}</span>
+                                  </div>
+                                )}
                                 
-                              // Get the message style class
-                              const messageStyleClass = styles[getMessageStyleClass(isOwnMessage)];
-                              
-                              return (
-                                <React.Fragment key={message.id}>
-                                  {showDateDivider && (
-                                    <div className={styles.dateDivider}>
-                                      <span>{new Date(messageDate).toLocaleDateString(undefined, { 
-                                        weekday: 'long',
-                                        month: 'short', 
-                                        day: 'numeric',
-                                        year: new Date(messageDate).getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
-                                      })}</span>
+                                {showAuthor && isOwnMessage && (
+                                  <div className={styles.ownMessageIndicator}>You</div>
+                                )}
+                                
+                                <div className={`${styles.messageWithActions} ${isRevealed ? styles.revealed : ''} ${isActive ? styles.active : ''}`}> 
+                                  <motion.div
+                                    drag={isOwnMessage && !isEditing ? "x" : false} // Disable drag while editing
+                                    dragConstraints={{ left: -100, right: 0 }}
+                                    dragElastic={0.1}
+                                    onDragEnd={(event, info) => {
+                                      if (isOwnMessage && !isEditing) {
+                                        const dragThreshold = -40;
+                                        if (info.offset.x < dragThreshold) {
+                                          setRevealedMessageId(message.id);
+                                          setActiveMessageId(null); // Hide action buttons on drag reveal
+                                        } else {
+                                          if (revealedMessageId === message.id) {
+                                            setRevealedMessageId(null);
+                                          }
+                                        }
+                                      }
+                                    }}
+                                    // Update animation logic to match page.tsx
+                                    animate={{ x: isEditing ? 0 : (isActive && canModify || isRevealed) ? -100 : 0 }}
+                                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                  >
+                                    <NineSliceContainer
+                                      variant="ghost"
+                                      className={`${styles.messageContent} ${isOwnMessage ? styles.ownMessageContent : ''} ${messageStyleClass}`}
+                                    >
+                                      {isEditing ? (
+                                        // --- Edit Input UI --- 
+                                        <div className={styles.editMessageContainer}>
+                                          <Input
+                                            type="text"
+                                            value={editMessageContent}
+                                            onChange={(e) => setEditMessageContent(e.target.value)}
+                                            autoFocus
+                                            onKeyDown={(e) => { if (e.key === 'Enter') saveEditedMessage(); if (e.key === 'Escape') cancelEditing(); }}
+                                            className={styles.editMessageInput}
+                                            label=""
+                                          />
+                                          <div className={styles.editButtons}>
+                                            <Button 
+                                              onClick={saveEditedMessage} 
+                                              variant="success" 
+                                              className={styles.editButton}
+                                              disabled={!editMessageContent.trim() || editMessageContent === message.content}
+                                            >
+                                              <FaCheck size={12} />
+                                            </Button>
+                                            <Button 
+                                              onClick={cancelEditing} 
+                                              variant="danger" 
+                                              className={styles.editButton}
+                                            >
+                                              <FaTimes size={12} />
+                                            </Button>
+                                          </div>
+                                        </div>
+                                        // ---------------------
+                                      ) : (
+                                        // --- Normal Message View --- 
+                                        <div className={styles.messageTextContainer}>
+                                          <p className={styles.messageText}>{message.content}</p>
+                                          {isOwnMessage && getMessageStatusIcon(message)}
+                                        </div>
+                                        // --------------------------
+                                      )}
+                                    </NineSliceContainer>
+                                  </motion.div>
+
+                                  {/* Revealed Timestamp */}
+                                  {isRevealed && !isEditing && (
+                                      <div className={styles.revealedTimestamp}>
+                                          {formatMessageTime(message.created_at)}
+                                      </div>
+                                  )}
+
+                                  {/* Action Buttons - Edit and Delete */}
+                                  {isActive && canModify && !isRevealed && !isEditing && (
+                                    <div className={styles.messageActionButtons}>
+                                      <Button 
+                                        variant="edit" 
+                                        onClick={() => handleEditMessage(message)}
+                                        className={styles.actionButton}
+                                        aria-label="Edit Message"
+                                      >
+                                        <FaEdit /> 
+                                      </Button>
+                                      <Button 
+                                        variant="delete" // Assumes a delete variant exists
+                                        onClick={() => handleDeleteMessage(message.id)}
+                                        className={styles.actionButton}
+                                        disabled={deleteLoading[message.id]}
+                                        aria-label="Delete Message"
+                                      >
+                                        <FaTrash />
+                                      </Button>
                                     </div>
                                   )}
-                                  
-                                  <div className={`${styles.messageItem} ${isOwnMessage ? styles.ownMessage : ''}`}>
-                                    {showAuthor && !isOwnMessage && (
-                                      <div className={styles.messageAuthor}>
-                                        <AvatarWithStatus
-                                          userId={message.sender_id}
-                                          avatarUrl={message.avatar_url}
-                                          username={message.username || 'User'}
-                                          size="small"
-                                          className={styles.messageAvatarContainer}
-                                        />
-                                        <span className={styles.messageUsername}>{message.username}</span>
-                                      </div>
-                                    )}
-                                    
-                                    {showAuthor && isOwnMessage && (
-                                      <div className={styles.ownMessageIndicator}>You</div>
-                                    )}
-                                    
-                                    <NineSliceContainer variant="ghost" className={styles.messageContent + ' ' + (isOwnMessage ? styles.ownMessageContent : '') + ' ' + messageStyleClass}>
-                                      <p className={styles.messageText}>{message.content}</p>
-                                      <span className={styles.messageTime}>
-                                        {formatMessageTime(message.created_at)}
-                                        {getMessageStatusIcon(message)}
-                                      </span>
-                                    </NineSliceContainer>
-                                  </div>
-                                </React.Fragment>
-                              );
-                            })}
-                            
-                            {recipientIsTyping && (
-                              <div className={`${styles.typingIndicator}`}>
-                                <NineSliceContainer variant="ghost" className={`${styles.typingIndicatorContent} ${styles[getMessageStyleClass(false)]}`}>
-                                  <div className={styles.typingDots}>
-                                    <span></span>
-                                    <span></span>
-                                    <span></span>
-                                  </div>
-                                  <span className={styles.typingText}>
-                                    {recipientName} is typing...
-                                  </span>
-                                </NineSliceContainer>
+                                </div>
                               </div>
-                            )}
-                            
-                            <div ref={messagesEndRef} />
+                            </React.Fragment>
+                          );
+                        })}
+                        
+                        {recipientIsTyping && (
+                          <div className={`${styles.typingIndicator}`}>
+                            <NineSliceContainer variant="ghost" className={`${styles.typingIndicatorContent} ${styles[getMessageStyleClass(false)]}`}>
+                              <div className={styles.typingDots}>
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                              </div>
+                              <span className={styles.typingText}>
+                                    {recipientName} is typing...
+                              </span>
+                            </NineSliceContainer>
                           </div>
                         )}
-                      </NineSliceContainer>
-                      
-                      <NineSliceContainer className={styles.messageForm} onSubmit={handleSendMessage}>
-                        <Input
-                          type="text"
+                        
+                        <div ref={messagesEndRef} />
+                      </div>
+                    )}
+                  </NineSliceContainer>
+                  
+                  <NineSliceContainer className={styles.messageForm} onSubmit={handleSendMessage}>
+                    <Input
+                      type="text"
                           placeholder={`Message ${recipientName}...`}
-                          value={newMessage}
-                          onChange={handleTyping}
-                          onKeyDown={handleKeyDown}
-                          className={styles.messageInput}
-                          label=""
-                          button={<Button 
-                          type="submit" 
-                          variant="primary"
-                          className={styles.sendButton}
-                          disabled={sending || !newMessage.trim()}
-                        >
-                          <FaPaperPlane />
-                        </Button>}
-                        />
-                      </NineSliceContainer>
-                    </div>
+                      value={newMessage}
+                      onChange={handleTyping}
+                      onKeyDown={handleKeyDown}
+                      className={styles.messageInput}
+                      label=""
+                      button={<Button 
+                      type="submit" 
+                      variant="primary"
+                      className={styles.sendButton}
+                      disabled={sending || !newMessage.trim()}
+                    >
+                      <FaPaperPlane />
+                    </Button>}
+                    />
+                  </NineSliceContainer>
+                </div>
                   );
                 })()
               )}

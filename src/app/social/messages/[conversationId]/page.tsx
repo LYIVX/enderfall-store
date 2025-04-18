@@ -8,7 +8,7 @@ import { useAuth } from '@/components/Auth/AuthContext';
 import { formatMessageTime, getUserColor } from '@/lib/socialUtils';
 import Button from '@/components/UI/Button';
 import Input from '@/components/UI/Input';
-import { FaPaperPlane, FaArrowLeft, FaSync, FaTrash, FaEllipsisH, FaPalette, FaFont, FaUndo, FaCheck, FaCheckDouble, FaClock, FaEdit } from 'react-icons/fa';
+import { FaPaperPlane, FaArrowLeft, FaSync, FaTrash, FaEllipsisH, FaPalette, FaFont, FaUndo, FaCheck, FaCheckDouble, FaClock, FaEdit, FaTimes } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useChatPreferences, MessageStyleOption, TextSizeOption, ChatBackgroundOption } from '@/components/Theme/ChatPreferencesContext';
 import styles from './page.module.css';
@@ -48,6 +48,7 @@ export default function ConversationPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [showDateDividers, setShowDateDividers] = useState<{[key: string]: boolean}>({});
   const isLoadingMoreRef = useRef(false);
+  const [revealedMessageId, setRevealedMessageId] = useState<string | null>(null);
   
   // Chat preferences dropdown state
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -624,21 +625,21 @@ export default function ConversationPage() {
     };
   }, [isTyping]);
 
-  // Add a function to render message status indicator
+  // Add a function to render message status indicator (using CSS Modules like Quick Chat)
   const getMessageStatusIcon = (message: any) => {
     // For messages sent by the current user
     if (message.sender_id === user?.id) {
       // If we're still sending (temporary state before supabase insert)
       if (message.status === 'sending') {
-        return <FaClock className="text-gray-400 ml-1 text-xs" title="Sending..." />;
+        return <FaClock className={styles.statusIcon} title="Sending..." />;
       }
       // If message has been read
       else if (message.is_read) {
-        return <FaCheckDouble className="text-blue-500 ml-1 text-xs" title="Read" />;
+        return <FaCheckDouble className={styles.statusIconRead} title="Read" />;
       }
       // If message has been delivered but not read
       else {
-        return <FaCheck className="text-gray-400 ml-1 text-xs" title="Delivered" />;
+        return <FaCheck className={styles.statusIcon} title="Delivered" />;
       }
     }
     return null;
@@ -792,20 +793,34 @@ export default function ConversationPage() {
   // Close active message when clicking elsewhere
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
+      let shouldClose = true;
       if (activeMessageId && !editingMessageId) {
         const target = e.target as HTMLElement;
-        // Don't close if clicking on action buttons
-        if (!target.closest(`.${styles.messageActionButtons}`)) {
-          setActiveMessageId(null);
+        if (target.closest(`.${styles.messageActionButtons}`)) {
+          shouldClose = false; // Don't close if clicking action buttons
         }
       }
+      // Also check if clicking within the message item that might be dragged/revealed
+      if (revealedMessageId) {
+         const target = e.target as HTMLElement;
+         if (target.closest(`.${styles.messageItem}`)) { // Check if click is inside ANY message item
+             // More specific check could be added if needed based on class or ID
+             // For now, clicking any message item will keep the revealed state
+             // shouldClose = false;
+         }
+      }
+
+      if (shouldClose) {
+        setActiveMessageId(null); // Close action buttons
+        setRevealedMessageId(null); // Close revealed time
+      }
     };
-    
+
     document.addEventListener('click', handleClickOutside);
     return () => {
       document.removeEventListener('click', handleClickOutside);
     };
-  }, [activeMessageId, editingMessageId]);
+  }, [activeMessageId, editingMessageId, revealedMessageId]); // <-- Add revealedMessageId dependency
 
   // Check if message is within 15 minutes timeframe
   const isWithin15Minutes = (timestamp: string) => {
@@ -1426,6 +1441,9 @@ export default function ConversationPage() {
                 // Check if message is within 15 minutes
                 const canModify = isOwnMessage && isWithin15Minutes(message.created_at);
                 
+                // Check if this message has its time revealed via drag
+                const isRevealed = revealedMessageId === message.id;
+                
                 return (
                   <React.Fragment key={message.id}>
                     {showDateDivider && (
@@ -1449,7 +1467,7 @@ export default function ConversationPage() {
                       initial={{ opacity: 0, x: isOwnMessage ? 20 : -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.3 }}
-                      onContextMenu={(e) => isOwnMessage && handleMessageRightClick(e, message.id)}
+                      onContextMenu={(e) => isOwnMessage && canModify && handleMessageRightClick(e, message.id)}
                     >
                       {showAuthor && !isOwnMessage && (
                         <div className={styles.messageAuthor}>
@@ -1468,9 +1486,25 @@ export default function ConversationPage() {
                         <div className={styles.ownMessageIndicator}>You</div>
                       )}
                       
-                      <div className={styles.messageWithActions}>
+                      <div className={`${styles.messageWithActions} ${isRevealed ? styles.revealed : ''}`}>
                         <motion.div
-                          animate={{ x: isActive && canModify ? -75 : 0 }}
+                          drag={isOwnMessage ? "x" : false}
+                          dragConstraints={{ left: -100, right: 0 }}
+                          dragElastic={0.1}
+                          onDragEnd={(event, info) => {
+                            if (isOwnMessage) {
+                              const dragThreshold = -40;
+                              if (info.offset.x < dragThreshold) {
+                                setRevealedMessageId(message.id);
+                                setActiveMessageId(null);
+                              } else {
+                                if (revealedMessageId === message.id) {
+                                    setRevealedMessageId(null);
+                                }
+                              }
+                            }
+                          }}
+                          animate={{ x: isEditing ? 0 : ((isActive && canModify) || isRevealed ? -100 : 0) }}
                           transition={{ type: "spring", stiffness: 500, damping: 30 }}
                         >
                           <NineSliceContainer 
@@ -1479,8 +1513,7 @@ export default function ConversationPage() {
                               ${styles.messageContent} 
                               ${isOwnMessage ? styles.ownMessageContent : ''} 
                               ${messageStyleClass}
-                              ${!isConsecutiveStart ? (isOwnMessage ? styles.consecutiveOwnMessage : styles.consecutiveMessage) : ''}
-                              ${!isConsecutiveEnd ? (isOwnMessage ? styles.consecutiveOwnMessageEnd : styles.consecutiveMessageEnd) : ''}
+                              ${!showAuthor && !showDateDivider ? (isOwnMessage ? styles.consecutiveOwnMessage : styles.consecutiveMessage) : ''}
                             `}
                           >
                             {isEditing ? (
@@ -1504,24 +1537,29 @@ export default function ConversationPage() {
                                   </Button>
                                   <Button 
                                     onClick={cancelEditing} 
-                                    variant="warning" 
+                                    variant="danger" 
                                     className={styles.editButton}
                                   >
-                                    <FaUndo size={12} />
+                                    <FaTimes size={12} />
                                   </Button>
                                 </div>
                               </div>
                             ) : (
-                              <p className={styles.messageText}>{message.content}</p>
+                              <div className={styles.messageTextContainer}>
+                                <p className={styles.messageText}>{message.content}</p>
+                                {isOwnMessage && getMessageStatusIcon(message)}
+                              </div>
                             )}
-                            <span className={styles.messageTime}>
-                              {formatMessageTime(message.created_at)}
-                              {getMessageStatusIcon(message)}
-                            </span>
                           </NineSliceContainer>
                         </motion.div>
                         
-                        {isActive && canModify && (
+                        {isRevealed && (
+                          <div className={styles.revealedTimestamp}>
+                            {formatMessageTime(message.created_at)}
+                          </div>
+                        )}
+
+                        {isActive && canModify && !isRevealed && !isEditing && (
                           <div className={styles.messageActionButtons}>
                             <Button 
                               variant="edit" 
